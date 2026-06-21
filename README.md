@@ -6,6 +6,54 @@
 >
 > 支持 Android / iOS / Web 全平台。
 
+## 快速开始
+
+### 前提
+- Flutter SDK 3.12+
+- 一台运行 1Panel v2.x 的服务器
+- 在 1Panel 后台生成 API Key（面板设置 → API 接口）
+
+### 克隆 & 运行
+
+```bash
+git clone https://github.com/CHINAYYDSNB/Tianxuan_panel.git
+cd Tianxuan_panel
+flutter pub get
+```
+
+**Android APK:**
+```bash
+flutter build apk --release
+# 安装到手机, 打开输入你的 1Panel 地址 + API Key
+```
+
+**iOS (需要 macOS):**
+```bash
+flutter build ios --release
+```
+
+**Web (浏览器直连, 有 CORS 限制):**
+```bash
+flutter run -d chrome
+# 如果 API 跨域报错, 用下面同源服务器方案
+```
+
+**Web (同源服务器, 推荐开发用):**
+```bash
+# 1. 构建
+flutter build web --release
+
+# 2. 设置你的 1Panel 地址
+export API_HOST=你的服务器IP   # Linux/macOS
+set API_HOST=你的服务器IP      # Windows
+
+# 3. 启动同源开发服务器
+node server.mjs
+
+# 4. 浏览器访问 http://localhost:25568
+# 5. 登录页填入 localhost:25568 + 你的 API Key
+```
+
 ## 许可证
 
 本项目采用 **GNU Affero General Public License v3.0 (AGPLv3)** 开源。

@@ -1,11 +1,21 @@
 # Tianxuan — 1Panel 第三方管理工具
 
+*本软件开发借助了DeepSeek api和claude code进行实际操作*
+
+## 前言
+
+当我第一次看到1panel的时候，觉得界面真的很好看，那为什么不能做一个有着相同颜值的手机端管理呢？于是就有了这个项目
+
+## 原理
+
+其实就是调用api进行远程操作，具体方式可以看看[这个](https://1panel.cn/docs/v2/dev_manual/api_manual/)（面板api属于高敏感文件，请勿泄露）
+
 ## 项目分工
 
 | 角色 | 负责 | 目录 |
 |------|------|------|
 | **逻辑开发** | API 封装、数据模型、状态管理 | `api/` `models/` `providers/` |
-| **UI 开发 (你)** | 页面布局、交互、组件 | `pages/` `widgets/` |
+| **UI 开发**  *（估计还没上线的吧）*| 页面布局、交互、组件 | `pages/` `widgets/` |
 
 ---
 
@@ -20,20 +30,20 @@ flutter run        # 启动（需连接设备/模拟器）
 
 ```
 lib/
-├── api/              ← HTTP 请求（不用动）
-│   ├── client.dart      统一客户端（拦截器+错误处理）
-│   └── *.dart           各模块 API
-├── models/           ← 数据模型（不用动）
+├── api/             
+│   ├── client.dart      
+│   └── *.dart           
+├── models/           
 │   ├── website.dart
 │   └── ...
-├── providers/        ← Riverpod 状态管理（不用动）
+├── providers/       
 │   ├── website_provider.dart
 │   └── ...
-├── pages/            ← UI 页面（你的地盘）
-│   ├── dashboard/   服务器状态
-│   ├── website/    网站管理
+├── pages/            
+│   ├── dashboard/   
+│   ├── website/    
 │   └── ...
-├── widgets/          ← 公共 UI 组件（你的地盘）
+├── widgets/          
 │   └── ...
 └── main.dart
 ```
@@ -219,9 +229,14 @@ final both = ref.watch([serverStatusProvider, websitesProvider]);
 
 ---
 
-## 设计建议
-
-- **LoginPage**：服务器地址 + API Key 输入框，连接成功后跳转 Dashboard
-- **DashboardPage**：四个卡片展示 CPU/内存/磁盘/运行时间，底部导航或抽屉菜单
-- **WebsiteListPage**：列表+下拉刷新，每项显示域名和状态
-- 风格：Material 3，主色蓝，支持深色模式
+## 开发进度
+新建文件夹
+学习flutter
+跑个界面
+获取服务器基本信息
+文件管理
+## TODO
+UI更新
+网站状态管理
+docker管理
+高级功能（WAF等等）

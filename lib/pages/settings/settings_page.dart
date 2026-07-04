@@ -450,7 +450,7 @@ class _AboutTabState extends State<_AboutTab> {
           child: ListTile(
             leading: const Icon(Icons.code),
             title: const Text('GitHub'),
-            subtitle: const Text('CHINAYYDSNB/Tianxuan_panel'),
+            subtitle: const Text('CHINAYYDSNB/Tianxuan'),
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _openUrl(UpdateService.repoUrl),
           ),

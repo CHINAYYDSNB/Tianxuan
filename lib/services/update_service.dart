@@ -4,11 +4,11 @@ import 'package:http/http.dart' as http;
 
 /// GitHub release update checker.
 class UpdateService {
-  static const _repo = 'CHINAYYDSNB/Tianxuan_panel';
+  static const _repo = 'CHINAYYDSNB/Tianxuan';
   static const _api = 'https://api.github.com/repos/$_repo/releases/latest';
 
   /// Keep in sync with pubspec.yaml version.
-  static const currentVersion = '0.3.0+1';
+  static const currentVersion = '0.0.10+1';
 
   /// GitHub repo URL for download.
   static const repoUrl = 'https://github.com/$_repo';

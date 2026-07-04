@@ -1,7 +1,7 @@
 name: tianxuan
 description: "1Panel third-party manager"
 publish_to: 'none'
-version: 4.0.1+1
+version: 0.0.10+1
 
 environment:
   sdk: ^3.12.1

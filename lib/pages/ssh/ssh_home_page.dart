@@ -181,6 +181,17 @@ class _SshConnectPageState extends State<_SshConnectPage> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     _ssh = SshService();
+
+    // 获取 proxy URL (APK 连服务器, Web 连本地)
+    String? proxyUrl;
+    try {
+      final serverUrl = await StorageService.instance.getServerUrl();
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        proxyUrl = SshService.buildProxyUrl(serverUrl);
+        _addLog('SSH 代理: $proxyUrl');
+      }
+    } catch (_) {}
+
     _addLog('身份验证方式: ${widget.password != null ? "密码" : "密钥"}');
 
     _ssh!.onData = (data) {
@@ -228,6 +239,7 @@ class _SshConnectPageState extends State<_SshConnectPage> {
         username: widget.username,
         password: widget.password,
         privateKey: widget.privateKey,
+        proxyUrl: proxyUrl,
       );
     } catch (e) {
       if (mounted) {

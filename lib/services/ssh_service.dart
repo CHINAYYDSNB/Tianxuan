@@ -15,15 +15,28 @@ class SshService {
 
   bool get isConnected => _connected;
 
+  /// 从 1Panel 服务器 URL 构建 SSH proxy WebSocket 地址
+  /// APK: 连服务器上的 ssh-proxy (port 25569)
+  /// Web: 连本地 server.mjs (port 25568)
+  static String buildProxyUrl(String serverUrl) {
+    final uri = Uri.parse(serverUrl);
+    final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    return '$scheme://${uri.host}:25569/';
+  }
+
   /// 连接 SSH 服务器通过 WebSocket 代理
+  /// [proxyUrl] — WebSocket 代理地址（APK: 连 1Panel 服务器的 SSH proxy）
   Future<void> connect({
     required String host,
     int port = 22,
     required String username,
     String? password,
     String? privateKey,
+    String? proxyUrl,
   }) async {
-    final proxyUrl = 'ws://localhost:25568/ssh-proxy';
+    if (proxyUrl == null || proxyUrl.isEmpty) {
+      proxyUrl = 'ws://localhost:25568/ssh-proxy'; // Web dev fallback
+    }
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(proxyUrl));

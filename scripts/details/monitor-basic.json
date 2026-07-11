@@ -1,0 +1,17 @@
+{
+  "id": "monitor-basic",
+  "name": "服务器监控脚本",
+  "description": "定时采集服务器 CPU、内存、磁盘指标并上报。支持 Telegram/DingTalk 通知。",
+  "author": {
+    "logtoId": "",
+    "name": "示例开发者",
+    "avatar": "",
+    "email": ""
+  },
+  "language": "sh",
+  "dependencies": ["curl", "jq"],
+  "downloadUrl": "https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts/examples/monitor/start.sh",
+  "screenshots": [],
+  "version": "1.0.0",
+  "updatedAt": "2026-07-11"
+}

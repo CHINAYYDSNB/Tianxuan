@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-11",
+  "scripts": [
+    {
+      "id": "monitor-basic",
+      "name": "服务器监控脚本",
+      "language": "sh",
+      "author": "示例开发者"
+    }
+  ]
+}

@@ -10,3 +10,16 @@
     }
   ]
 }
+
+{
+  "version": 0.0.1,
+  "updatedAt": "2026-07-11",
+  "scripts": [
+    {
+      "id": "test",
+      "name": "测试脚本",
+      "language": "sh",
+      "author": "示例开发者"
+    }
+  ]
+}

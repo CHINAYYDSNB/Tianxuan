@@ -463,7 +463,7 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
           SizedBox(
             width: 80,
             child: Text(label, style: const TextStyle(
-              color: Colors.grey,
+              color: const Color(0xFF686F78),
               fontWeight: FontWeight.w500,
             )),
           ),

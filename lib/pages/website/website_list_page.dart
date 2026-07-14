@@ -20,9 +20,9 @@ class WebsiteListPage extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.language, size: 64, color: Colors.grey),
+                    Icon(Icons.language, size: 64, color: Color(0xFFAAB4BF)),
                     SizedBox(height: 12),
-                    Text('暂无网站', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    Text('暂无网站', style: TextStyle(fontSize: 16, color: Color(0xFF686F78))),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: () => _goCreate(context),
@@ -136,12 +136,12 @@ class _WebsiteTile extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(website.typeLabel,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-            if (website.sitePath != null && website.sitePath!.isNotEmpty)
-              Text(website.sitePath!,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF686F78))),
+            ],
+          ),
+          if (website.sitePath != null && website.sitePath!.isNotEmpty)
+            Text(website.sitePath!,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF686F78))),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -187,6 +187,6 @@ class _WebsiteTile extends ConsumerWidget {
         'Running' => Colors.green,
         'Stopped' => Colors.red,
         'Error' => Colors.red,
-        _ => Colors.grey,
+        _ => const Color(0xFFAAB4BF),
       };
 }

@@ -573,7 +573,7 @@ class _AboutTabState extends State<_AboutTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.tag, size: 16, color: Colors.grey),
+                    const Icon(Icons.tag, size: 16, color: Color(0xFFAAB4BF)),
                     const SizedBox(width: 4),
                     Text(UpdateService.currentVersion, style: theme.textTheme.titleMedium),
                   ],
@@ -716,7 +716,7 @@ class _LogtoStatusCardState extends State<_LogtoStatusCard> {
       child: ListTile(
         leading: Icon(
           _loggedIn ? Icons.lock : Icons.lock_open,
-          color: _loggedIn ? Colors.green : Colors.grey,
+          color: _loggedIn ? Colors.green : const Color(0xFFAAB4BF),
         ),
         title: Text(_loggedIn ? 'Logto 已登录' : 'Logto 未登录'),
         subtitle: Text(_loggedIn ? '点击登出' : '返回首页可登录'),
@@ -799,7 +799,7 @@ class _ConnectionTabState extends ConsumerState<_ConnectionTab> {
             child: Column(
               children: [
                 Icon(connected ? Icons.wifi_find : Icons.cloud_off, size: 48,
-                    color: connected ? Colors.grey : theme.colorScheme.outline),
+                    color: connected ? const Color(0xFFAAB4BF) : theme.colorScheme.outline),
                 const SizedBox(height: 12),
                 Text(connected ? 'API 连接检测' : '未连接服务器',
                     style: theme.textTheme.titleMedium),

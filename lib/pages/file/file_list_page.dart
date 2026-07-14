@@ -363,9 +363,9 @@ class _FileListPageState extends ConsumerState<FileListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.folder_open, size: 64, color: const Color(0xFFAAB4BF)),
             const SizedBox(height: 12),
-            Text('此目录为空', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+            Text('此目录为空', style: const TextStyle(fontSize: 16, color: Color(0xFF686F78))),
           ],
         ),
       );
@@ -404,7 +404,7 @@ class _BreadcrumbBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: List.generate(crumbs.length * 2 - 1, (i) {
-          if (i.isOdd) return const Icon(Icons.chevron_right, size: 16, color: Colors.grey);
+          if (i.isOdd) return const Icon(Icons.chevron_right, size: 16, color: Color(0xFFAAB4BF));
           final idx = i ~/ 2;
           final crumb = crumbs[idx];
           final isLast = idx == crumbs.length - 1;
@@ -420,7 +420,7 @@ class _BreadcrumbBar extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isLast ? FontWeight.w600 : FontWeight.normal,
-                color: isLast ? Theme.of(context).colorScheme.primary : Colors.grey,
+                color: isLast ? Theme.of(context).colorScheme.primary : const Color(0xFFAAB4BF),
               ),
             ),
           );
@@ -462,7 +462,7 @@ class _FileListTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: file.isDir
-          ? Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400)
+          ? Icon(Icons.chevron_right, size: 18, color: const Color(0xFFAAB4BF))
           : PopupMenuButton<String>(
               onSelected: (v) => _handleFileAction(context, ref, v),
               itemBuilder: (_) => [

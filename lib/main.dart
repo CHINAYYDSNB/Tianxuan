@@ -20,8 +20,26 @@ class OnePanelApp extends StatelessWidget {
         title: 'Tianxuan',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
+          colorScheme: ColorScheme.light(
+            surface: const Color(0xFFEBEDF5), // 页面背景
+            onSurface: const Color(0xFF0C1014), // 文 字颜色
+            onSurfaceVariant: const Color(0xFF686F78), // 按钮文字颜色
+            outline: const Color(0xFFAAB4BF), // 按钮边框颜色
+            primary: const Color(0xFF0062F5), // 主题色
+          ),
+          scaffoldBackgroundColor: const Color(0xFFEBEDF5), // 页面背景
+          cardTheme: const CardThemeData(
+            color: Color(0xFFFFFFFF),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+          ),
+          splashFactory: NoSplash.splashFactory, // 禁用水波纹
+          highlightColor: Colors.transparent, // 禁用高亮
+          splashColor: Colors.transparent, // 禁用水波纹
+          hoverColor: Colors.transparent, // 禁用悬停效果
+          focusColor: Colors.transparent, // 禁用焦点效果
         ),
         home: const InitPage(),
         routes: {

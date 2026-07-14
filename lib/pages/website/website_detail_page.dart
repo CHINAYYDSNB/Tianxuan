@@ -352,7 +352,7 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
       'Running' => (Colors.green, '运行中'),
-      'Stopped' => (Colors.grey, '已停止'),
+      'Stopped' => (const Color(0xFFAAB4BF), '已停止'),
       'Error' => (Colors.red, '异常'),
       _ => (Colors.orange, status),
     };
@@ -468,7 +468,7 @@ class _OverviewTab extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            child: Text(label, style: const TextStyle(color: Color(0xFF686F78), fontSize: 13)),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
@@ -552,7 +552,7 @@ class _SslTabState extends ConsumerState<_SslTab> {
             Card(
               child: ListTile(
                 leading: Icon(enable ? Icons.lock : Icons.lock_open,
-                    color: enable ? Colors.green : Colors.grey),
+                    color: enable ? Colors.green : const Color(0xFFAAB4BF)),
                 title: Text(enable ? 'HTTPS 已启用' : 'HTTPS 未启用'),
                 subtitle: Text(enable ? '证书已配置' : '点击下方按钮配置 SSL 证书'),
               ),
@@ -621,7 +621,7 @@ class _SslTabState extends ConsumerState<_SslTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
+          SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Color(0xFF686F78), fontSize: 13))),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
@@ -691,7 +691,7 @@ class _LogTabState extends ConsumerState<_LogTab> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                          const Icon(Icons.error_outline, size: 48, color: Color(0xFFAAB4BF)),
                           const SizedBox(height: 8),
                           Text(_error!),
                           const SizedBox(height: 16),
@@ -849,9 +849,9 @@ class _BackupTab extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.backup_outlined, size: 48, color: Colors.grey),
+                  Icon(Icons.backup_outlined, size: 48, color: Color(0xFFAAB4BF)),
                   SizedBox(height: 12),
-                  Text('暂无备份记录', style: TextStyle(color: Colors.grey)),
+                  Text('暂无备份记录', style: TextStyle(color: Color(0xFF686F78))),
                 ],
               ),
             );

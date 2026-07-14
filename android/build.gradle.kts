@@ -16,11 +16,12 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 
-// 强制所有 Android library 模块使用 compileSdk 36, 兼容 file_picker 等旧插件
+// 强制所有子模块使用 compileSdk 36
 subprojects {
-    plugins.withId("com.android.library") {
-        configure<com.android.build.gradle.LibraryExtension> {
-            compileSdk = 36
+    afterEvaluate {
+        if (plugins.hasPlugin("com.android.library")) {
+            extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)
+                ?.compileSdk = 36
         }
     }
 }

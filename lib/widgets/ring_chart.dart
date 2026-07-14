@@ -40,7 +40,7 @@ class RingChart extends StatelessWidget {
         Text(label, style: const TextStyle(fontSize: 14)),
         if (subtitle.isNotEmpty)
           Text(subtitle,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              style: TextStyle(fontSize: 11, color: const Color(0xFF686F78))),
       ],
     );
   }
@@ -59,7 +59,7 @@ class _RingPainter extends CustomPainter {
 
     // 背景圆环
     final bgPaint = Paint()
-      ..color = Colors.grey[200]!
+      ..color = const Color(0xFFE9ECF8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;

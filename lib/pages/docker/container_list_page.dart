@@ -76,7 +76,7 @@ class _ContainerTile extends ConsumerWidget {
       'running' => Colors.green,
       'exited' || 'stopped' => Colors.red,
       'paused' => Colors.orange,
-      _ => Colors.grey,
+      _ => const Color(0xFFAAB4BF),
     };
 
     return Card(

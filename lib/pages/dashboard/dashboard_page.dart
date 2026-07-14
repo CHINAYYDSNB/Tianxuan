@@ -19,9 +19,9 @@ class DashboardPage extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey),
+        Icon(icon, size: 14, color: const Color(0xFFAAB4BF)),
         const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF686F78))),
       ],
     );
   }
@@ -60,13 +60,13 @@ class DashboardPage extends ConsumerWidget {
                   if (servers.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: Text('暂无已保存的服务器', style: TextStyle(color: Colors.grey))),
+                      child: Center(child: Text('暂无已保存的服务器', style: TextStyle(color: const Color(0xFF686F78)))),
                     )
                   else
                     ...servers.map((s) => ListTile(
                           leading: Icon(
                             s.url == currUrl ? Icons.link : Icons.link_off,
-                            color: s.url == currUrl ? Colors.green : Colors.grey,
+                            color: s.url == currUrl ? Colors.green : const Color(0xFFAAB4BF),
                           ),
                           title: Text(s.name),
                           subtitle: Text(s.displayUrl, style: const TextStyle(fontSize: 12)),
@@ -125,6 +125,125 @@ class DashboardPage extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  void _showDropdownCard(BuildContext ctx, WidgetRef ref, List<SavedServer> servers, String currUrl, String hostname) {
+    final renderBox = ctx.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final pos = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    final notifier = ref.read(serverStatusProvider.notifier);
+    final hasCurrent = currUrl.isNotEmpty && servers.any((s) => s.url == currUrl);
+    final displayServers = hasCurrent
+        ? servers
+        : [SavedServer(id: '_current', name: hostname, url: currUrl, apiKey: ''), ...servers];
+
+    showGeneralDialog(
+      context: ctx,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: const Color(0x08000000),
+      pageBuilder: (context, _, __) => Stack(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(color: Colors.transparent),
+          ),
+          Positioned(
+            top: pos.dy + size.height + 4,
+            left: pos.dx,
+            child: Material(
+              borderRadius: BorderRadius.circular(12),
+              elevation: 0,
+              color: const Color(0xFFFFFFFF),
+              child: SizedBox(
+                width: 280,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    if (displayServers.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: Text('暂无已保存的服务器', style: TextStyle(color: Color(0xFF686F78)))),
+                      )
+                    else
+                      ...displayServers.map((s) => InkWell(
+                        onTap: s.url == currUrl ? null : () async {
+                          Navigator.pop(context);
+                          final err = await ref.read(savedServersProvider.notifier).switchTo(s);
+                          if (err != null && ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                              content: Text('切换失败: $err'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                          notifier.refresh();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.dns_outlined, size: 18,
+                                color: s.url == currUrl ? Colors.green : const Color(0xFFAAB4BF)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  s.name,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: s.url == currUrl ? FontWeight.w600 : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              if (s.url == currUrl)
+                                const SizedBox(
+                                  width: 40,
+                                  child: Text('当前', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Color(0xFF686F78))),
+                                ),
+                            ],
+                          ),
+                        ),
+                      )),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showAddServer(ctx, ref);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.add, size: 18, color: Color(0xFF0062F5)),
+                                const SizedBox(width: 4),
+                                const Text('添加', style: TextStyle(color: Color(0xFF0062F5))),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: const SizedBox(
+                              width: 40,
+                              child: Text('退出', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF0062F5))),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -215,6 +334,13 @@ class DashboardPage extends ConsumerWidget {
     final status = ref.watch(serverStatusProvider);
     final lastFetch = ref.watch(serverStatusProvider.notifier).lastFetchTime;
     final errMsg = ref.watch(refreshErrorProvider);
+    final servers = ref.watch(savedServersProvider);
+    final currUrl = ref.watch(settingsProvider.select((s) => s.serverUrl));
+    final hostname = status.when(
+      data: (d) => d.hostname.isNotEmpty ? d.hostname : d.ipv4Address,
+      loading: () => '加载中',
+      error: (_, __) => 'Tianxuan',
+    );
 
     // 网络错误时弹 snackbar
     ref.listen<String?>(refreshErrorProvider, (prev, next) {
@@ -231,20 +357,19 @@ class DashboardPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tianxuan - 1Panel'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(serverStatusProvider.notifier).refresh(),
+        title: Builder(
+          builder: (ctx) => GestureDetector(
+            onTap: () => _showDropdownCard(ctx, ref, servers, currUrl ?? '', hostname),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(hostname, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 30, color: Color(0xFFAAB4BF)),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(settingsProvider.notifier).disconnect();
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-        ],
+        ),
       ),
       body: status.when(
         data: (data) => RefreshIndicator(
@@ -257,60 +382,8 @@ class DashboardPage extends ConsumerWidget {
                 child: Text(
                   '最后更新: ${_lastUpdated(lastFetch)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: errMsg != null ? Colors.orange : Colors.grey,
+                        color: errMsg != null ? Colors.orange : const Color(0xFFAAB4BF),
                       ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // 服务器信息卡片（点击切换服务器）
-              Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _showServerSwitcher(context, ref),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.dns_outlined, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                data.hostname.isNotEmpty ? data.hostname : data.ipv4Address,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                            if (data.platform.isNotEmpty)
-                              Chip(
-                                label: Text(data.platform, style: const TextStyle(fontSize: 12)),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 4,
-                          children: [
-                            if (data.cpuModelName.isNotEmpty)
-                              _infoChip(Icons.memory, data.cpuModelName),
-                            if (data.cpuCores > 0)
-                              _infoChip(Icons.developer_board, '${data.cpuCores} 核'),
-                            if (data.ipv4Address.isNotEmpty)
-                              _infoChip(Icons.language, data.ipv4Address),
-                            if (data.kernelVersion.isNotEmpty)
-                              _infoChip(Icons.terminal, data.kernelVersion),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -337,7 +410,59 @@ class DashboardPage extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              // 服务器信息卡片（暂时隐藏）
+              // Card(
+              //   child: InkWell(
+              //     borderRadius: BorderRadius.circular(12),
+              //     onTap: () => _showServerSwitcher(context, ref),
+              //     child: Padding(
+              //       padding: const EdgeInsets.all(16),
+              //       child: Column(
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           Row(
+              //             children: [
+              //               const Icon(Icons.dns_outlined, size: 20),
+              //               const SizedBox(width: 8),
+              //               Expanded(
+              //                 child: Text(
+              //                   data.hostname.isNotEmpty ? data.hostname : data.ipv4Address,
+              //                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              //                         fontWeight: FontWeight.w600,
+              //                       ),
+              //                 ),
+              //               ),
+              //               if (data.platform.isNotEmpty)
+              //                 Chip(
+              //                   label: Text(data.platform, style: const TextStyle(fontSize: 12)),
+              //                   visualDensity: VisualDensity.compact,
+              //                 ),
+              //               const SizedBox(width: 4),
+              //               const Icon(Icons.chevron_right, size: 20, color: Color(0xFFAAB4BF)),
+              //             ],
+              //           ),
+              //           const SizedBox(height: 8),
+              //           Wrap(
+              //             spacing: 16,
+              //             runSpacing: 4,
+              //             children: [
+              //               if (data.cpuModelName.isNotEmpty)
+              //                 _infoChip(Icons.memory, data.cpuModelName),
+              //               if (data.cpuCores > 0)
+              //                 _infoChip(Icons.developer_board, '${data.cpuCores} 核'),
+              //               if (data.ipv4Address.isNotEmpty)
+              //                 _infoChip(Icons.language, data.ipv4Address),
+              //               if (data.kernelVersion.isNotEmpty)
+              //                 _infoChip(Icons.terminal, data.kernelVersion),
+              //             ],
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ),
+              const SizedBox(height: 24),
               // 运行时间
               Card(
                 child: ListTile(

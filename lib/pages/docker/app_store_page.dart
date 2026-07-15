@@ -58,7 +58,7 @@ class _AppStoreView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (list.isEmpty) return const Center(child: Text('暂无可用应用'));
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       itemCount: list.length,
       itemBuilder: (ctx, i) => _AppTile(item: list[i]),
     );
@@ -76,7 +76,7 @@ class _AppTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => Navigator.push(context, MaterialPageRoute(

@@ -35,7 +35,7 @@ class WebsiteListPage extends ConsumerWidget {
             : RefreshIndicator(
                 onRefresh: () => ref.read(websitesProvider.notifier).refresh(),
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   itemCount: list.length,
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, i) => _WebsiteTile(website: list[i]),

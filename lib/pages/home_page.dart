@@ -5,12 +5,9 @@ import '../providers/ai_provider.dart';
 import '../providers/settings_provider.dart';
 import 'ai/ai_chat_page.dart';
 import 'dashboard/dashboard_page.dart';
-import 'file/file_list_page.dart';
-import 'website/website_list_page.dart';
-import 'docker/docker_home_page.dart';
+import 'management/management_page.dart';
 import 'script_store/script_store_page.dart';
 import 'settings/settings_page.dart';
-import 'ssh/ssh_home_page.dart';
 
 /// 未连接时阻止 API 请求, 显示添加按钮
 class _Guard extends ConsumerWidget {
@@ -76,59 +73,57 @@ class _HomePageState extends ConsumerState<HomePage> {
     final ai = AiChatPage(onClose: _isFloating ? _closeAi : null);
     _stablePages = [
       _Guard(DashboardPage()),
-      _Guard(FileListPage()),
-      _Guard(WebsiteListPage()),
-      _Guard(DockerHomePage()),
+      const ManagementPage(),
       ScriptStorePage(),
       ai,
-      SshHomePage(),
       SettingsPage(),
     ];
   }
 
-  int _navToStack(int navIdx) => _isFloating && navIdx >= 5 ? navIdx + 1 : navIdx;
+  int _navToStack(int navIdx) => _isFloating && navIdx >= 3 ? navIdx + 1 : navIdx;
   int _stackToNav(int stackIdx) {
     if (!_isFloating) return stackIdx;
-    if (stackIdx == 5) return 0;
-    return stackIdx > 5 ? stackIdx - 1 : stackIdx;
+    if (stackIdx == 3) return 0;
+    return stackIdx > 3 ? stackIdx - 1 : stackIdx;
   }
 
   void _onTapNav(int navIdx) {
     setState(() { _fabOpenedAi = false; _stackIdx = _navToStack(navIdx); });
   }
 
-  void _openAi() => setState(() { _stackIdx = 5; _fabOpenedAi = true; });
+  void _openAi() => setState(() { _stackIdx = 3; _fabOpenedAi = true; });
   void _closeAi() => setState(() { _fabOpenedAi = false; _stackIdx = 0; });
 
   @override
   Widget build(BuildContext context) {
     final showAiTab = !_isFloating;
-    final showIdx = (!showAiTab && !_fabOpenedAi && _stackIdx == 5) ? 6 : _stackIdx;
+    final showIdx = (!showAiTab && !_fabOpenedAi && _stackIdx == 3) ? 4 : _stackIdx;
     final navIdx = _stackToNav(showIdx);
 
     return Scaffold(
       body: IndexedStack(index: showIdx, children: _stablePages),
-      floatingActionButton: _isFloating && showIdx < 4
+      floatingActionButton: _isFloating && showIdx < 2
           ? FloatingActionButton(
               onPressed: _openAi,
               tooltip: 'AI 助手',
               child: const Icon(Icons.auto_awesome),
             )
           : null,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        child: NavigationBar(
+        indicatorColor: Colors.transparent,
         selectedIndex: navIdx,
         onDestinationSelected: _onTapNav,
         destinations: [
           const NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: '概览'),
-          const NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: '文件'),
-          const NavigationDestination(icon: Icon(Icons.language_outlined), selectedIcon: Icon(Icons.language), label: '网站'),
-          const NavigationDestination(icon: Icon(Icons.view_in_ar_outlined), selectedIcon: Icon(Icons.view_in_ar), label: '容器'),
+          const NavigationDestination(icon: Icon(Icons.dns_outlined), selectedIcon: Icon(Icons.dns), label: '管理'),
           const NavigationDestination(icon: Icon(Icons.store_outlined), selectedIcon: Icon(Icons.store), label: '商店'),
           if (showAiTab)
             const NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'AI'),
-          const NavigationDestination(icon: Icon(Icons.terminal), selectedIcon: Icon(Icons.terminal), label: 'SSH'),
           const NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: '设置'),
         ],
+      ),
       ),
     );
   }

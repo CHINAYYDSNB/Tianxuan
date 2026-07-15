@@ -79,7 +79,7 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                 );
               }
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 itemCount: items.length,
                 itemBuilder: (_, i) => _ScriptCard(item: items[i]),
               );

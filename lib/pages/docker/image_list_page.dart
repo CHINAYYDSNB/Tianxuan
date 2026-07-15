@@ -73,7 +73,7 @@ class _ImageView extends ConsumerWidget {
                   onRefresh: () =>
                       ref.read(imageListProvider.notifier).refresh(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     itemCount: list.length,
                     itemBuilder: (ctx, i) =>
                         _ImageTile(image: list[i]),
@@ -133,7 +133,7 @@ class _ImageTile extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(

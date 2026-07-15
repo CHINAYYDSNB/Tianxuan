@@ -122,7 +122,7 @@ class _FileListPageState extends ConsumerState<FileListPage> {
                   : RefreshIndicator(
                       onRefresh: () => ref.read(fileListProvider.notifier).refresh(),
                       child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         itemCount: result.items.length,
                         separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
                         itemBuilder: (context, i) => _FileListTile(

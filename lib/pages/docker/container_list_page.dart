@@ -54,7 +54,7 @@ class _ContainerListView extends StatelessWidget {
         // Refresh via parent widget's ref — handled by the provider above
       },
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: list.length,
         itemBuilder: (ctx, i) => _ContainerTile(container: list[i]),
       ),
@@ -80,7 +80,7 @@ class _ContainerTile extends ConsumerWidget {
     };
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => Navigator.push(

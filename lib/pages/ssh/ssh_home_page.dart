@@ -100,13 +100,13 @@ class _SshHomePageState extends State<SshHomePage> {
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView.builder(
-                padding: const EdgeInsets.only(top: 8, bottom: 80),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                 itemCount: _connections.length,
                 itemBuilder: (_, i) {
                   final c = _connections[i];
                   return Card(
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                        horizontal: 0, vertical: 4),
                     child: ListTile(
                       leading: const Icon(Icons.computer, color: Colors.green),
                       title: Text(c.name.isNotEmpty ? c.name : c.host),

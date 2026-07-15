@@ -660,7 +660,7 @@ class _LogTabState extends ConsumerState<_LogTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               SegmentedButton<String>(
@@ -716,7 +716,7 @@ class _LogTabState extends ConsumerState<_LogTab> {
       children: [
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _lines.length + (_hasMore ? 1 : 0),
             itemBuilder: (ctx, i) {
               if (i == _lines.length) {
@@ -859,7 +859,7 @@ class _BackupTab extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () => ref.read(backupRecordsProvider.notifier).refresh(),
             child: ListView.separated(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               itemCount: records.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (ctx, i) {

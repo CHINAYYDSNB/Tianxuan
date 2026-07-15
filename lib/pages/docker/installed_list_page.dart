@@ -53,7 +53,7 @@ class _InstalledView extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref.read(installedAppListProvider.notifier).refresh(),
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: list.length,
         itemBuilder: (ctx, i) => _InstalledTile(
           app: list[i],
@@ -76,7 +76,7 @@ class _InstalledTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => Navigator.push(context, MaterialPageRoute(

@@ -4,16 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/server_list_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/website_provider.dart';
+import '../../providers/installed_app_provider.dart';
+import '../website/website_list_page.dart';
+import '../docker/installed_list_page.dart';
 import '../../widgets/ring_chart.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
-
-  String _lastUpdated(DateTime t) {
-    final sec = DateTime.now().difference(t).inSeconds;
-    if (sec < 60) return '${sec}秒前';
-    return '${sec ~/ 60}分钟前';
-  }
 
   Widget _infoChip(IconData icon, String text) {
     return Row(
@@ -22,6 +20,20 @@ class DashboardPage extends ConsumerWidget {
         Icon(icon, size: 14, color: const Color(0xFFAAB4BF)),
         const SizedBox(width: 4),
         Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF686F78))),
+      ],
+    );
+  }
+
+  Widget _sysInfoRow(String label, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF686F78))),
+        ),
+        Expanded(
+          child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ),
       ],
     );
   }
@@ -332,10 +344,10 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(serverStatusProvider);
-    final lastFetch = ref.watch(serverStatusProvider.notifier).lastFetchTime;
-    final errMsg = ref.watch(refreshErrorProvider);
     final servers = ref.watch(savedServersProvider);
     final currUrl = ref.watch(settingsProvider.select((s) => s.serverUrl));
+    final siteCount = ref.watch(websitesProvider).when(data: (l) => l.length, loading: () => null, error: (_, __) => null);
+    final appCount = ref.watch(installedAppListProvider).when(data: (l) => l.length, loading: () => null, error: (_, __) => null);
     final hostname = status.when(
       data: (d) => d.hostname.isNotEmpty ? d.hostname : d.ipv4Address,
       loading: () => '加载中',
@@ -372,29 +384,25 @@ class DashboardPage extends ConsumerWidget {
         ),
       ),
       body: status.when(
-        data: (data) => RefreshIndicator(
+        data: (data) => Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(surfaceTint: Colors.transparent),
+          ),
+          child: RefreshIndicator(
           onRefresh: () => ref.read(serverStatusProvider.notifier).refresh(),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             children: [
-              // 最后更新时间
-              Center(
-                child: Text(
-                  '最后更新: ${_lastUpdated(lastFetch)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: errMsg != null ? Colors.orange : const Color(0xFFAAB4BF),
-                      ),
-                ),
-              ),
-              const SizedBox(height: 16),
               // 三个环状图
-              Row(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   RingChart(
                     value: data.cpuUsage,
                     label: 'CPU',
-                    color: Colors.blue,
+                    color: const Color(0xFF0062F5),
                   ),
                   RingChart(
                     value: data.memoryUsage,
@@ -410,7 +418,57 @@ class DashboardPage extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 10),
+              // 网站 & 已安装应用卡片
+              Row(
+                children: [
+                  Expanded(
+                    child: Card(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Column(
+                            children: [
+                              const Text('网站', style: TextStyle(fontSize: 14, color: Color(0xFF686F78))),
+                              const SizedBox(height: 8),
+                              Text(
+                                siteCount != null ? '$siteCount' : '-',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Card(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InstalledListPage())),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Column(
+                            children: [
+                              const Text('已安装应用', style: TextStyle(fontSize: 14, color: Color(0xFF686F78))),
+                              const SizedBox(height: 8),
+                              Text(
+                                appCount != null ? '$appCount' : '-',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               // 服务器信息卡片（暂时隐藏）
               // Card(
               //   child: InkWell(
@@ -462,17 +520,31 @@ class DashboardPage extends ConsumerWidget {
               //     ),
               //   ),
               // ),
-              const SizedBox(height: 24),
-              // 运行时间
+              // 服务器系统信息
               Card(
-                child: ListTile(
-                  leading: const Icon(Icons.timer_outlined, size: 32),
-                  title: Text(ref.watch(tickingUptimeProvider)),
-                  subtitle: const Text('运行时间'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sysInfoRow('主机名称', data.hostname.isNotEmpty ? data.hostname : data.ipv4Address),
+                      const SizedBox(height: 8),
+                      _sysInfoRow('发行版本', data.platform.isNotEmpty ? data.platform : '-'),
+                      const SizedBox(height: 8),
+                      _sysInfoRow('内核版本', data.kernelVersion.isNotEmpty ? data.kernelVersion : '-'),
+                      const SizedBox(height: 8),
+                      _sysInfoRow('系统类型', data.cpuModelName.isNotEmpty ? data.cpuModelName : '-'),
+                      const SizedBox(height: 8),
+                      _sysInfoRow('主机地址', data.ipv4Address.isNotEmpty ? data.ipv4Address : '-'),
+                      const SizedBox(height: 8),
+                      _sysInfoRow('运行时间', ref.watch(tickingUptimeProvider)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
+        ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

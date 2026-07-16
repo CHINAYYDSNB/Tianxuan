@@ -4,7 +4,7 @@ import '../providers/settings_provider.dart';
 import 'ai/ai_chat_page.dart';
 import 'dashboard/dashboard_page.dart';
 import 'resource/resource_page.dart';
-import 'docker/app_store_page.dart';
+import 'script_store/script_store_page.dart';
 import 'settings/settings_page.dart';
 
 /// 未连接时阻止 API 请求, 显示添加按钮
@@ -60,13 +60,16 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: const [
               _Guard(DashboardPage()),      // 0 概览
               _Guard(const ResourcePage()), // 1 资源
-              AppStorePage(),               // 2 Docker商店
+              ScriptStorePage(),               // 2 脚本商店
               SettingsPage(),               // 3 设置
             ],
           ),
           if (_showAi)
             Positioned.fill(
-              child: AiChatPage(onClose: _closeAi),
+              child: ColoredBox(
+                color: Colors.white,
+                child: AiChatPage(onClose: _closeAi),
+              ),
             ),
         ],
       ),
@@ -83,7 +86,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: '概览'),
           NavigationDestination(icon: Icon(Icons.dashboard_customize_outlined), selectedIcon: Icon(Icons.dashboard_customize), label: '资源'),
-          NavigationDestination(icon: Icon(Icons.store_outlined), selectedIcon: Icon(Icons.store), label: 'Docker商店'),
+          NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: '脚本商店'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: '设置'),
         ],
       ),

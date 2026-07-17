@@ -31,7 +31,11 @@ class ApiClient {
   }
 
   /// 组装完整请求 URL
-  String _fullUrl(String path) => '$_serverUrl/api/v2$path';
+  /// Web 平台走本地 server.mjs 代理以避免 CORS
+  String _fullUrl(String path) {
+    if (kIsWeb) return 'http://localhost:25568/api/v2$path';
+    return '$_serverUrl/api/v2$path';
+  }
 
   Future<void> init() async {
     final url = await StorageService.instance.getServerUrl() ?? '';

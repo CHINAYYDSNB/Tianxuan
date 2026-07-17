@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
@@ -17,6 +18,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _keyController = TextEditingController();
   bool _useHttps = false;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      _ipController.text = 'localhost';
+      _portController.text = '25568';
+    }
+  }
 
   Future<void> _connect() async {
     final ip = _ipController.text.trim();

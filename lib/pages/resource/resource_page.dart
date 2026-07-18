@@ -74,8 +74,8 @@ class ResourcePage extends ConsumerWidget {
           _ResourceCard(
             icon: Icons.article,
             iconColor: Colors.indigo,
-            title: '脚本',
-            subtitle: '浏览 / 执行脚本',
+            title: '脚本商店',
+            subtitle: '浏览 / 安装 / 执行脚本',
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScriptStorePage())),
           ),
           const SizedBox(height: 10),

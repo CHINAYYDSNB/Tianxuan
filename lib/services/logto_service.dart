@@ -78,6 +78,58 @@ class LogtoService {
     return false;
   }
 
+  static const _managementApi = 'https://logto.lingqi.vip/api';
+
+  /// 从 ID Token 解码用户信息
+  static Future<({String sub, String name, String email, String picture})?> getUserInfo() async {
+    final idToken = await StorageService.instance.getLogtoIdToken();
+    if (idToken == null || idToken.isEmpty) return null;
+    try {
+      final parts = idToken.split('.');
+      if (parts.length != 3) return null;
+      String payload = parts[1];
+      while (payload.length % 4 != 0) payload += '=';
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final json = jsonDecode(decoded) as Map<String, dynamic>;
+      return (
+        sub: (json['sub'] ?? '').toString(),
+        name: (json['name'] ?? json['username'] ?? json['preferred_username'] ?? '').toString(),
+        email: (json['email'] ?? '').toString(),
+        picture: (json['picture'] ?? '').toString(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 更新 Logto 用户资料（name / avatar）
+  static Future<bool> updateProfile({
+    required String userId,
+    String? name,
+    String? avatar,
+  }) async {
+    final token = await StorageService.instance.getLogtoAccessToken();
+    if (token == null || token.isEmpty) return false;
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (avatar != null) body['avatar'] = avatar;
+      if (body.isEmpty) return false;
+
+      final resp = await http.patch(
+        Uri.parse('$_managementApi/users/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+      return resp.statusCode == 200 || resp.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// 检查是否已登录
   static Future<bool> get isLoggedIn async {
     final token = await StorageService.instance.getLogtoAccessToken();

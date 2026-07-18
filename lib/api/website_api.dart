@@ -148,65 +148,6 @@ class WebsiteApi {
     return (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
   }
 
-  // ─── Backups ───
-
-  /// Search backup records for website
-  static Future<Map<String, dynamic>> getBackups(int page, int pageSize) async {
-    final res = await ApiClient.instance.post('/backups/record/search', data: {
-      'page': page,
-      'pageSize': pageSize,
-      'type': 'website',
-      'orderBy': 'createdAt',
-      'order': 'ascending',
-    });
-    final data = res.data['data'] as Map? ?? {};
-    final items = (data['items'] as List?)?.map(
-          (e) => BackupRecord.fromJson(e as Map<String, dynamic>),
-        ) ??
-        <BackupRecord>[];
-    return {'total': data['total'] ?? 0, 'items': items};
-  }
-
-  /// Create backup for website
-  static Future<void> createBackup({
-    required int websiteId,
-    required String websiteName,
-    required int backupAccountId,
-  }) async {
-    await ApiClient.instance.post('/backups/backup', data: {
-      'type': 'website',
-      'detail': {'id': websiteId, 'name': websiteName},
-      'backupAccountID': backupAccountId,
-    });
-  }
-
-  /// Delete backup record
-  static Future<void> deleteBackup(int recordId) async {
-    await ApiClient.instance.post('/backups/record/del', data: {
-      'id': recordId,
-    });
-  }
-
-  /// Download backup record
-  static Future<void> downloadBackup(int recordId) async {
-    await ApiClient.instance.post('/backups/record/download', data: {
-      'id': recordId,
-    });
-  }
-
-  /// Get backup account list
-  static Future<List<Map<String, dynamic>>> getBackupAccounts() async {
-    final res = await ApiClient.instance.post('/backups/search', data: {
-      'page': 1,
-      'pageSize': 50,
-      'orderBy': 'createdAt',
-      'order': 'ascending',
-    });
-    final data = res.data['data'] as Map? ?? {};
-    final items = (data['items'] as List?) ?? [];
-    return items.cast<Map<String, dynamic>>();
-  }
-
   // ─── Other ───
 
   /// Get available PHP versions

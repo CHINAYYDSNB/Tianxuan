@@ -129,6 +129,18 @@ class AuthInterceptor extends Interceptor {
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    // Timeout errors: suppress visible prompts
+    if (err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout) {
+      handler.reject(DioException(
+        requestOptions: err.requestOptions,
+        message: '',
+        type: err.type,
+      ));
+      return;
+    }
+
     final msg = switch (err.response?.statusCode) {
       401 => '认证失败，请检查 API Key',
       403 => '权限不足',

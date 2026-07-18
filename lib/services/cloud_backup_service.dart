@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../api/file_api.dart';
-import '../providers/health_provider.dart';
 import '../providers/server_list_provider.dart';
 import '../services/storage_service.dart';
 
@@ -11,7 +10,6 @@ class CloudBackupService {
   /// 备份：当前连接 + 已保存服务器 + API Key(加密) + 设置 → 写到 1Panel
   static Future<void> backup({
     required List<SavedServer> servers,
-    required HealthThresholds thresholds,
   }) async {
     // 0. 包含当前服务器（如果已连接）
     final allServers = List<SavedServer>.from(servers);
@@ -45,7 +43,6 @@ class CloudBackupService {
       'keyEncrypted': key != null,
       'exportedAt': DateTime.now().toIso8601String(),
       'servers': allServers.map((s) => s.toJson()).toList(),
-      'settings': thresholds.toJson(),
     };
 
     // 3. 写文件 — 先确保文件存在
@@ -106,23 +103,8 @@ class CloudBackupService {
         ));
       }
 
-      // 解析设置
-      final settingsRaw = data['settings'] as Map<String, dynamic>?;
-      HealthThresholds? thresholds;
-      if (settingsRaw != null) {
-        thresholds = HealthThresholds(
-          cpuWarning: settingsRaw['cpuWarning'] as int? ?? 80,
-          cpuCritical: settingsRaw['cpuCritical'] as int? ?? 90,
-          memWarning: settingsRaw['memWarning'] as int? ?? 80,
-          memCritical: settingsRaw['memCritical'] as int? ?? 90,
-          diskWarning: settingsRaw['diskWarning'] as int? ?? 85,
-          diskCritical: settingsRaw['diskCritical'] as int? ?? 95,
-        );
-      }
-
       return BackupData(
         servers: servers,
-        thresholds: thresholds,
         exportedAt: data['exportedAt']?.toString() ?? '',
       );
     } catch (e) {
@@ -181,12 +163,10 @@ class CloudBackupService {
 
 class BackupData {
   final List<SavedServer> servers;
-  final HealthThresholds? thresholds;
   final String exportedAt;
 
   BackupData({
     required this.servers,
-    this.thresholds,
     this.exportedAt = '',
   });
 }

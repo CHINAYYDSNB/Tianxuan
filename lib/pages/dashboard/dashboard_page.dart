@@ -354,9 +354,9 @@ class DashboardPage extends ConsumerWidget {
       error: (_, __) => 'Tianxuan',
     );
 
-    // 网络错误时弹 snackbar
+    // 网络错误时弹 snackbar（超时静默）
     ref.listen<String?>(refreshErrorProvider, (prev, next) {
-      if (next != null) {
+      if (next != null && next.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('刷新失败: $next'),

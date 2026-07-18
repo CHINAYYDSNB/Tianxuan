@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'container_list_page.dart';
 import 'image_list_page.dart';
 import 'compose_list_page.dart';
-import 'app_store_page.dart';
-import 'installed_list_page.dart';
 
 class DockerHomePage extends StatefulWidget {
   const DockerHomePage({super.key});
@@ -33,22 +31,6 @@ class _DockerHomePageState extends State<DockerHomePage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('容器管理'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.store),
-            tooltip: '应用商店',
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => const AppStorePage(),
-            )),
-          ),
-          IconButton(
-            icon: const Icon(Icons.checklist),
-            tooltip: '已安装',
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => const InstalledListPage(),
-            )),
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

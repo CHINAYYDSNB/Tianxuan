@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/cloud_backup_service.dart';
-import '../../services/logto_service.dart';
 import '../../services/storage_service.dart';
-import '../logto_login_page.dart';
 import '../../providers/server_list_provider.dart';
-import '../../providers/health_provider.dart';
 
 class CloudBackupPage extends ConsumerStatefulWidget {
   const CloudBackupPage({super.key});
@@ -35,8 +32,7 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
     setState(() { _busy = true; _statusMsg = null; _isError = false; });
     try {
       final servers = ref.read(savedServersProvider);
-      final thresholds = ref.read(healthThresholdsProvider);
-      await CloudBackupService.backup(servers: servers, thresholds: thresholds);
+      await CloudBackupService.backup(servers: servers);
       await _loadBackupTime();
       // 重新加载备份时间（显示更新）
       final currentUrl = await StorageService.instance.getServerUrl();
@@ -81,11 +77,6 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
         try { await notifier.add(s); } catch (_) {}
       }
 
-      // 恢复阈值
-      if (data.thresholds != null) {
-        ref.read(healthThresholdsProvider.notifier).state = data.thresholds!;
-      }
-
       await _loadBackupTime();
       setState(() {
         _statusMsg = '恢复成功 ✓  已恢复 ${data.servers.length} 个服务器配置';
@@ -103,43 +94,10 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('云备份')),
+      appBar: AppBar(title: const Text('数据备份')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Logto 状态
-          FutureBuilder<bool>(
-            future: LogtoService.isLoggedIn,
-            builder: (ctx, snap) {
-              final loggedIn = snap.data == true;
-              return Card(
-                child: ListTile(
-                  leading: Icon(
-                    loggedIn ? Icons.lock : Icons.lock_open,
-                    color: loggedIn ? Colors.green : Colors.orange,
-                  ),
-                  title: Text(loggedIn ? 'Logto 已登录' : 'Logto 未登录'),
-                  subtitle: Text(loggedIn
-                      ? 'API Key 加密上传到服务器'
-                      : '未加密存储（建议先登录 Logto）'),
-                  trailing: loggedIn
-                      ? null
-                      : TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LogtoLoginPage(child: SizedBox.shrink()),
-                            ),
-                          ),
-                          child: const Text('去登录'),
-                        ),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
           // 状态卡片
           Card(
             child: Padding(
@@ -230,11 +188,9 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                 children: [
                   Text('说明', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  _Bullet('备份内容：所有已保存的服务器 + API Key + 健康阈值'),
+                  _Bullet('备份内容：所有已保存的服务器 + API Key'),
                   _Bullet('存储位置：当前连接的 1Panel 服务器'),
                   _Bullet('上传覆盖旧备份，每次都是完整备份'),
-                  _Bullet('已登录 Logto：API Key 加密存储'),
-                  _Bullet('未登录 Logto：API Key 明文存储'),
                 ],
               ),
             ),

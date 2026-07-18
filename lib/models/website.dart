@@ -341,40 +341,6 @@ class Website {
   bool get isRunning => status == 'Running';
 }
 
-/// Backup record for website
-class BackupRecord {
-  final int id;
-  final String fileName;
-  final String fileSize;
-  final String createdAt;
-  final String? backupAccountName;
-  final String? backupType;
-  final String? source;
-
-  BackupRecord({
-    required this.id,
-    required this.fileName,
-    required this.fileSize,
-    required this.createdAt,
-    this.backupAccountName,
-    this.backupType,
-    this.source,
-  });
-
-  factory BackupRecord.fromJson(Map<String, dynamic> json) {
-    String s(dynamic v) => v?.toString() ?? '';
-    return BackupRecord(
-      id: _toInt(json['id']),
-      fileName: s(json['fileName']),
-      fileSize: s(json['fileSize']),
-      createdAt: s(json['createdAt']),
-      backupAccountName: json['backupAccountName']?.toString(),
-      backupType: json['backupType']?.toString(),
-      source: json['source']?.toString(),
-    );
-  }
-}
-
 /// Request body for create website
 class WebsiteCreateRequest {
   final String primaryDomain;

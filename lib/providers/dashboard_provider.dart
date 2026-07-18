@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/dashboard_api.dart';
@@ -60,7 +61,9 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
       ref.read(refreshErrorProvider.notifier).state = null;
     } catch (e, st) {
       debugPrint('AutoRefresh failed: $e');
-      ref.read(refreshErrorProvider.notifier).state = e.toString();
+      if (!_isTimeout(e)) {
+        ref.read(refreshErrorProvider.notifier).state = e.toString();
+      }
       if (state is! AsyncData) {
         state = AsyncValue.error(e, st);
       }
@@ -76,11 +79,23 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
       ref.read(refreshErrorProvider.notifier).state = null;
     } catch (e, st) {
       debugPrint('ManualRefresh failed: $e');
-      ref.read(refreshErrorProvider.notifier).state = e.toString();
+      if (!_isTimeout(e)) {
+        ref.read(refreshErrorProvider.notifier).state = e.toString();
+      }
       if (state is! AsyncData) {
         state = AsyncValue.error(e, st);
       }
     }
+  }
+
+  bool _isTimeout(Object e) {
+    if (e is DioException) {
+      return e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          (e.message?.isEmpty ?? false);
+    }
+    return false;
   }
 }
 

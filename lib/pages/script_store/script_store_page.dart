@@ -81,26 +81,53 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
-                      const SizedBox(height: 12),
-                      Text('加载失败', style: theme.textTheme.titleMedium),
-                      Text('$e', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => ref.invalidate(scriptIndexProvider),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('重试'),
-                      ),
-                    ],
+              error: (e, st) {
+                // 弹窗提示
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      icon: Icon(Icons.cloud_off, size: 36, color: theme.colorScheme.error),
+                      title: const Text('脚本商店不可用'),
+                      content: Text('$e', style: theme.textTheme.bodySmall),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('关闭'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ref.invalidate(scriptIndexProvider);
+                          },
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  );
+                });
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
+                        const SizedBox(height: 12),
+                        Text('加载失败', style: theme.textTheme.titleMedium),
+                        Text('$e', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () => ref.invalidate(scriptIndexProvider),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('重试'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],

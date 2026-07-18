@@ -138,10 +138,33 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/api/script/exec') {
     handleScriptExec(req, res);
   } else if (req.url === '/api/script/index') {
-    fetchUrl('https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts/index.json', res);
+    // Try CNB first, fallback GitHub
+    const cnbUrl = 'https://cnb.cool/Lingqi_Team/Tianxuan/-/raw/main/scripts/index.json';
+    const ghUrl = 'https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts/index.json';
+    const cnbReq = https.get(cnbUrl, cnbRes => {
+      if (cnbRes.statusCode === 200) {
+        res.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' });
+        cnbRes.pipe(res);
+      } else {
+        fetchUrl(ghUrl, res);
+      }
+    });
+    cnbReq.on('error', () => fetchUrl(ghUrl, res));
+    cnbReq.setTimeout(5000, () => { cnbReq.destroy(); fetchUrl(ghUrl, res); });
   } else if (req.url.startsWith('/api/script/detail/')) {
     const id = req.url.split('/').pop();
-    fetchUrl(`https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts/details/${id}.json`, res);
+    const cnbUrl = `https://cnb.cool/Lingqi_Team/Tianxuan/-/raw/main/scripts/details/${id}.json`;
+    const ghUrl = `https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts/details/${id}.json`;
+    const cnbReq = https.get(cnbUrl, cnbRes => {
+      if (cnbRes.statusCode === 200) {
+        res.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' });
+        cnbRes.pipe(res);
+      } else {
+        fetchUrl(ghUrl, res);
+      }
+    });
+    cnbReq.on('error', () => fetchUrl(ghUrl, res));
+    cnbReq.setTimeout(5000, () => { cnbReq.destroy(); fetchUrl(ghUrl, res); });
   } else if (req.url.startsWith('/api/script-download')) {
     const up = new URL(req.url, `http://${req.headers.host}`);
     const target = decodeURIComponent(up.searchParams.get('url') || '');

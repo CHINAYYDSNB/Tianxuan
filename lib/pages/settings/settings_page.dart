@@ -1,615 +1,141 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../../providers/health_provider.dart';
-import '../../providers/ai_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../api/client.dart';
-import '../../services/storage_service.dart';
 import '../../services/logto_service.dart';
+import '../../services/logto_bridge.dart';
+import '../../services/storage_service.dart';
 import '../../services/update_service.dart';
-import '../../utils/url_launcher.dart';
+import '../logto_login_page.dart';
+import 'connection_test_page.dart';
 import 'cloud_backup_page.dart';
+import 'ai_config_page.dart';
+import 'about_page.dart';
+import 'profile_page.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
+class _SettingsPageState extends ConsumerState<SettingsPage>
+    with WidgetsBindingObserver {
+  bool _loggedIn = false;
+  bool _checking = true;
+  String _displayName = '';
+  String _avatarUrl = '';
+  StreamSubscription<Uri>? _linkSub;
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
+    if (!kIsWeb) _listenDeepLinks();
+    _refreshLoginState();
   }
 
   @override
   void dispose() {
-    _tabCtrl.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _linkSub?.cancel();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('设置'),
-        bottom: TabBar(
-          controller: _tabCtrl,
-          tabs: const [
-            Tab(icon: Icon(Icons.monitor_heart), text: '健康检测'),
-            Tab(icon: Icon(Icons.wifi_find), text: '连接检测'),
-            Tab(icon: Icon(Icons.cloud), text: '云备份'),
-            Tab(icon: Icon(Icons.smart_toy), text: 'AI'),
-            Tab(icon: Icon(Icons.info_outline), text: '关于'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabCtrl,
-        children: const [
-          _HealthTab(),
-          _ConnectionTab(),
-          CloudBackupPage(),
-          _AiTab(),
-          _AboutTab(),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════
-// 健康检测 Tab
-// ═══════════════════════════════════════════
-
-class _HealthTab extends ConsumerWidget {
-  const _HealthTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final health = ref.watch(healthProvider);
-    final thresholds = ref.watch(healthThresholdsProvider);
-
-    return health.when(
-      data: (status) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 总览卡片
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _overallIcon(status.overallLevel),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('服务器健康状态',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      Text(status.checkedAt.toString().substring(0, 19),
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                  const Spacer(),
-                  if (status.criticalCount > 0)
-                    Chip(label: Text('${status.criticalCount} 严重',
-                        style: const TextStyle(color: Colors.red, fontSize: 12))),
-                  if (status.warningCount > 0)
-                    Chip(label: Text('${status.warningCount} 警告',
-                        style: const TextStyle(color: Colors.orange, fontSize: 12))),
-                  if (status.criticalCount == 0 && status.warningCount == 0)
-                    const Chip(label: Text('正常', style: TextStyle(color: Colors.green, fontSize: 12))),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 指标卡片
-          ...status.items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _HealthCard(item: item),
-          )),
-          const SizedBox(height: 24),
-
-          // 阈值设置
-          Text('告警阈值设置', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _ThresholdSlider(
-                    label: 'CPU 警告',
-                    value: thresholds.cpuWarning.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, cpuWarning: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, cpuWarning: v.toInt()),
-                  ),
-                  _ThresholdSlider(
-                    label: 'CPU 严重',
-                    value: thresholds.cpuCritical.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, cpuCritical: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, cpuCritical: v.toInt()),
-                  ),
-                  const Divider(height: 24),
-                  _ThresholdSlider(
-                    label: '内存 警告',
-                    value: thresholds.memWarning.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, memWarning: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, memWarning: v.toInt()),
-                  ),
-                  _ThresholdSlider(
-                    label: '内存 严重',
-                    value: thresholds.memCritical.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, memCritical: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, memCritical: v.toInt()),
-                  ),
-                  const Divider(height: 24),
-                  _ThresholdSlider(
-                    label: '磁盘 警告',
-                    value: thresholds.diskWarning.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, diskWarning: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, diskWarning: v.toInt()),
-                  ),
-                  _ThresholdSlider(
-                    label: '磁盘 严重',
-                    value: thresholds.diskCritical.toDouble(),
-                    onChanged: (v) => _updateThresholdLive(ref, thresholds, diskCritical: v.toInt()),
-                    onChangeEnd: (v) => _updateThresholdFinal(ref, thresholds, diskCritical: v.toInt()),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          Text('加载失败: $e'),
-          FilledButton(onPressed: () => ref.read(healthProvider.notifier).refresh(), child: const Text('重试')),
-        ],
-      )),
-    );
-  }
-
-  Widget _overallIcon(HealthLevel level) {
-    return Icon(
-      switch (level) {
-        HealthLevel.ok => Icons.check_circle,
-        HealthLevel.warning => Icons.warning_amber,
-        HealthLevel.critical => Icons.error,
-      },
-      size: 40,
-      color: switch (level) {
-        HealthLevel.ok => Colors.green,
-        HealthLevel.warning => Colors.orange,
-        HealthLevel.critical => Colors.red,
-      },
-    );
-  }
-
-  void _updateThresholdLive(WidgetRef ref, HealthThresholds t,
-      {int? cpuWarning, int? cpuCritical, int? memWarning, int? memCritical,
-       int? diskWarning, int? diskCritical}) {
-    ref.read(healthThresholdsProvider.notifier).state = t.copyWith(
-      cpuWarning: cpuWarning, cpuCritical: cpuCritical,
-      memWarning: memWarning, memCritical: memCritical,
-      diskWarning: diskWarning, diskCritical: diskCritical,
-    );
-  }
-
-  void _updateThresholdFinal(WidgetRef ref, HealthThresholds t,
-      {int? cpuWarning, int? cpuCritical, int? memWarning, int? memCritical,
-       int? diskWarning, int? diskCritical}) {
-    _updateThresholdLive(ref, t,
-      cpuWarning: cpuWarning, cpuCritical: cpuCritical,
-      memWarning: memWarning, memCritical: memCritical,
-      diskWarning: diskWarning, diskCritical: diskCritical,
-    );
-    // 拖完才触发重检
-    ref.read(healthProvider.notifier).refresh();
-  }
-}
-
-class _ThresholdSlider extends StatelessWidget {
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-  final ValueChanged<double>? onChangeEnd;
-
-  const _ThresholdSlider({
-    required this.label, required this.value, required this.onChanged,
-    this.onChangeEnd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 80, child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
-          Expanded(
-            child: Slider(
-              value: value,
-              min: 50,
-              max: 99,
-              divisions: 49,
-              label: '${value.toInt()}%',
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd ?? onChanged,
-            ),
-          ),
-          SizedBox(width: 40, child: Text('${value.toInt()}%', textAlign: TextAlign.right)),
-        ],
-      ),
-    );
-  }
-}
-
-class _HealthCard extends StatelessWidget {
-  final HealthItem item;
-  const _HealthCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (item.level) {
-      HealthLevel.ok => Colors.green,
-      HealthLevel.warning => Colors.orange,
-      HealthLevel.critical => Colors.red,
-    };
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 60, height: 60,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: item.level == HealthLevel.ok ? item.value / 100 : item.value / 100,
-                    strokeWidth: 6,
-                    backgroundColor: color.withValues(alpha: 0.15),
-                    color: color,
-                  ),
-                  Text('${item.value.toStringAsFixed(0)}${item.unit}',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.label, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                  if (item.detail.isNotEmpty)
-                    Text(item.detail, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-            Icon(
-              switch (item.level) {
-                HealthLevel.ok => Icons.check_circle,
-                HealthLevel.warning => Icons.warning_amber,
-                HealthLevel.critical => Icons.error,
-              },
-              color: color, size: 24,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════
-// AI 配置 Tab
-// ═══════════════════════════════════════════
-
-class _AiTab extends ConsumerStatefulWidget {
-  const _AiTab();
-
-  @override
-  ConsumerState<_AiTab> createState() => _AiTabState();
-}
-
-class _AiTabState extends ConsumerState<_AiTab> {
-  late TextEditingController _endpointCtrl;
-  late TextEditingController _keyCtrl;
-  late TextEditingController _modelCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    final config = ref.read(aiConfigProvider);
-    _endpointCtrl = TextEditingController(text: config.endpoint);
-    _keyCtrl = TextEditingController(text: config.apiKey);
-    _modelCtrl = TextEditingController(text: config.model);
-  }
-
-  @override
-  void dispose() {
-    _endpointCtrl.dispose();
-    _keyCtrl.dispose();
-    _modelCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final config = ref.watch(aiConfigProvider);
-    final theme = Theme.of(context);
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // API 配置
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('API 配置', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _endpointCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'API Endpoint',
-                    hintText: 'https://api.openai.com/v1',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (v) => ref.read(aiConfigProvider.notifier).updateEndpoint(v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _keyCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'API Key',
-                    hintText: 'sk-...',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  obscureText: true,
-                  onChanged: (v) => ref.read(aiConfigProvider.notifier).updateApiKey(v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _modelCtrl,
-                  decoration: const InputDecoration(
-                    labelText: '模型',
-                    hintText: 'gpt-4o-mini',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (v) => ref.read(aiConfigProvider.notifier).updateModel(v),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(
-                      config.isValid ? Icons.check_circle : Icons.error_outline,
-                      size: 16,
-                      color: config.isValid ? Colors.green : Colors.orange,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      config.isValid ? '配置有效，可以使用 AI 助手' : '请填写完整配置',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // 模型推荐
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('推荐模型', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Text('gpt-4o-mini — 快速便宜，适合日常使用',
-                    style: theme.textTheme.bodySmall),
-                Text('gpt-4o — 更强能力，适合复杂分析',
-                    style: theme.textTheme.bodySmall),
-                Text('DeepSeek / Claude 等兼容接口也可用',
-                    style: theme.textTheme.bodySmall),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AboutTab extends StatefulWidget {
-  const _AboutTab();
-
-  @override
-  State<_AboutTab> createState() => _AboutTabState();
-}
-
-class _AboutTabState extends State<_AboutTab> {
-  bool _checking = false;
-  ({String tag, String url, bool newer})? _result;
-  String? _error;
-
-  Future<void> _checkUpdate() async {
-    setState(() { _checking = true; _error = null; _result = null; });
-    try {
-      final r = await UpdateService.check();
-      if (!mounted) return;
-      setState(() { _result = r; _checking = false; });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _error = e.toString(); _checking = false; });
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !kIsWeb && !_loggedIn) {
+      _checkDeepLinkOnResume();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // App icon + name
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                SvgPicture.asset(
-                  'assets/Tianxuan.svg',
-                  width: 72,
-                  height: 72,
-                  colorFilter: ColorFilter.mode(
-                    theme.colorScheme.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text('Tianxuan', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                Text('1Panel 第三方管理器', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.tag, size: 16, color: Color(0xFFAAB4BF)),
-                    const SizedBox(width: 4),
-                    Text(UpdateService.currentVersion, style: theme.textTheme.titleMedium),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
+  void _listenDeepLinks() {
+    _linkSub = LogtoBridge.onCallback.listen((uri) async {
+      final query = uri.queryParameters;
+      final handled = await _processCallback(query['code'], query['state']);
+      if (handled && mounted) _refreshLoginState();
+    });
+  }
 
-        // Update check
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Text('版本更新', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 16),
+  Future<void> _checkDeepLinkOnResume() async {
+    try {
+      final initial = await LogtoBridge.getInitialLink();
+      if (initial != null) {
+        final query = initial.queryParameters;
+        final handled = await _processCallback(query['code'], query['state']);
+        if (handled && mounted) _refreshLoginState();
+      }
+    } catch (_) {}
+  }
 
-                if (_result != null) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _result!.newer ? Icons.system_update : Icons.check_circle,
-                        color: _result!.newer ? Colors.orange : Colors.green,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _result!.newer ? '新版本可用: ${_result!.tag}' : '已是最新版本',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_result!.newer)
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: () => _openUrl(_result!.url),
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text('前往下载'),
-                      ),
-                    ),
-                ],
-
-                if (_error != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(_error!, style: TextStyle(fontSize: 12, color: theme.colorScheme.onErrorContainer)),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _checking ? null : _checkUpdate,
-                    icon: _checking
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.refresh),
-                    label: Text(_checking ? '检查中...' : '检查更新'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // GitHub link
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.code),
-            title: const Text('GitHub'),
-            subtitle: const Text('CHINAYYDSNB/Tianxuan'),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () => _openUrl(UpdateService.repoUrl),
-          ),
-        ),
-        const SizedBox(height: 24),
-        _LogtoStatusCard(),
-      ],
+  Future<bool> _processCallback(String? code, String? state) async {
+    if (code == null || state == null) return false;
+    final saved = await StorageService.instance.getLogtoPending();
+    if (saved == null || state != saved['state']) return false;
+    final ok = await LogtoService.exchangeCode(
+      code: code, verifier: saved['verifier'] ?? '',
+      redirectUri: LogtoBridge.callbackUri, state: state,
+      expectedState: saved['state'],
     );
+    if (ok) {
+      await StorageService.instance.clearLogtoPending();
+      return true;
+    }
+    return false;
   }
 
-  void _openUrl(String url) => openUrl(url);
-}
-
-class _LogtoStatusCard extends StatefulWidget {
-  @override
-  State<_LogtoStatusCard> createState() => _LogtoStatusCardState();
-}
-
-class _LogtoStatusCardState extends State<_LogtoStatusCard> {
-  bool _loggedIn = false;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
+  Future<void> _refreshLoginState() async {
+    final loggedIn = await LogtoService.isLoggedIn;
+    String name = '';
+    String avatar = '';
+    if (loggedIn) {
+      final info = await LogtoService.getUserInfo();
+      if (info != null) {
+        name = info.name;
+        avatar = info.picture;
+      }
+    }
+    if (mounted) setState(() {
+      _loggedIn = loggedIn;
+      _displayName = name;
+      _avatarUrl = avatar;
+      _checking = false;
+    });
   }
 
-  Future<void> _check() async {
-    final ok = await LogtoService.isLoggedIn;
-    if (mounted) setState(() { _loggedIn = ok; _loading = false; });
+  Future<void> _startLogin() async {
+    try {
+      final pkce = LogtoService.buildPkce();
+      await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
+      final url = LogtoService.buildAuthUrl(
+        verifier: pkce.verifier,
+        challenge: pkce.challenge,
+        state: pkce.state,
+        redirectUri: LogtoBridge.callbackUri,
+      );
+
+      if (kIsWeb) {
+        await LogtoBridge.redirect(url);
+      } else {
+        if (!mounted) return;
+        final result = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LogtoLoginPage(
+              child: const _LoginSuccessPlaceholder(),
+            ),
+          ),
+        );
+        if (result == true && mounted) _refreshLoginState();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('打开浏览器失败: $e')),
+      );
+    }
   }
 
   Future<void> _logout() async {
@@ -624,88 +150,9 @@ class _LogtoStatusCardState extends State<_LogtoStatusCard> {
         ],
       ),
     );
-    if (ok != true) return;
-
-    await LogtoService.logout();
-    if (mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) return const SizedBox.shrink();
-
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          _loggedIn ? Icons.lock : Icons.lock_open,
-          color: _loggedIn ? Colors.green : const Color(0xFFAAB4BF),
-        ),
-        title: Text(_loggedIn ? 'Logto 已登录' : 'Logto 未登录'),
-        subtitle: Text(_loggedIn ? '点击登出' : '返回首页可登录'),
-        trailing: _loggedIn
-            ? IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                onPressed: _logout,
-              )
-            : null,
-        onTap: _loggedIn ? _logout : null,
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════
-// 连接检测 Tab
-// ═══════════════════════════════════════════
-
-class _ConnectionTab extends ConsumerStatefulWidget {
-  const _ConnectionTab();
-
-  @override
-  ConsumerState<_ConnectionTab> createState() => _ConnectionTabState();
-}
-
-class _ConnectionTabState extends ConsumerState<_ConnectionTab> {
-  bool _testing = false;
-  String? _apiUrl;
-  int? _latencyMs;
-  bool? _apiOk;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUrl();
-  }
-
-  Future<void> _loadUrl() async {
-    final settings = ref.read(settingsProvider);
-    if (!settings.isConnected) return;
-    final url = await StorageService.instance.getServerUrl();
-    if (mounted) setState(() => _apiUrl = url);
-  }
-
-  Future<void> _runTest() async {
-    setState(() { _testing = true; _error = null; _apiOk = null; _latencyMs = null; });
-
-    try {
-      final start = DateTime.now();
-      final res = await ApiClient.instance.get('/dashboard/base/0/0');
-      final ms = DateTime.now().difference(start).inMilliseconds;
-
-      setState(() {
-        _latencyMs = ms;
-        _apiOk = res.data['code'] == 200;
-        _testing = false;
-      });
-    } catch (e) {
-      setState(() {
-        _apiOk = false;
-        _error = e.toString();
-        _testing = false;
-      });
+    if (ok == true) {
+      await LogtoService.logout();
+      if (mounted) _refreshLoginState();
     }
   }
 
@@ -714,72 +161,173 @@ class _ConnectionTabState extends ConsumerState<_ConnectionTab> {
     final theme = Theme.of(context);
     final connected = ref.watch(settingsProvider.select((s) => s.isConnected));
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Icon(connected ? Icons.wifi_find : Icons.cloud_off, size: 48,
-                    color: connected ? const Color(0xFFAAB4BF) : theme.colorScheme.outline),
-                const SizedBox(height: 12),
-                Text(connected ? 'API 连接检测' : '未连接服务器',
-                    style: theme.textTheme.titleMedium),
-                const SizedBox(height: 8),
-                if (_apiUrl != null)
-                  Text(_apiUrl!, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-                if (!connected)
-                  Text('请先添加服务器后再检测连接',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                if (connected) ...[
-                  const SizedBox(height: 24),
-                  if (_latencyMs != null) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(_apiOk == true ? Icons.check_circle : Icons.error,
-                            color: _apiOk == true ? Colors.green : Colors.red, size: 32),
-                        const SizedBox(width: 12),
-                        Text(_apiOk == true ? '连接正常' : '连接失败',
-                            style: theme.textTheme.titleMedium),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text('响应时间: $_latencyMs ms',
-                        style: theme.textTheme.bodyMedium),
-                  ],
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
+    return Scaffold(
+      appBar: AppBar(title: const Text('设置')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // ═══ Logto 登录卡片 ═══
+          if (_checking)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+              ),
+            )
+          else
+            Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _loggedIn
+                    ? () async {
+                        final loggedOut = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProfilePage()),
+                        );
+                        if (loggedOut == true && mounted) _refreshLoginState();
+                      }
+                    : _startLogin,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      if (_loggedIn && _avatarUrl.isNotEmpty)
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundImage: NetworkImage(_avatarUrl),
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: (_loggedIn ? Colors.green : Colors.orange).withAlpha(30),
+                          child: Icon(
+                            _loggedIn ? Icons.person : Icons.login,
+                            color: _loggedIn ? Colors.green : Colors.orange,
+                          ),
+                        ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _loggedIn ? _displayName : 'Logto 登录',
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _loggedIn ? '已登录 — 点击登出' : '点击登录以加密备份数据',
+                              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78)),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Text(_error!, style: TextStyle(fontSize: 12, color: theme.colorScheme.onErrorContainer)),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _testing ? null : _runTest,
-                      icon: _testing
-                          ? const SizedBox(width: 18, height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.play_arrow),
-                      label: Text(_testing ? '测试中...' : '运行检测'),
-                    ),
+                      const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+                    ],
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
+
+          const SizedBox(height: 16),
+
+          _SettingsCard(
+            icon: Icons.wifi_find,
+            iconColor: Colors.blue,
+            title: '连接检测',
+            subtitle: connected ? '已连接服务器' : '未连接',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConnectionTestPage())),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.cloud,
+            iconColor: Colors.teal,
+            title: '数据备份',
+            subtitle: '备份/恢复服务器配置',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CloudBackupPage())),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.smart_toy,
+            iconColor: Colors.purple,
+            title: 'AI 配置',
+            subtitle: 'OpenAI 兼容接口设置',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiConfigPage())),
+          ),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            icon: Icons.info_outline,
+            iconColor: const Color(0xFF686F78),
+            title: '关于',
+            subtitle: 'Tianxuan ${UpdateService.currentVersion}',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// After native login success, this placeholder triggers a pop
+class _LoginSuccessPlaceholder extends StatelessWidget {
+  const _LoginSuccessPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pop(true);
+    });
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: iconColor.withAlpha(30),
+                child: Icon(icon, color: iconColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78))),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

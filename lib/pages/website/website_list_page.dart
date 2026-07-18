@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/website.dart';
 import '../../providers/website_provider.dart';
-import 'website_create_page.dart';
 import 'website_detail_page.dart';
 
 /// Standalone page (with Scaffold + AppBar)
@@ -14,23 +13,8 @@ class WebsiteListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('网站列表'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _goCreate(context),
-            ),
-          ),
-        ],
       ),
       body: const WebsiteListBody(),
-    );
-  }
-
-  void _goCreate(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WebsiteCreatePage()),
     );
   }
 }
@@ -52,14 +36,6 @@ class WebsiteListBody extends ConsumerWidget {
                   Icon(Icons.language, size: 64, color: Color(0xFFAAB4BF)),
                   SizedBox(height: 12),
                   Text('暂无网站', style: TextStyle(fontSize: 16, color: Color(0xFF686F78))),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const WebsiteCreatePage()),
-                    ),
-                    icon: const Icon(Icons.add),
-                    label: const Text('创建网站'),
-                  ),
                 ],
               ),
             )

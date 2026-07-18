@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/settings_provider.dart';
 import 'services/storage_service.dart';
+import 'services/logto_service.dart';
+import 'services/logto_bridge.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 
@@ -75,11 +78,14 @@ class _InitPageState extends ConsumerState<InitPage> {
 
   Future<void> _checkConfig() async {
     try {
+      // Web: handle Logto OIDC callback params from URL
+      if (kIsWeb) {
+        await _handleLogtoCallback();
+      }
+
       final settings = ref.read(settingsProvider.notifier);
       await settings.init();
       if (!mounted) return;
-      // 不管有没有服务器配置，先进 home
-      // 未配置时进入后部分页面不可用，但 AI/设置 可用
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       debugPrint('InitPage._checkConfig error: $e');
@@ -87,6 +93,25 @@ class _InitPageState extends ConsumerState<InitPage> {
         Navigator.pushReplacementNamed(context, '/home');
       }
     }
+  }
+
+  Future<void> _handleLogtoCallback() async {
+    final code = LogtoBridge.extractCallbackParams()['code'];
+    final state = LogtoBridge.extractCallbackParams()['state'];
+    if (code == null || state == null) return;
+
+    final saved = await StorageService.instance.getLogtoPending();
+    if (saved == null || state != saved['state']) return;
+
+    await LogtoService.exchangeCode(
+      code: code,
+      verifier: saved['verifier'] ?? '',
+      redirectUri: LogtoBridge.callbackUri,
+      state: state,
+      expectedState: saved['state'],
+    );
+    await StorageService.instance.clearLogtoPending();
+    LogtoBridge.clearCallbackParams();
   }
 
   @override

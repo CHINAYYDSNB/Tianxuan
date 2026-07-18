@@ -10,7 +10,9 @@ class ComposeListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final composes = ref.watch(composeListProvider);
 
-    return composes.when(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Compose')),
+      body: composes.when(
       data: (list) => _ComposeView(list: list),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
@@ -32,6 +34,7 @@ class ComposeListPage extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

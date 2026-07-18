@@ -391,7 +391,7 @@ class DashboardPage extends ConsumerWidget {
           child: RefreshIndicator(
           onRefresh: () => ref.read(serverStatusProvider.notifier).refresh(),
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
             children: [
               // 三个环状图
               Padding(

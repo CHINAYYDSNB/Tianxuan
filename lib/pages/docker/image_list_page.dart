@@ -10,7 +10,9 @@ class ImageListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final images = ref.watch(imageListProvider);
 
-    return images.when(
+    return Scaffold(
+      appBar: AppBar(title: const Text('镜像')),
+      body: images.when(
       data: (list) => _ImageView(list: list),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
@@ -32,6 +34,7 @@ class ImageListPage extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

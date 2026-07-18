@@ -76,14 +76,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           // 底部渐变遮罩
           Positioned(
             bottom: 0, left: 0, right: 0,
-            height: 80 + bottomInset,
+            height: 120 + bottomInset,
             child: IgnorePointer(
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [Color(0xFFEBEDF5), Color(0x00EBEDF5)],
+                    stops: [0.0, 0.5, 1.0],
+                    colors: [Color(0xFFEBEDF5), Color(0xBFEBEDF5), Color(0x00EBEDF5)],
                   ),
                 ),
               ),

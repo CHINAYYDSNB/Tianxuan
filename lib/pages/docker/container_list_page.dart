@@ -12,7 +12,9 @@ class ContainerListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final containers = ref.watch(containerListProvider);
 
-    return containers.when(
+    return Scaffold(
+      appBar: AppBar(title: const Text('容器')),
+      body: containers.when(
       data: (list) => _ContainerListView(list: list),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
@@ -34,6 +36,7 @@ class ContainerListPage extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

@@ -33,13 +33,14 @@ class OnePanelApp extends StatelessWidget {
           ),
           scaffoldBackgroundColor: const Color(0xFFEBEDF5), // 页面背景
           appBarTheme: const AppBarTheme(
-            titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF0C1014)),
+            titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF0C1014)),
           ),
           cardTheme: const CardThemeData(
             color: Color(0xFFFFFFFF),
             elevation: 0,
             shadowColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(17))),
           ),
           splashFactory: NoSplash.splashFactory, // 禁用水波纹
           highlightColor: Colors.transparent, // 禁用高亮

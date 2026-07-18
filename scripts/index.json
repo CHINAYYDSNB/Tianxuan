@@ -7,6 +7,12 @@
       "name": "服务器监控脚本",
       "language": "sh",
       "author": "示例开发者"
+    },
+    {
+      "id": "Docker-inistall",
+      "name": "Docker安装脚本",
+      "language": "sh",
+      "author": "岚汐"
     }
   ]
 }

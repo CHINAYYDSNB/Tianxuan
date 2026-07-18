@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
 
@@ -11,7 +12,9 @@ class SseClient {
   /// Returns a Stream of data lines (without "data: " prefix).
   static Stream<String> connect(String path,
       {Map<String, String>? queryParams}) async* {
-    final serverUrl = await StorageService.instance.getServerUrl() ?? '';
+    final serverUrl = kIsWeb
+        ? 'http://localhost:25568'
+        : (await StorageService.instance.getServerUrl() ?? '');
     if (serverUrl.isEmpty) throw Exception('Server URL not configured');
 
     final apiKey = await StorageService.instance.getApiKey() ?? '';

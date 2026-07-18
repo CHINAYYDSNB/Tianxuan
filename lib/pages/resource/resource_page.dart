@@ -9,6 +9,7 @@ import '../docker/docker_home_page.dart';
 import '../docker/installed_list_page.dart';
 import '../docker/app_store_page.dart';
 import '../ssh/ssh_home_page.dart';
+import '../script_store/script_store_page.dart';
 
 /// 资源页 — 入口卡片列表，点进具体功能
 class ResourcePage extends ConsumerWidget {
@@ -68,6 +69,14 @@ class ResourcePage extends ConsumerWidget {
             title: 'SSH 终端',
             subtitle: '远程服务器连接',
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshHomePage())),
+          ),
+          const SizedBox(height: 10),
+          _ResourceCard(
+            icon: Icons.article,
+            iconColor: Colors.indigo,
+            title: '脚本',
+            subtitle: '浏览 / 执行脚本',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScriptStorePage())),
           ),
           const SizedBox(height: 10),
           _ResourceCard(

@@ -53,18 +53,19 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(
-            index: _showAi ? _stackIdx : _stackIdx,
-            children: const [
-              _Guard(DashboardPage()),      // 0 概览
-              _Guard(const ResourcePage()), // 1 资源
-              ScriptStorePage(),               // 2 脚本商店
-              SettingsPage(),               // 3 设置
-            ],
-          ),
+          if (!_showAi)
+            IndexedStack(
+              index: _stackIdx,
+              children: const [
+                _Guard(DashboardPage()),
+                _Guard(ResourcePage()),
+                SettingsPage(),
+              ],
+            ),
           if (_showAi)
             Positioned.fill(
               child: ColoredBox(
@@ -72,23 +73,60 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: AiChatPage(onClose: _closeAi),
               ),
             ),
-        ],
-      ),
-      floatingActionButton: _showAi
-          ? null
-          : FloatingActionButton(
-              onPressed: () => setState(() => _showAi = true),
-              tooltip: 'AI 助手',
-              child: const Icon(Icons.auto_awesome),
+          // 底部渐变遮罩
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            height: 80 + bottomInset,
+            child: IgnorePointer(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Color(0xFFEBEDF5), Color(0x00EBEDF5)],
+                  ),
+                ),
+              ),
             ),
-      bottomNavigationBar: AnimatedNavBar(
-        currentIndex: _stackIdx,
-        onTap: (i) => setState(() { _showAi = false; _stackIdx = i; }),
-        items: const [
-          AnimatedNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: '概览'),
-          AnimatedNavItem(icon: Icons.dashboard_customize_outlined, activeIcon: Icons.dashboard_customize, label: '资源'),
-          AnimatedNavItem(icon: Icons.article_outlined, activeIcon: Icons.article, label: '脚本'),
-          AnimatedNavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: '设置'),
+          ),
+          // 悬浮导航栏 + AI 按钮
+          if (!_showAi)
+            Positioned(
+              bottom: bottomInset + 16,
+              left: 16,
+              right: 16,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: AnimatedNavBar(
+                      currentIndex: _stackIdx,
+                      onTap: (i) => setState(() { _stackIdx = i; }),
+                      items: const [
+                        AnimatedNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: '概览'),
+                        AnimatedNavItem(icon: Icons.dashboard_customize_outlined, activeIcon: Icons.dashboard_customize, label: '资源'),
+                        AnimatedNavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: '设置'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 58,
+                    height: 58,
+                    child: Material(
+                      elevation: 0,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(29),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(29),
+                        onTap: () => setState(() => _showAi = true),
+                        child: const Icon(Icons.auto_awesome, color: Color(0xFF0062F5)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

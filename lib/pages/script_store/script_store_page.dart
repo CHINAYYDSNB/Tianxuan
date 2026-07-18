@@ -26,88 +26,85 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
     final search = ref.watch(scriptSearchProvider);
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Container(
-          color: theme.colorScheme.surface,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        hintText: '搜索脚本...',
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        isDense: true,
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      ),
-                      onChanged: (v) => ref.read(scriptSearchProvider.notifier).state = v,
+    return Scaffold(
+      appBar: AppBar(title: const Text('脚本')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      hintText: '搜索脚本...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      isDense: true,
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     ),
+                    onChanged: (v) => ref.read(scriptSearchProvider.notifier).state = v,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () => ref.invalidate(scriptIndexProvider),
-                    tooltip: '刷新',
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => ref.invalidate(scriptIndexProvider),
+                  tooltip: '刷新',
+                ),
+              ],
             ),
           ),
-        ),
-        Expanded(
-          child: index.when(
-            data: (idx) {
-              var items = idx.scripts;
-              if (search.isNotEmpty) {
-                final q = search.toLowerCase();
-                items = items.where((s) =>
-                  s.name.toLowerCase().contains(q) ||
-                  s.author.toLowerCase().contains(q)
-                ).toList();
-              }
-              if (items.isEmpty) {
-                return Center(
-                  child: Text(search.isEmpty ? '暂无脚本' : '没有匹配的脚本',
-                      style: theme.textTheme.bodyLarge),
+          Expanded(
+            child: index.when(
+              data: (idx) {
+                var items = idx.scripts;
+                if (search.isNotEmpty) {
+                  final q = search.toLowerCase();
+                  items = items.where((s) =>
+                    s.name.toLowerCase().contains(q) ||
+                    s.author.toLowerCase().contains(q)
+                  ).toList();
+                }
+                if (items.isEmpty) {
+                  return Center(
+                    child: Text(search.isEmpty ? '暂无脚本' : '没有匹配的脚本',
+                        style: theme.textTheme.bodyLarge),
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) => _ScriptCard(item: items[i]),
                 );
-              }
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                itemCount: items.length,
-                itemBuilder: (_, i) => _ScriptCard(item: items[i]),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
-                    const SizedBox(height: 12),
-                    Text('加载失败', style: theme.textTheme.titleMedium),
-                    Text('$e', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => ref.invalidate(scriptIndexProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('重试'),
-                    ),
-                  ],
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
+                      const SizedBox(height: 12),
+                      Text('加载失败', style: theme.textTheme.titleMedium),
+                      Text('$e', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () => ref.invalidate(scriptIndexProvider),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重试'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

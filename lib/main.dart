@@ -30,7 +30,7 @@ class OnePanelApp extends StatelessWidget {
           ),
           scaffoldBackgroundColor: const Color(0xFFEBEDF5), // 页面背景
           appBarTheme: const AppBarTheme(
-            titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF0C1014)),
+            titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF0C1014)),
           ),
           cardTheme: const CardThemeData(
             color: Color(0xFFFFFFFF),

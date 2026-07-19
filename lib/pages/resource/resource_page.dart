@@ -28,19 +28,29 @@ class ResourcePage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
         children: [
-          // ─── 运行 ───
-          _SectionHeader(title: '运行'),
+          // ─── 容器生态 ───
+          _SectionHeader(title: '容器生态'),
           const SizedBox(height: 8),
           _CategoryCard(children: [
-            _ResourceRow(
-              icon: Icons.language, iconColor: Colors.blue,
-              title: '网站', subtitle: siteCount != null ? '$siteCount 个站点' : null,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
-            ),
             _ResourceRow(
               icon: Icons.view_in_ar_outlined, iconColor: Colors.teal,
               title: '容器', subtitle: '启动 / 停止 / 日志',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContainerListPage())),
+            ),
+            _ResourceRow(
+              icon: Icons.image_outlined, iconColor: Colors.teal,
+              title: '镜像', subtitle: '拉取 / 删除 / 构建',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImageListPage())),
+            ),
+            _ResourceRow(
+              icon: Icons.dns_outlined, iconColor: Colors.teal,
+              title: 'Compose', subtitle: '编排 / 启动 / 停止',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComposeListPage())),
+            ),
+            _ResourceRow(
+              icon: Icons.store, iconColor: Colors.orange,
+              title: 'Docker商店', subtitle: '1Panel 应用商店',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppStorePage())),
             ),
             if (appCount != null && appCount > 0)
               _ResourceRow(
@@ -50,24 +60,19 @@ class ResourcePage extends ConsumerWidget {
               ),
           ]),
           const SizedBox(height: 10),
-          // ─── 仓库 ───
-          _SectionHeader(title: '仓库'),
+          // ─── 网站 ───
+          _SectionHeader(title: '网站'),
           const SizedBox(height: 8),
           _CategoryCard(children: [
             _ResourceRow(
-              icon: Icons.image_outlined, iconColor: Colors.teal,
-              title: '镜像', subtitle: '拉取 / 删除 / 构建',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImageListPage())),
-            ),
-            _ResourceRow(
-              icon: Icons.store, iconColor: Colors.orange,
-              title: 'Docker商店', subtitle: '1Panel 应用商店',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppStorePage())),
+              icon: Icons.language, iconColor: Colors.blue,
+              title: '网站', subtitle: siteCount != null ? '$siteCount 个站点' : null,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
             ),
           ]),
           const SizedBox(height: 10),
-          // ─── 运维 ───
-          _SectionHeader(title: '运维'),
+          // ─── 系统工具 ───
+          _SectionHeader(title: '系统工具'),
           const SizedBox(height: 8),
           _CategoryCard(children: [
             _ResourceRow(
@@ -81,17 +86,11 @@ class ResourcePage extends ConsumerWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshHomePage())),
             ),
             _ResourceRow(
-              icon: Icons.dns_outlined, iconColor: Colors.teal,
-              title: 'Compose', subtitle: '编排 / 启动 / 停止',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComposeListPage())),
-              ),
-              _ResourceRow(
-                icon: Icons.article, iconColor: Colors.indigo,
-                title: '脚本商店', subtitle: '浏览 / 安装 / 执行脚本',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScriptStorePage())),
-              ),
-            ],
-          ),
+              icon: Icons.article, iconColor: Colors.indigo,
+              title: '脚本商店', subtitle: '浏览 / 安装 / 执行脚本',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScriptStorePage())),
+            ),
+          ]),
         ],
       ),
     );

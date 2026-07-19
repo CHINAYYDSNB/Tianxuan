@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ssh_command_service.dart';
 import '../services/storage_service.dart';
 
-/// Manages SSH command connection lifecycle.
-/// Reads saved credentials from storage, auto-connects on build.
+/// Manages SSH connection lifecycle.
+/// Auto-connects from saved credentials, falls back to detecting host from 1Panel.
 class SshConnectionNotifier extends StateNotifier<AsyncValue<SshCommandService?>> {
   SshCommandService? _service;
 
@@ -13,20 +13,35 @@ class SshConnectionNotifier extends StateNotifier<AsyncValue<SshCommandService?>
 
   SshCommandService? get service => _service;
 
+  /// Extract host from 1Panel URL (e.g., http://114.66.58.232:25567 → 114.66.58.232)
+  static Future<String?> detectServerHost() async {
+    final url = await StorageService.instance.getServerUrl();
+    if (url == null || url.isEmpty) return null;
+    try {
+      return Uri.parse(url).host;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _autoConnect() async {
     final storage = StorageService.instance;
     final raw = await storage.getSshConnections();
-    if (raw == null || raw.isEmpty) return;
-    final first = raw.first;
-    final config = SshConfig(
-      host: first['host']?.toString() ?? '',
-      port: int.tryParse(first['port']?.toString() ?? '') ?? 22,
-      username: first['username']?.toString() ?? 'root',
-      password: first['password']?.toString(),
-      privateKey: first['privateKey']?.toString(),
-    );
-    if (config.host.isEmpty) return;
-    await connect(config);
+
+    if (raw != null && raw.isNotEmpty) {
+      final first = raw.first;
+      final host = first['host']?.toString() ?? '';
+      if (host.isNotEmpty) {
+        final config = SshConfig(
+          host: host,
+          port: int.tryParse(first['port']?.toString() ?? '') ?? 22,
+          username: first['username']?.toString() ?? 'root',
+          password: first['password']?.toString(),
+          privateKey: first['privateKey']?.toString(),
+        );
+        await connect(config);
+      }
+    }
   }
 
   Future<String?> connect(SshConfig config) async {
@@ -65,7 +80,6 @@ final sshConnectionProvider =
   (ref) => SshConnectionNotifier(),
 );
 
-/// Shorthand: the current SshCommandService, or null.
 final sshServiceProvider = Provider<SshCommandService?>((ref) {
   return ref.watch(sshConnectionProvider).valueOrNull;
 });

@@ -16,6 +16,8 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
   final _portCtrl = TextEditingController(text: '22');
   final _userCtrl = TextEditingController(text: 'root');
   final _passCtrl = TextEditingController();
+  final _keyCtrl = TextEditingController();
+  bool _usePassword = true;
   bool _loading = false;
   String? _error;
   bool _isConnected = false;
@@ -28,14 +30,33 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
 
   Future<void> _loadSaved() async {
     final raw = await StorageService.instance.getSshConnections();
+    bool hasSaved = false;
     if (raw != null && raw.isNotEmpty) {
       final first = raw.first;
       _hostCtrl.text = first['host']?.toString() ?? '';
       _portCtrl.text = first['port']?.toString() ?? '22';
       _userCtrl.text = first['username']?.toString() ?? 'root';
-      _passCtrl.text = first['password']?.toString() ?? '';
+      final pwd = first['password']?.toString();
+      final key = first['privateKey']?.toString();
+      if (pwd != null && pwd.isNotEmpty) {
+        _passCtrl.text = pwd;
+        _usePassword = true;
+        hasSaved = true;
+      } else if (key != null && key.isNotEmpty) {
+        _keyCtrl.text = key;
+        _usePassword = false;
+        hasSaved = true;
+      }
     }
-    // Check current connection state
+
+    // Auto-detect host from 1Panel connection if not saved
+    if (!hasSaved && _hostCtrl.text.isEmpty) {
+      final host = await SshConnectionNotifier.detectServerHost();
+      if (host != null && host.isNotEmpty) {
+        _hostCtrl.text = host;
+      }
+    }
+
     final ssh = ref.read(sshServiceProvider);
     setState(() => _isConnected = ssh != null);
   }
@@ -44,7 +65,6 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
     final host = _hostCtrl.text.trim();
     final port = int.tryParse(_portCtrl.text.trim()) ?? 22;
     final username = _userCtrl.text.trim();
-    final password = _passCtrl.text;
 
     if (host.isEmpty) {
       setState(() => _error = '请输入主机地址');
@@ -57,7 +77,8 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
       host: host,
       port: port,
       username: username,
-      password: password,
+      password: _usePassword ? _passCtrl.text : null,
+      privateKey: _usePassword ? null : _keyCtrl.text,
     );
 
     final err = await ref.read(sshConnectionProvider.notifier).connect(config);
@@ -81,6 +102,7 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
     _portCtrl.dispose();
     _userCtrl.dispose();
     _passCtrl.dispose();
+    _keyCtrl.dispose();
     super.dispose();
   }
 
@@ -94,7 +116,7 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Connection state
+          // Status
           Card(
             color: _isConnected
                 ? Colors.green.withValues(alpha: 0.08)
@@ -177,16 +199,37 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _passCtrl,
-            decoration: const InputDecoration(
-              labelText: '密码',
-              hintText: '输入 SSH 密码',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.lock),
-            ),
-            obscureText: true,
+          // Auth method toggle
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('密码')),
+              ButtonSegment(value: false, label: Text('私钥')),
+            ],
+            selected: {_usePassword},
+            onSelectionChanged: (s) => setState(() => _usePassword = s.first),
           ),
+          const SizedBox(height: 12),
+          if (_usePassword)
+            TextField(
+              controller: _passCtrl,
+              decoration: const InputDecoration(
+                labelText: '密码',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+              ),
+              obscureText: true,
+            )
+          else
+            TextField(
+              controller: _keyCtrl,
+              decoration: const InputDecoration(
+                labelText: '私钥文件路径',
+                hintText: '/data/data/com.tianxuan/files/key 或粘贴 PEM 内容',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.vpn_key),
+              ),
+              maxLines: 5,
+            ),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,

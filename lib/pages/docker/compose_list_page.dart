@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/compose_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
 import '../../models/compose.dart';
+import '../settings/ssh_config_page.dart';
 
 class ComposeListPage extends ConsumerWidget {
   const ComposeListPage({super.key});
@@ -9,11 +11,12 @@ class ComposeListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final composes = ref.watch(composeListProvider);
+    final ssh = ref.watch(sshServiceProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Compose')),
       body: composes.when(
-      data: (list) => _ComposeView(list: list),
+      data: (list) => _ComposeView(list: list, sshConnected: ssh != null),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
         child: Column(
@@ -41,12 +44,40 @@ class ComposeListPage extends ConsumerWidget {
 
 class _ComposeView extends StatelessWidget {
   final List<ComposeItem> list;
+  final bool sshConnected;
 
-  const _ComposeView({required this.list});
+  const _ComposeView({required this.list, required this.sshConnected});
 
   @override
   Widget build(BuildContext context) {
-    if (list.isEmpty) return const Center(child: Text('暂无 Compose 项目'));
+    if (list.isEmpty) {
+      if (!sshConnected) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.link_off, size: 48, color: Color(0xFFAAB4BF)),
+                const SizedBox(height: 16),
+                const Text('SSH 未连接', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                const Text('Compose 管理需要 SSH 连接服务器',
+                    style: TextStyle(color: Color(0xFF686F78))),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('设置 SSH 连接'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return const Center(child: Text('暂无 Compose 项目'));
+    }
     return RefreshIndicator(
       onRefresh: () async {},
       child: ListView.builder(

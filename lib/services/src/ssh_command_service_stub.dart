@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 
 class SshConfig {
@@ -54,14 +55,45 @@ class SshCommandService {
       timeout: const Duration(seconds: 15),
     );
 
-    _client = SSHClient(
+    // Build SSH client
+    // Try private key auth if provided, fallback to password
+    if (config.privateKey != null && config.privateKey!.isNotEmpty) {
+      try {
+        final keyContent = await _readKeyContent(config.privateKey!);
+        if (keyContent != null) {
+          final keyPairs = SSHKeyPair.fromPem(keyContent);
+          _client = SSHClient(
+            socket,
+            username: config.username,
+            identities: keyPairs,
+            onPasswordRequest: () => config.password ?? '',
+          );
+        }
+      } catch (_) {
+        // Key auth setup failed, fall through to password-only
+      }
+    }
+
+    _client ??= SSHClient(
       socket,
       username: config.username,
       onPasswordRequest: () => config.password ?? '',
-      onUserInfoRequest: (req) => [config.password ?? ''],
     );
 
     _connected = true;
+  }
+
+  /// Read key content: try as file path first, fallback to treating input as PEM.
+  Future<String?> _readKeyContent(String keyInput) async {
+    // Try reading as file path
+    try {
+      final file = File(keyInput);
+      if (await file.exists()) {
+        return await file.readAsString();
+      }
+    } catch (_) {}
+    // Assume keyInput is already the PEM content
+    return keyInput;
   }
 
   Future<SshResult> execute(

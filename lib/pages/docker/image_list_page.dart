@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/image_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
 import '../../models/image.dart' as models;
+import '../settings/ssh_config_page.dart';
 
 class ImageListPage extends ConsumerWidget {
   const ImageListPage({super.key});
@@ -77,7 +79,35 @@ class _ImageView extends ConsumerWidget {
         // List
         Expanded(
           child: list.isEmpty
-              ? const Center(child: Text('暂无镜像'))
+              ? Builder(builder: (ctx) {
+                  final ssh = ref.watch(sshServiceProvider);
+                  if (ssh == null) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.link_off, size: 48, color: Color(0xFFAAB4BF)),
+                            const SizedBox(height: 16),
+                            const Text('SSH 未连接', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 8),
+                            const Text('镜像管理需要 SSH 连接服务器',
+                                style: TextStyle(color: Color(0xFF686F78))),
+                            const SizedBox(height: 20),
+                            FilledButton.icon(
+                              onPressed: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                              icon: const Icon(Icons.settings, size: 18),
+                              label: const Text('设置 SSH 连接'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return const Center(child: Text('暂无镜像'));
+                })
               : RefreshIndicator(
                   onRefresh: () =>
                       ref.read(imageListProvider.notifier).refresh(),

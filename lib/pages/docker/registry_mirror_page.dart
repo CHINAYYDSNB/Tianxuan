@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ssh_connection_provider.dart';
 import '../../services/docker_service.dart';
 import '../../services/docker_parser.dart';
+import '../settings/ssh_config_page.dart';
 
 class RegistryMirrorPage extends ConsumerStatefulWidget {
   const RegistryMirrorPage({super.key});
@@ -122,19 +123,30 @@ class _RegistryMirrorPageState extends ConsumerState<RegistryMirrorPage> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-                      const SizedBox(height: 16),
-                      Text(_error!, style: theme.textTheme.bodyMedium),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('重试'),
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text(_error!, style: theme.textTheme.bodyMedium),
+                        const SizedBox(height: 16),
+                        if (_error == 'SSH 未连接')
+                          FilledButton.icon(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                            icon: const Icon(Icons.settings, size: 18),
+                            label: const Text('设置 SSH 连接'),
+                          )
+                        else
+                          FilledButton.icon(
+                            onPressed: _load,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('重试'),
+                          ),
+                      ],
+                    ),
                   ),
                 )
               : ListView(

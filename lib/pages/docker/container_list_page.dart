@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/container_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
 import '../../models/container.dart' as models;
+import '../settings/ssh_config_page.dart';
 import 'container_detail_page.dart';
 import 'container_log_page.dart';
 
@@ -11,11 +13,12 @@ class ContainerListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final containers = ref.watch(containerListProvider);
+    final ssh = ref.watch(sshServiceProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('容器')),
       body: containers.when(
-      data: (list) => _ContainerListView(list: list),
+      data: (list) => _ContainerListView(list: list, sshConnected: ssh != null),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
         child: Column(
@@ -43,19 +46,43 @@ class ContainerListPage extends ConsumerWidget {
 
 class _ContainerListView extends StatelessWidget {
   final List<models.Container> list;
+  final bool sshConnected;
 
-  const _ContainerListView({required this.list});
+  const _ContainerListView({required this.list, required this.sshConnected});
 
   @override
   Widget build(BuildContext context) {
     if (list.isEmpty) {
+      if (!sshConnected) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.link_off, size: 48, color: Color(0xFFAAB4BF)),
+                const SizedBox(height: 16),
+                const Text('SSH 未连接', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                const Text('Docker 管理需要 SSH 连接服务器',
+                    style: TextStyle(color: Color(0xFF686F78))),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('设置 SSH 连接'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       return const Center(child: Text('暂无容器'));
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        // Refresh via parent widget's ref — handled by the provider above
-      },
+      onRefresh: () async {},
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: list.length,

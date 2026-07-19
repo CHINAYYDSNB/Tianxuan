@@ -62,6 +62,20 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
       appBar: AppBar(
         title: Text('${widget.containerName} 日志'),
         actions: [
+          // Source switch
+          TextButton.icon(
+            icon: Icon(
+              state.source == LogSource.ssh ? Icons.terminal : Icons.wifi,
+              size: 16,
+            ),
+            label: Text(
+              state.source == LogSource.ssh ? 'SSH' : '1Panel',
+              style: const TextStyle(fontSize: 12),
+            ),
+            onPressed: () => notifier.switchSource(
+              state.source == LogSource.ssh ? LogSource.sse : LogSource.ssh,
+            ),
+          ),
           // Connection status indicator
           Padding(
             padding: const EdgeInsets.only(right: 8),

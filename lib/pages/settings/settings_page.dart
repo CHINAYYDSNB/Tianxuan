@@ -8,6 +8,7 @@ import '../logto_login_page.dart';
 import 'connection_test_page.dart';
 import 'cloud_backup_page.dart';
 import 'ai_config_page.dart';
+import 'ssh_config_page.dart';
 import 'about_page.dart';
 import 'profile_page.dart';
 
@@ -93,6 +94,12 @@ class SettingsPage extends ConsumerWidget {
           Card(
             child: Column(
               children: [
+                _SettingRow(
+                  icon: Icons.terminal,
+                  title: 'SSH 连接',
+                  subtitle: '配置 Docker SSH 管理',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                ),
                 _SettingRow(
                   icon: Icons.wifi_find_outlined,
                   title: '连接检测',

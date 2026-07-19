@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/website_provider.dart';
-import '../../providers/installed_app_provider.dart';
 import '../website/website_list_page.dart';
 import '../file/file_list_page.dart';
 import '../docker/container_list_page.dart';
 import '../docker/image_list_page.dart';
 import '../docker/compose_list_page.dart';
-import '../docker/installed_list_page.dart';
-import '../docker/app_store_page.dart';
 import '../ssh/ssh_home_page.dart';
 import '../script_store/script_store_page.dart';
 
@@ -19,8 +16,6 @@ class ResourcePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final siteCount = ref.watch(websitesProvider).when(
-      data: (l) => l.length, loading: () => null, error: (_, __) => null);
-    final appCount = ref.watch(installedAppListProvider).when(
       data: (l) => l.length, loading: () => null, error: (_, __) => null);
 
     return Scaffold(
@@ -47,17 +42,6 @@ class ResourcePage extends ConsumerWidget {
               title: 'Compose', subtitle: '编排 / 启动 / 停止',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComposeListPage())),
             ),
-            _ResourceRow(
-              icon: Icons.store, iconColor: Colors.orange,
-              title: 'Docker商店', subtitle: '1Panel 应用商店',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppStorePage())),
-            ),
-            if (appCount != null && appCount > 0)
-              _ResourceRow(
-                icon: Icons.checklist, iconColor: Colors.purple,
-                title: '已安装应用', subtitle: '$appCount 个应用',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InstalledListPage())),
-              ),
           ]),
           const SizedBox(height: 10),
           // ─── 网站 ───

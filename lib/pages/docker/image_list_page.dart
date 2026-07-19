@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/image_provider.dart';
@@ -59,6 +60,11 @@ class _ImageView extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.cleaning_services_outlined, size: 20),
+                tooltip: '清理废旧镜像',
+                onPressed: () => _confirmPrune(context, ref),
+              ),
               FilledButton.tonalIcon(
                 onPressed: () => _showPullDialog(context, ref),
                 icon: const Icon(Icons.download, size: 18),
@@ -111,16 +117,140 @@ class _ImageView extends ConsumerWidget {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('正在拉取 $name...')),
-                );
-                ref.read(imageListProvider.notifier).pull(name);
+                _showPullProgress(context, ref, name);
               }
             },
             child: const Text('拉取'),
           ),
         ],
       ),
+    );
+  }
+
+  void _showPullProgress(BuildContext context, WidgetRef ref, String imageName) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return _PullProgressDialog(imageName: imageName, ref: ref);
+      },
+    );
+  }
+
+  void _confirmPrune(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清理废旧镜像'),
+        content: const Text('将删除所有未被容器使用的镜像 (docker image prune -a -f)，确定继续？'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('正在清理...')),
+              );
+              ref.read(imageListProvider.notifier).prune(all: true).then((result) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('清理完成: $result')),
+                  );
+                }
+                ref.read(imageListProvider.notifier).refresh();
+              });
+            },
+            child: const Text('确定清理'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PullProgressDialog extends ConsumerStatefulWidget {
+  final String imageName;
+  final WidgetRef ref;
+
+  const _PullProgressDialog({required this.imageName, required this.ref});
+
+  @override
+  ConsumerState<_PullProgressDialog> createState() => _PullProgressDialogState();
+}
+
+class _PullProgressDialogState extends ConsumerState<_PullProgressDialog> {
+  final _lines = <String>[];
+  StreamSubscription<String>? _sub;
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final stream = ref.read(imageListProvider.notifier).pullStream(widget.imageName);
+    _sub = stream.listen(
+      (line) {
+        if (mounted) {
+          setState(() {
+            _lines.add(line);
+            if (_lines.length > 200) _lines.removeAt(0);
+          });
+        }
+      },
+      onDone: () {
+        if (mounted) {
+          setState(() => _done = true);
+          ref.read(imageListProvider.notifier).refresh();
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          setState(() {
+            _lines.add('Error: $e');
+            _done = true;
+          });
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('拉取 ${widget.imageName}'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: SingleChildScrollView(
+          reverse: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!_done)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: LinearProgressIndicator(),
+                ),
+              ..._lines.map((l) => Text(l,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 11))),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        if (_done)
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('完成'),
+          ),
+      ],
     );
   }
 }

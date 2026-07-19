@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'container_list_page.dart';
 import 'image_list_page.dart';
 import 'compose_list_page.dart';
+import 'registry_mirror_page.dart';
+import 'docker_daemon_page.dart';
 
 class DockerHomePage extends StatelessWidget {
   const DockerHomePage({super.key});
@@ -32,6 +34,20 @@ class DockerHomePage extends StatelessWidget {
             title: 'Compose',
             subtitle: '编排 / 启动 / 停止',
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComposeListPage())),
+          ),
+          const SizedBox(height: 10),
+          _DockerCard(
+            icon: Icons.cloud_sync_outlined,
+            title: '镜像站',
+            subtitle: 'Registry Mirror 配置',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistryMirrorPage())),
+          ),
+          const SizedBox(height: 10),
+          _DockerCard(
+            icon: Icons.settings_applications_outlined,
+            title: 'Docker 管理',
+            subtitle: '守护进程状态与操作',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DockerDaemonPage())),
           ),
         ],
       ),

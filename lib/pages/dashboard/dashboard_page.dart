@@ -5,9 +5,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/server_list_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/website_provider.dart';
-import '../../providers/installed_app_provider.dart';
 import '../website/website_list_page.dart';
-import '../docker/installed_list_page.dart';
 import '../../widgets/ring_chart.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -347,7 +345,6 @@ class DashboardPage extends ConsumerWidget {
     final servers = ref.watch(savedServersProvider);
     final currUrl = ref.watch(settingsProvider.select((s) => s.serverUrl));
     final siteCount = ref.watch(websitesProvider).when(data: (l) => l.length, loading: () => null, error: (_, __) => null);
-    final appCount = ref.watch(installedAppListProvider).when(data: (l) => l.length, loading: () => null, error: (_, __) => null);
     final hostname = status.when(
       data: (d) => d.hostname.isNotEmpty ? d.hostname : d.ipv4Address,
       loading: () => '加载中',
@@ -420,53 +417,26 @@ class DashboardPage extends ConsumerWidget {
               ),
               ),
               const SizedBox(height: 10),
-              // 网站 & 已安装应用卡片
-              Row(
-                children: [
-                  Expanded(
-                    child: Card(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Column(
-                            children: [
-                              const Text('网站', style: TextStyle(fontSize: 14, color: Color(0xFF686F78))),
-                              const SizedBox(height: 8),
-                              Text(
-                                siteCount != null ? '$siteCount' : '-',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
+              // 网站卡片
+              Card(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('网站', style: TextStyle(fontSize: 14, color: Color(0xFF686F78))),
+                        const SizedBox(width: 12),
+                        Text(
+                          siteCount != null ? '$siteCount' : '-',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Card(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InstalledListPage())),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Column(
-                            children: [
-                              const Text('已安装应用', style: TextStyle(fontSize: 14, color: Color(0xFF686F78))),
-                              const SizedBox(height: 8),
-                              Text(
-                                appCount != null ? '$appCount' : '-',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 10),
               // 服务器信息卡片（暂时隐藏）

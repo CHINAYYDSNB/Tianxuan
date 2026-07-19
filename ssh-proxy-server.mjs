@@ -74,6 +74,85 @@ wss.on('connection', (ws) => {
 
         sshClient.connect(opts);
 
+      } else if (msg.type === 'exec') {
+        if (!sshClient) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
+          return;
+        }
+        const cmd = msg.command;
+        const timeout = (msg.timeout || 30) * 1000;
+        console.log('[ssh] exec:', cmd.substring(0, 80));
+
+        const timer = setTimeout(() => {
+          ws.send(JSON.stringify({
+            type: 'exec-result',
+            id: msg.id,
+            exitCode: -1,
+            stdout: '',
+            stderr: Buffer.from('Command timed out').toString('base64'),
+          }));
+        }, timeout);
+
+        sshClient.exec(cmd, (err, stream) => {
+          clearTimeout(timer);
+          if (err) {
+            ws.send(JSON.stringify({
+              type: 'exec-result', id: msg.id,
+              exitCode: -1,
+              stdout: '',
+              stderr: Buffer.from(err.message).toString('base64'),
+            }));
+            return;
+          }
+          const chunks = [], errChunks = [];
+          stream.on('data', (d) => chunks.push(d));
+          stream.stderr.on('data', (d) => errChunks.push(d));
+          stream.on('close', (code) => {
+            ws.send(JSON.stringify({
+              type: 'exec-result',
+              id: msg.id,
+              exitCode: code ?? 0,
+              stdout: Buffer.concat(chunks).toString('base64'),
+              stderr: Buffer.concat(errChunks).toString('base64'),
+            }));
+          });
+        });
+
+      } else if (msg.type === 'stream-exec') {
+        if (!sshClient) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
+          return;
+        }
+        const cmd = msg.command;
+        console.log('[ssh] stream-exec:', cmd.substring(0, 80));
+
+        sshClient.exec(cmd, (err, stream) => {
+          if (err) {
+            ws.send(JSON.stringify({
+              type: 'stream-error', id: msg.id,
+              message: err.message,
+            }));
+            return;
+          }
+          stream.on('data', (d) => {
+            ws.send(JSON.stringify({
+              type: 'stream-data', id: msg.id,
+              data: d.toString('base64'),
+            }));
+          });
+          stream.stderr.on('data', (d) => {
+            ws.send(JSON.stringify({
+              type: 'stream-data', id: msg.id,
+              data: d.toString('base64'),
+            }));
+          });
+          stream.on('close', () => {
+            ws.send(JSON.stringify({
+              type: 'stream-done', id: msg.id,
+            }));
+          });
+        });
+
       } else if (msg.type === 'resize') {
         shellOpts = { cols: msg.cols || 80, rows: msg.rows || 24 };
         if (sshStream) sshStream.setWindow(shellOpts.rows, shellOpts.cols, 0, 0);

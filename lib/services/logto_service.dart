@@ -1,3 +1,10 @@
+// TODO: Logto OIDC 已知问题 (2026-07-20)
+// 1. PKCE flow 可能因 redirect URI 不匹配导致 code_verifier 校验失败
+// 2. Web 平台 token 静默刷新未处理跨域 cookie
+// 3. Session 过期后 UI 无感知，操作失败才报错
+// 当前状态: Login entry points removed from first-launch, cloud backup, about page.
+//   底层文件保留但不可达。logtoAuthProvider 是唯一状态源 (2026-07-19 refactored).
+// See: [[tianxuan-logto-issues]]
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';

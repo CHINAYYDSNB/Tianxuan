@@ -10,9 +10,11 @@ class SshService {
   bool _connected = false;
 
   void Function(String data)? onData;
+  void Function(List<int> bytes)? onBytes;
   void Function(bool connected)? onStateChange;
 
   bool get isConnected => _connected;
+  SSHClient? get client => _client;
 
   /// Build proxy URL (APK 不用, 保留兼容).
   static String buildProxyUrl(String serverUrl) => '';
@@ -48,6 +50,7 @@ class SshService {
 
       shell.stdout.listen(
         (data) {
+          onBytes?.call(data);
           onData?.call(utf8.decode(data));
         },
         onError: (e) {
@@ -78,6 +81,18 @@ class SshService {
 
   void write(String input) {
     _session?.write(utf8.encode(input));
+  }
+
+  /// Keep-alive ping via SSH exec. Returns true if connection is healthy.
+  Future<bool> ping() async {
+    if (_client == null || !_connected) return false;
+    try {
+      final session = await _client!.execute('echo pong');
+      await session.done.timeout(const Duration(seconds: 10));
+      return session.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   void disconnect() {

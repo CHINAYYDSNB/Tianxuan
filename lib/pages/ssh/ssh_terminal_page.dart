@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/ssh_service.dart';
+import '../../data/ssh/terminal_output_buffer.dart';
 import 'package:xterm/xterm.dart';
 
 class SshTerminalPage extends StatefulWidget {
@@ -51,8 +53,18 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
 
   late final Terminal _terminal;
   final _sshService = SshService();
+  late final TerminalOutputBuffer _buffer;
   bool _connecting = true;
   String? _error;
+
+  // Keep-alive
+  Timer? _keepAliveTimer;
+  int _missedPings = 0;
+  static const _keepAliveInterval = Duration(seconds: 60);
+  static const _maxMissedPings = 3;
+
+  // Reconnect
+  bool _isReconnecting = false;
 
   @override
   void initState() {
@@ -60,7 +72,13 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     _terminal = Terminal(maxLines: 2000);
     _terminal.onOutput = _onTerminalOutput;
     _terminal.onResize = _onTerminalResize;
-    _sshService.onData = _onSshData;
+
+    // 32KB buffer → 16ms batch flush to xterm
+    _buffer = TerminalOutputBuffer((bytes) {
+      _terminal.write(String.fromCharCodes(bytes));
+    });
+
+    _sshService.onBytes = _onSshBytes;
     _sshService.onStateChange = _onSshState;
     _connect();
   }
@@ -73,13 +91,126 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     _sshService.resize(w, h);
   }
 
-  void _onSshData(String data) {
-    _terminal.write(data);
+  void _onSshBytes(List<int> bytes) {
+    _buffer.add(bytes);
   }
 
   void _onSshState(bool connected) {
-    if (mounted) setState(() => _connecting = !connected);
+    if (!mounted) return;
+    setState(() {
+      _connecting = !connected;
+      if (!connected && !_isReconnecting) {
+        _connecting = true;
+      }
+    });
+    if (connected) {
+      _startKeepAlive();
+    } else {
+      _stopKeepAlive();
+    }
   }
+
+  // ─── Keep-alive ───
+
+  void _startKeepAlive() {
+    _stopKeepAlive();
+    _missedPings = 0;
+    _keepAliveTimer = Timer.periodic(_keepAliveInterval, (_) => _doPing());
+  }
+
+  void _stopKeepAlive() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = null;
+  }
+
+  Future<void> _doPing() async {
+    final ok = await _sshService.ping();
+    if (!mounted) return;
+    if (ok) {
+      _missedPings = 0;
+    } else {
+      _missedPings++;
+      if (_missedPings >= _maxMissedPings) {
+        _onConnectionLost();
+      }
+    }
+  }
+
+  void _onConnectionLost() {
+    _stopKeepAlive();
+    if (!mounted || _isReconnecting) return;
+    _startReconnect();
+  }
+
+  // ─── Reconnect with exponential backoff ───
+
+  Future<void> _startReconnect() async {
+    _isReconnecting = true;
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('SSH 连接断开'),
+        content: const Text('正在尝试重新连接...'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) {
+      _isReconnecting = false;
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    var attempt = 0;
+    const maxAttempts = 10;
+    const baseDelayMs = 200;
+    const maxDelayMs = 3000;
+
+    while (attempt < maxAttempts && mounted && _isReconnecting) {
+      attempt++;
+      try {
+        _sshService.disconnect();
+        await _sshService.connect(
+          host: widget.host,
+          port: widget.port,
+          username: widget.username,
+          password: widget.password,
+          privateKey: widget.privateKey,
+        );
+        if (mounted && _sshService.isConnected) {
+          _isReconnecting = false;
+          _buffer.flushNow();
+          _startKeepAlive();
+          if (mounted) {
+            setState(() { _connecting = false; _error = null; });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('SSH 已重新连接'), backgroundColor: Colors.green),
+            );
+          }
+          return;
+        }
+      } catch (_) {}
+
+      final delayMs = (baseDelayMs * (1 << (attempt - 1))).clamp(0, maxDelayMs);
+      await Future.delayed(Duration(milliseconds: delayMs));
+    }
+
+    _isReconnecting = false;
+    if (mounted) {
+      setState(() {
+        _connecting = false;
+        _error = '重连失败（已尝试 $maxAttempts 次）';
+      });
+    }
+  }
+
+  // ─── Connect ───
 
   Future<void> _connect() async {
     try {
@@ -100,6 +231,8 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
 
   @override
   void dispose() {
+    _stopKeepAlive();
+    _buffer.dispose();
     _sshService.disconnect();
     super.dispose();
   }
@@ -200,6 +333,8 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
   }
 }
 
+// ─── Virtual Keyboard ───
+
 class _TerminalKeyboard extends StatelessWidget {
   final void Function(String key) onKey;
 
@@ -265,6 +400,8 @@ class _TerminalKeyboard extends StatelessWidget {
     );
   }
 }
+
+// ─── Quick SSH Dialog ───
 
 class QuickSshDialog extends StatefulWidget {
   const QuickSshDialog({super.key});

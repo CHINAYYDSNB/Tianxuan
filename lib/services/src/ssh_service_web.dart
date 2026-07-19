@@ -9,9 +9,11 @@ class SshService {
   bool _connected = false;
 
   void Function(String data)? onData;
+  void Function(List<int> bytes)? onBytes;
   void Function(bool connected)? onStateChange;
 
   bool get isConnected => _connected;
+  dynamic get client => null; // Web has no direct SSHClient
 
   static String buildProxyUrl(String serverUrl) {
     final uri = Uri.parse(serverUrl);
@@ -78,6 +80,7 @@ class SshService {
       case 'data':
         final base64 = msg['data'] as String;
         final bytes = base64Decode(base64);
+        onBytes?.call(bytes);
         onData?.call(utf8.decode(bytes));
         break;
       case 'error':
@@ -107,6 +110,16 @@ class SshService {
       'type': 'input',
       'data': base64Encode(bytes),
     }));
+  }
+
+  Future<bool> ping() async {
+    if (!_connected || _channel == null) return false;
+    try {
+      _channel!.sink.add(jsonEncode({'type': 'ping'}));
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   void disconnect() {

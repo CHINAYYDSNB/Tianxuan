@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/logto_service.dart';
+import '../../providers/logto_auth_provider.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  bool _loading = true;
-  String _userId = '';
-  String _name = '';
-  String _email = '';
-  String _avatarUrl = '';
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   late TextEditingController _nameCtrl;
   late TextEditingController _avatarCtrl;
   bool _saving = false;
@@ -21,9 +18,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController();
-    _avatarCtrl = TextEditingController();
-    _loadProfile();
+    final auth = ref.read(logtoAuthProvider);
+    _nameCtrl = TextEditingController(text: auth.name);
+    _avatarCtrl = TextEditingController(text: auth.avatarUrl);
   }
 
   @override
@@ -33,44 +30,25 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    final info = await LogtoService.getUserInfo();
-    if (mounted) {
-      setState(() {
-        if (info != null) {
-          _userId = info.sub;
-          _name = info.name;
-          _email = info.email;
-          _avatarUrl = info.picture;
-          _nameCtrl.text = _name;
-          _avatarCtrl.text = _avatarUrl;
-        }
-        _loading = false;
-      });
-    }
-  }
-
   Future<void> _saveProfile() async {
+    final auth = ref.read(logtoAuthProvider);
     final newName = _nameCtrl.text.trim();
     final newAvatar = _avatarCtrl.text.trim();
 
-    if (newName == _name && newAvatar == _avatarUrl) return;
+    if (newName == auth.name && newAvatar == auth.avatarUrl) return;
     if (newName.isEmpty && newAvatar.isEmpty) return;
 
     setState(() => _saving = true);
     final ok = await LogtoService.updateProfile(
-      userId: _userId,
+      userId: auth.userId,
       name: newName.isNotEmpty ? newName : null,
       avatar: newAvatar.isNotEmpty ? newAvatar : null,
     );
     if (mounted) {
-      setState(() {
-        _saving = false;
-        if (ok) {
-          if (newName.isNotEmpty) _name = newName;
-          if (newAvatar.isNotEmpty) _avatarUrl = newAvatar;
-        }
-      });
+      setState(() => _saving = false);
+      if (ok) {
+        ref.read(logtoAuthProvider.notifier).refreshUserInfo();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok ? '资料已更新' : '更新失败，可能需要管理员权限'),
@@ -93,16 +71,16 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
     if (ok == true && mounted) {
-      await LogtoService.logout();
-      if (mounted) Navigator.of(context).pop(true);
+      ref.read(logtoAuthProvider.notifier).logout();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final auth = ref.watch(logtoAuthProvider);
 
-    if (_loading) {
+    if (auth.checking) {
       return Scaffold(
         appBar: AppBar(title: const Text('个人资料')),
         body: const Center(child: CircularProgressIndicator()),
@@ -123,17 +101,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 48,
                     backgroundColor: theme.colorScheme.primary.withAlpha(20),
-                    backgroundImage: _avatarUrl.isNotEmpty ? NetworkImage(_avatarUrl) : null,
-                    child: _avatarUrl.isEmpty
+                    backgroundImage: auth.avatarUrl.isNotEmpty ? NetworkImage(auth.avatarUrl) : null,
+                    child: auth.avatarUrl.isEmpty
                         ? Icon(Icons.person, size: 48, color: theme.colorScheme.primary)
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  Text(_name.isNotEmpty ? _name : '未设置昵称',
+                  Text(auth.name.isNotEmpty ? auth.name : '未设置昵称',
                       style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  if (_email.isNotEmpty) ...[
+                  if (auth.email.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(_email, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF686F78))),
+                    Text(auth.email, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF686F78))),
                   ],
                 ],
               ),
@@ -169,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       isDense: true,
                       prefixIcon: Icon(Icons.email_outlined, size: 20),
                     ),
-                    controller: TextEditingController(text: _email.isNotEmpty ? _email : '未绑定'),
+                    controller: TextEditingController(text: auth.email.isNotEmpty ? auth.email : '未绑定'),
                   ),
                   const SizedBox(height: 4),
                   Text('邮箱由 Logto 管理，如需修改请联系管理员',
@@ -189,7 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? IconButton(
                               icon: const Icon(Icons.refresh, size: 20),
                               tooltip: '预览',
-                              onPressed: () => setState(() => _avatarUrl = _avatarCtrl.text.trim()),
+                              onPressed: () => setState(() {}),
                             )
                           : null,
                     ),

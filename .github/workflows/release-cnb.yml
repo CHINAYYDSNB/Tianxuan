@@ -2,12 +2,8 @@ name: Release APK to CNB
 
 on:
   push:
-    tags: ['v*']
+    branches: [main, master]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag (e.g., v0.3.2), leave empty to use pubspec'
-        required: false
 
 jobs:
   release:
@@ -64,14 +60,8 @@ jobs:
             exit 0
           fi
 
-          # Determine version
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [ -n "${{ github.ref_name }}" ] && [ "${{ github.ref_type }}" = "tag" ]; then
-            VERSION="${{ github.ref_name }}"
-          else
-            VERSION="v$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d+ -f1)"
-          fi
+          # Determine version from pubspec.yaml
+          VERSION="v$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d+ -f1)"
           echo "VERSION=$VERSION"
 
           APK_SRC="build/app/outputs/flutter-apk/app-release.apk"

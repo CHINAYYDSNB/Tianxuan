@@ -1,42 +1,61 @@
-# Caveman Mode (Always Active)
+# Tianxuan — Project Guide
 
-Every response must use **caveman mode** — ultra-compressed, no fluff, full technical accuracy.
+> See `docs/guides/` for full reference documents.
 
-## Rules
-- Drop: articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries (sure/certainly/of course/happy to), hedging
-- Fragments OK. Short synonyms (big not extensive, fix not "implement a solution for")
-- Technical terms exact. Code blocks unchanged. Errors quoted exact
-- Pattern: `[thing] [action] [reason]. [next step].`
+## Commit Prefixes
 
-## Intensity: full (default)
-| Level | What changes |
-|-------|-------------|
-| **lite** | No filler/hedging. Keep articles + full sentences. Professional but tight |
-| **full** | Drop articles, fragments OK, short synonyms |
-| **ultra** | Abbreviate prose words, strip conjunctions, arrows for causality (X → Y). Code symbols/functions/API names/error strings: never abbreviate |
+| Prefix | Use |
+|--------|-----|
+| `wip(:)` | Work in progress |
+| `done(:)` | Human verified |
+| `port(:)` | Code from Lanxi |
+| `refactor(:)` | Structural changes |
+| `test(:)` | Build-only |
+| `shell(:)` | UI scaffold |
+| **Banned**: `fix:`, `feat:`, `chore:` |
 
-## Auto-Clarity (drop caveman when needed)
-- Security warnings
-- Irreversible action confirmations
-- Multi-step sequences where fragments risk misread
-- Compression creates technical ambiguity
-- User asks to clarify or repeats question
+## Core Architecture
 
-Resume caveman after clear part done.
+```
+ServerService (Facade) → ServerSource (SPI)
+  ├─ ApiServerSource       ← 1Panel API
+  ├─ SshServerSource       ← SSH fallback
+  └─ FallbackServerSource  ← auto degrade
+```
 
-## Boundaries
-Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert.
+- **UI** cannot import `dio` / `dartssh2`
+- **Service** zero branching on channel type
+- **Factory** is sole routing decision point
+- **No `print()`** → use `appLogger`
+- **No `UnimplementedError()`** → use domain exceptions
 
-## Agent skills
+## SSH Write Rules
 
-### Issue tracker
+```dart
+// Always: quoted heredoc prevents shell expansion
+ssh.exec("cat > \"$path\" <<'LANXI_EOF'\n$content\nLANXI_EOF");
+// Always: backup first
+ssh.exec("cp \"$path\" \"$path.bak.$(date +%s)\"");
+```
 
-Issues tracked in GitHub Issues on this repo. External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+- Files >1MB: warning dialog; >10MB: forced paged mode with Isolate
+- Dart SSH strings **must use double quotes** (single quotes don't interpolate)
 
-### Triage labels
+## References
 
-Five canonical labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+| Role | Repo |
+|------|------|
+| Skeleton | `lollipopkit/flutter_server_box` (logic only, NO UI copy) |
+| SSH | `CHINAYYDSNB/Lanxi` |
+| API | `bin64/Mono-Dash` (NOT nowubh) |
+| Terminal | `dorkytiger/Blink` |
+| Chunking | `dorkytiger/TeleBook` |
 
-### Domain docs
+## Key Files
 
-Single-context project — one CONTEXT.md + docs/adr/ at repo root. See `docs/agents/domain.md`.
+- `docs/guides/CI_CONSTITUTION.md` — Full CI rules & bans
+- `docs/guides/SSH_WRITE_RULES.md` — Non-negotiable SSH patterns
+- `docs/guides/SYSTEM_PROMPT.md` — AI architect system prompt
+- `docs/guides/REFERENCE_REPOS.md` — Per-task reference mapping
+- `docs/guides/HUMAN_GUIDE.md` — Human operator checklist
+- `docs/guides/STARTUP_PROMPT.txt` — AI session start template

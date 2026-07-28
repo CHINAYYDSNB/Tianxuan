@@ -1,0 +1,33 @@
+=== 开始 ===
+
+I am continuing the development of the Tianxuan app (https://github.com/CHINAYYDSNB/Tianxuan).
+
+Please read the following files to understand the project context, architecture, and constraints:
+
+1. SYSTEM_PROMPT.md (This is your primary constitution. Pay attention to the "Architecture Shadow" concept and the ban on UI plagiarism.)
+2. HUMAN_GUIDE.md (For operational context.)
+
+Core Rules Summary:
+- Architecture Shadow: flutter_server_box (skeleton only, NO UI copying)
+- SSH Core: CHINAYYDSNB/Lanxi (old repo)
+- API Template: bin64/Mono-Dash (NOT nowubh)
+- Commit Prefixes: wip(:), done(:), port(:), refactor(:)
+- No iCloud Keychain, no WebDAV
+- SSH writes must use <<'LANXI_EOF' for multi-line content
+- Large files (>10MB) must use paged mode with Isolate
+
+Current Status:
+- We have established the ServerSource SPI.
+- We are focusing on Phase 3: File Management, specifically the Online Editor and Large File Paging.
+- Reference repositories: flutter_server_box (skeleton), Lanxi (SSH), bin64/Mono-Dash (API).
+
+Immediate Task:
+[在此处填入你当前的具体任务，例如：Implement the file saving logic in SshServerSource according to the backup rules in SYSTEM_PROMPT.md.]
+
+Rules Reminder:
+- Use commit prefix: wip(:), done(:), port(:), or refactor(:).
+- Target Flutter version: 3.24.5.
+- Do not use iCloud or WebDAV.
+- If you need to see how Mono-Dash calls an API, tell me which endpoint, and I will provide the snippet from bin64/Mono-Dash.
+
+=== 结束 ===

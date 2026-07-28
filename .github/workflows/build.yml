@@ -7,6 +7,10 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   android:
     name: Android APK
@@ -26,8 +30,23 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: flutter analyze --fatal-infos
+
       - name: Generate code (riverpod + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Check coverage threshold (70%)
+        uses: VeryGoodOpenSource/very_good_coverage@v2
+        with:
+          path: coverage/lcov.info
+          min_coverage: 70
 
       - name: Decode keystore and create key.properties
         env:
@@ -57,3 +76,32 @@ jobs:
         with:
           name: tianxuan-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Block test: commits on main branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" =~ ^test(\(.+\))?: ]]; then
+            echo "::error::🚫 'test:' commits are build-only and cannot be merged into main."
+            exit 1
+          fi
+
+      - name: Anti-cheat scan (print statements)
+        run: |
+          if grep -r "print(" lib/ --include="*.dart" | grep -v "//"; then
+            echo "::error::❌ Found print() statements. Use appLogger instead."
+            exit 1
+          fi
+
+      - name: Anti-cheat scan (single-quote \$var in SSH commands)
+        run: |
+          if grep -r "'\$.*'" lib/ --include="*.dart" | grep -v "//"; then
+            echo "::warning::⚠️ Possible single-quote string with \$var found. Verify interpolation."
+          fi
+
+      - name: Anti-cheat scan (expect true,true)
+        run: |
+          if grep -r "expect(true, true)" lib/ --include="*_test.dart"; then
+            echo "::error::❌ Found expect(true, true). Write real assertions."
+            exit 1
+          fi

@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import '../../models/file_item.dart';
 import '../../providers/file_provider.dart';
 import '../../utils/downloader.dart';
@@ -286,28 +287,31 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
     }
     if (file.isDir) {
       ref.read(currentPathProvider.notifier).state = file.path;
-    } else if (isImageFile(file)) {
-      final images = items.where(isImageFile).toList();
-      final idx = images.indexOf(file);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => FileImagePreviewPage(
-            images: images,
-            initialIndex: idx < 0 ? 0 : idx,
+      return;
+    }
+    switch (getFileOpenMode(p.extension(file.name))) {
+      case FileOpenMode.edit:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                FileEditorPage(filePath: file.path, fileName: file.name),
           ),
-        ),
-      );
-    } else if (isTextFile(file)) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              FileEditorPage(filePath: file.path, fileName: file.name),
-        ),
-      );
-    } else {
-      _downloadFile(file);
+        );
+      case FileOpenMode.preview:
+        final images = items.where(isImageFile).toList();
+        final idx = images.indexOf(file);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FileImagePreviewPage(
+              images: images,
+              initialIndex: idx < 0 ? 0 : idx,
+            ),
+          ),
+        );
+      case FileOpenMode.download:
+        _downloadFile(file);
     }
   }
 

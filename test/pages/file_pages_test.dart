@@ -124,7 +124,7 @@ void main() {
       when(() => mock.list(path: any(named: 'path'))).thenAnswer(
         (_) async => FileListResult(
           items: [
-            fi('a.dart'), // 文本
+            fi('a.txt'), // 文本
             fi('b.png'), // 图片
             fi('c', isDir: true), // 目录
           ],
@@ -145,7 +145,7 @@ void main() {
 
     testWidgets('渲染文件列表', (tester) async {
       await pumpList(tester);
-      expect(find.text('a.dart'), findsWidgets);
+      expect(find.text('a.txt'), findsWidgets);
       expect(find.text('b.png'), findsWidgets);
       expect(find.text('c'), findsWidgets);
     });
@@ -159,7 +159,7 @@ void main() {
 
     testWidgets('点击文本进入编辑器', (tester) async {
       await pumpList(tester);
-      await tester.tap(find.text('a.dart'));
+      await tester.tap(find.text('a.txt'));
       await tester.pumpAndSettle();
       expect(find.byType(FileEditorPage), findsOneWidget);
     });

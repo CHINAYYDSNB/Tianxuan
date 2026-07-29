@@ -1,5 +1,31 @@
 import '../models/file_item.dart';
 
+/// 文件在列表中被点击时的打开方式
+enum FileOpenMode { edit, preview, download }
+
+/// 根据扩展名判断文件被点击时的打开方式。
+/// 文本类（可在线编辑）→ [FileOpenMode.edit]；
+/// 图片类（可预览）→ [FileOpenMode.preview]；
+/// 其余统一走下载 → [FileOpenMode.download]。
+FileOpenMode getFileOpenMode(String extension) {
+  final ext = extension.toLowerCase();
+  final dotless = ext.startsWith('.') ? ext.substring(1) : ext;
+  const editExtensions = {
+    'txt',
+    'conf',
+    'yaml',
+    'yml',
+    'json',
+    'md',
+    'sh',
+    'log',
+  };
+  const previewExtensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'};
+  if (editExtensions.contains(dotless)) return FileOpenMode.edit;
+  if (previewExtensions.contains(dotless)) return FileOpenMode.preview;
+  return FileOpenMode.download;
+}
+
 /// 文本类文件扩展名（可在在线编辑器中打开）
 const textExtensions = <String>{
   'txt',
@@ -56,7 +82,8 @@ bool isTextFile(FileItem file) {
   if (file.size > 10 * 1024 * 1024) return false;
   final name = file.name.toLowerCase();
   if (name == 'dockerfile' || name == 'makefile') return true;
-  final ext = (file.extension ?? '').toLowerCase();
+  final raw = (file.extension ?? '').toLowerCase();
+  final ext = raw.startsWith('.') ? raw.substring(1) : raw;
   return textExtensions.contains(ext);
 }
 
@@ -64,7 +91,8 @@ bool isTextFile(FileItem file) {
 bool isImageFile(FileItem file) {
   if (file.isDir) return false;
   final name = file.name.toLowerCase();
-  final ext = (file.extension ?? '').toLowerCase();
   if (name == 'dockerfile' || name == 'makefile') return false;
+  final raw = (file.extension ?? '').toLowerCase();
+  final ext = raw.startsWith('.') ? raw.substring(1) : raw;
   return imageExtensions.contains(ext);
 }

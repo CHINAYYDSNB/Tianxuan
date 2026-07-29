@@ -2,17 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/file_api.dart';
 import '../models/file_item.dart';
+import '../services/file_service.dart';
 
 /// 当前浏览路径
 final currentPathProvider = StateProvider<String>((_) => '/');
 
 /// 文件列表 (依赖 currentPathProvider)
-final fileListProvider = AsyncNotifierProvider<FileListNotifier, FileListResult>(FileListNotifier.new);
+final fileListProvider =
+    AsyncNotifierProvider<FileListNotifier, FileListResult>(
+      FileListNotifier.new,
+    );
 
 class FileListNotifier extends AsyncNotifier<FileListResult> {
   String? _sortBy;
   String? _sortOrder;
   String? _search;
+
+  FileService get _svc => ref.watch(fileServiceProvider);
 
   @override
   Future<FileListResult> build() async {
@@ -21,7 +27,7 @@ class FileListNotifier extends AsyncNotifier<FileListResult> {
   }
 
   Future<FileListResult> _load(String path) async {
-    return FileApi.getList(
+    return _svc.list(
       path: path,
       sortBy: _sortBy,
       sortOrder: _sortOrder,
@@ -64,31 +70,55 @@ class FileListNotifier extends AsyncNotifier<FileListResult> {
 
   /// 删除文件后刷新
   Future<void> deleteFile(String path, {bool isDir = false}) async {
-    await FileApi.delete(path, isDir: isDir);
+    await _svc.delete(path, isDir: isDir);
     await silentRefresh();
   }
 
   /// 重命名后刷新
   Future<void> renameFile(String oldName, String newName) async {
-    await FileApi.rename(oldName, newName);
+    await _svc.rename(oldName, newName);
     await silentRefresh();
   }
 
   /// 创建后刷新
   Future<void> createItem(String path, {bool isDir = false}) async {
-    await FileApi.create(path, isDir: isDir);
+    await _svc.create(path, isDir: isDir);
+    await silentRefresh();
+  }
+
+  /// 上传本地文件到当前目录
+  Future<void> uploadFile(String dirPath, String localFilePath) async {
+    await _svc.upload(dirPath, localFilePath);
+    await silentRefresh();
+  }
+
+  /// 下载文件字节
+  Future<List<int>> downloadFile(String path) => _svc.download(path);
+
+  /// 批量删除后刷新
+  Future<void> batchDelete(List<String> paths) async {
+    await _svc.batchDelete(paths);
     await silentRefresh();
   }
 }
 
-/// 文件内容 (根据路径加载)
-final fileContentProvider = FutureProvider.family<FileItem, String>((ref, path) async {
-  return FileApi.getContent(path);
+/// 文件内容 (根据路径加载，整文件)
+final fileContentProvider = FutureProvider.family<FileItem, String>((
+  ref,
+  path,
+) async {
+  return ref.watch(fileServiceProvider).getContent(path);
 });
 
 /// 目录树
-final fileTreeProvider = FutureProvider.family<List<FileItem>, String>((ref, path) async {
-  final res = await ApiClient.instance.post('/files/tree', data: {'path': path});
+final fileTreeProvider = FutureProvider.family<List<FileItem>, String>((
+  ref,
+  path,
+) async {
+  final res = await ApiClient.instance.post(
+    '/files/tree',
+    data: {'path': path},
+  );
   final body = res.data;
   if (body is Map && body['data'] is List) {
     return (body['data'] as List)
@@ -102,10 +132,11 @@ final fileTreeProvider = FutureProvider.family<List<FileItem>, String>((ref, pat
 /// 面包屑路径
 final breadcrumbProvider = Provider<List<BreadcrumbItem>>((ref) {
   final path = ref.watch(currentPathProvider);
-  return _buildBreadcrumbs(path);
+  return buildBreadcrumbs(path);
 });
 
-List<BreadcrumbItem> _buildBreadcrumbs(String path) {
+/// 由路径构建面包屑（纯函数，便于单测）
+List<BreadcrumbItem> buildBreadcrumbs(String path) {
   if (path == '/') return [BreadcrumbItem(name: '/', path: '/')];
   final parts = path.split('/').where((e) => e.isNotEmpty).toList();
   final crumbs = [BreadcrumbItem(name: '/', path: '/')];
@@ -124,7 +155,10 @@ class BreadcrumbItem {
 }
 
 /// 多选: 选中文件路径集合
-final fileSelectionProvider = StateNotifierProvider<FileSelectionNotifier, Set<String>>((_) => FileSelectionNotifier());
+final fileSelectionProvider =
+    StateNotifierProvider<FileSelectionNotifier, Set<String>>(
+      (_) => FileSelectionNotifier(),
+    );
 
 class FileSelectionNotifier extends StateNotifier<Set<String>> {
   FileSelectionNotifier() : super({});

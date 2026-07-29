@@ -28,6 +28,9 @@ dependencies:
   dartssh2: ^2.9.0
   web_socket_channel: ^3.0.0
   xterm: ^4.0.0
+  flutter_code_editor: ^0.3.5
+  photo_view: ^0.14.0
+  highlight: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -37,6 +40,8 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   json_serializable: ^6.7.0
   flutter_launcher_icons: ^0.14.0
+  mocktail: ^1.0.0
+  path_provider_platform_interface: ^2.1.0
 
 flutter_launcher_icons:
   android: true

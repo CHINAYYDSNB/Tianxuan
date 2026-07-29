@@ -1,14 +1,14 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../api/file_api.dart';
 import '../../models/file_item.dart';
 import '../../providers/file_provider.dart';
 import '../../utils/downloader.dart';
+import '../../utils/file_utils.dart';
 import '../../widgets/file_icon.dart';
 import 'file_editor_page.dart';
+import 'file_image_preview_page.dart';
 
 /// Standalone page (with Scaffold + AppBar)
 class FileListPage extends ConsumerStatefulWidget {
@@ -44,7 +44,8 @@ class _FileListPageState extends ConsumerState<FileListPage> {
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 8),
                 ),
-                onSubmitted: (v) => ref.read(fileListProvider.notifier).setSearch(v),
+                onSubmitted: (v) =>
+                    ref.read(fileListProvider.notifier).setSearch(v),
               )
             : const Text('文件管理'),
         actions: [
@@ -57,8 +58,11 @@ class _FileListPageState extends ConsumerState<FileListPage> {
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.add),
               onSelected: (v) {
-                if (v == 'create_dir') _showCreateDialog(context);
-                else if (v == 'upload') _pickAndUpload();
+                if (v == 'create_dir') {
+                  _showCreateDialog(context);
+                } else if (v == 'upload') {
+                  _pickAndUpload();
+                }
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 'create_dir', child: Text('新建文件夹')),
@@ -68,7 +72,11 @@ class _FileListPageState extends ConsumerState<FileListPage> {
           ),
         ],
       ),
-      body: FileListBody(initialPath: widget.initialPath, showSearch: _showSearch, searchCtrl: _searchCtrl),
+      body: FileListBody(
+        initialPath: widget.initialPath,
+        showSearch: _showSearch,
+        searchCtrl: _searchCtrl,
+      ),
     );
   }
 
@@ -78,25 +86,47 @@ class _FileListPageState extends ConsumerState<FileListPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('新建文件夹'),
-        content: TextField(controller: ctrl, decoration: const InputDecoration(labelText: '文件夹名', border: OutlineInputBorder()), autofocus: true),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: '文件夹名',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(onPressed: () async {
-            final name = ctrl.text.trim();
-            if (name.isEmpty) return;
-            final parent = ref.read(currentPathProvider);
-            Navigator.pop(ctx);
-            try {
-              await ref.read(fileListProvider.notifier).createItem('$parent/$name', isDir: true);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已创建 $name')));
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = ctrl.text.trim();
+              if (name.isEmpty) return;
+              final parent = ref.read(currentPathProvider);
+              Navigator.pop(ctx);
+              try {
+                await ref
+                    .read(fileListProvider.notifier)
+                    .createItem('$parent/$name', isDir: true);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('已创建 $name')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('创建失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('创建失败: $e'), backgroundColor: Colors.red));
-              }
-            }
-          }, child: const Text('创建')),
+            },
+            child: const Text('创建'),
+          ),
         ],
       ),
     );
@@ -109,13 +139,18 @@ class _FileListPageState extends ConsumerState<FileListPage> {
       final path = ref.read(currentPathProvider);
       final filePath = result.files.single.path;
       if (filePath == null) return;
-      await FileApi.upload(path, filePath);
+      await ref.read(fileListProvider.notifier).uploadFile(path, filePath);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('上传成功')));
-        ref.read(fileListProvider.notifier).refresh();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('上传成功')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('上传失败: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('上传失败: $e')));
+      }
     }
   }
 }
@@ -126,7 +161,12 @@ class FileListBody extends ConsumerStatefulWidget {
   final bool showSearch;
   final TextEditingController? searchCtrl;
 
-  const FileListBody({super.key, this.initialPath, this.showSearch = false, this.searchCtrl});
+  const FileListBody({
+    super.key,
+    this.initialPath,
+    this.showSearch = false,
+    this.searchCtrl,
+  });
 
   @override
   ConsumerState<FileListBody> createState() => _FileListBodyState();
@@ -157,9 +197,7 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
 
     return Column(
       children: [
-        // 面包屑
         _BreadcrumbBar(crumbs: crumbs),
-        // 多选模式提示
         if (_multiSelectMode)
           Container(
             width: double.infinity,
@@ -167,28 +205,34 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
             color: Theme.of(context).colorScheme.primaryContainer,
             child: Text(
               '已选 ${selected.length} 项',
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
           ),
-        // 文件列表
         Expanded(
           child: files.when(
             data: (result) => result.items.isEmpty
                 ? _emptyState(context)
                 : RefreshIndicator(
-                    onRefresh: () => ref.read(fileListProvider.notifier).refresh(),
+                    onRefresh: () =>
+                        ref.read(fileListProvider.notifier).refresh(),
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       itemCount: result.items.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
+                      separatorBuilder: (_, _) =>
+                          const Divider(height: 1, indent: 72),
                       itemBuilder: (context, i) => _FileListTile(
                         file: result.items[i],
+                        items: result.items,
                         multiSelect: _multiSelectMode,
                         selected: selected.contains(result.items[i].path),
-                        onTap: () => _onFileTap(result.items[i], path),
+                        onTap: () =>
+                            _onFileTap(result.items[i], path, result.items),
                         onLongPress: () => _onFileLongPress(result.items[i]),
-                        onToggleSelect: () =>
-                            ref.read(fileSelectionProvider.notifier).toggle(result.items[i].path),
+                        onToggleSelect: () => ref
+                            .read(fileSelectionProvider.notifier)
+                            .toggle(result.items[i].path),
                       ),
                     ),
                   ),
@@ -196,7 +240,6 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
             error: (e, _) => _errorState(context, e),
           ),
         ),
-        // 多选底部操作栏
         if (_multiSelectMode && selected.isNotEmpty)
           Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -205,7 +248,11 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _actionBtn(Icons.delete, '删除', () => _confirmBatchDelete(selected)),
+                  _actionBtn(
+                    Icons.delete,
+                    '删除',
+                    () => _confirmBatchDelete(selected),
+                  ),
                   _actionBtn(Icons.drive_file_rename_outline, '批量', () {}),
                 ],
               ),
@@ -220,25 +267,44 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 20),
-          Text(label, style: const TextStyle(fontSize: 11)),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20),
+            Text(label, style: const TextStyle(fontSize: 11)),
+          ],
+        ),
       ),
     );
   }
 
-  void _onFileTap(FileItem file, String currentPath) {
+  void _onFileTap(FileItem file, String currentPath, List<FileItem> items) {
     if (_multiSelectMode) {
       ref.read(fileSelectionProvider.notifier).toggle(file.path);
       return;
     }
     if (file.isDir) {
       ref.read(currentPathProvider.notifier).state = file.path;
-    } else if (_isTextFile(file)) {
-      Navigator.push(context, MaterialPageRoute(
-        builder: (_) => FileEditorPage(filePath: file.path, fileName: file.name),
-      ));
+    } else if (isImageFile(file)) {
+      final images = items.where(isImageFile).toList();
+      final idx = images.indexOf(file);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FileImagePreviewPage(
+            images: images,
+            initialIndex: idx < 0 ? 0 : idx,
+          ),
+        ),
+      );
+    } else if (isTextFile(file)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              FileEditorPage(filePath: file.path, fileName: file.name),
+        ),
+      );
     } else {
       _downloadFile(file);
     }
@@ -251,35 +317,22 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
     }
   }
 
-  bool _isTextFile(FileItem file) {
-    if (file.size > 10 * 1024 * 1024) return false;
-    final ext = file.extension?.toLowerCase() ?? '';
-    const textExts = [
-      'txt', 'md', 'dart', 'js', 'ts', 'py', 'go', 'rs', 'java', 'c', 'cpp', 'h',
-      'css', 'html', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf',
-      'log', 'sh', 'bat', 'env', 'gitignore', 'dockerfile', 'makefile',
-      'sql', 'rb', 'php', 'swift', 'kt', 'gradle', 'lock',
-    ];
-    if (textExts.contains(ext)) return true;
-    if (file.name.toLowerCase() == 'dockerfile') return true;
-    if (file.name.toLowerCase() == 'makefile') return true;
-    return false;
-  }
-
   Future<void> _downloadFile(FileItem file) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('下载 ${file.name}...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('下载 ${file.name}...')));
     try {
-      final bytes = await FileApi.download(file.path);
+      final bytes = await ref
+          .read(fileListProvider.notifier)
+          .downloadFile(file.path);
       final result = await saveFile(file.name, bytes);
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('已保存: $result (${file.formattedSize})')),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('下载失败: $e'), backgroundColor: Colors.red),
         );
@@ -294,7 +347,10 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
         title: const Text('确认删除'),
         content: Text('确定删除 ${paths.length} 项？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('删除', style: TextStyle(color: Colors.red)),
@@ -304,17 +360,16 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
     );
     if (confirmed == true) {
       try {
-        await FileApi.batchDelete(paths.toList());
+        await ref.read(fileListProvider.notifier).batchDelete(paths.toList());
         ref.read(fileSelectionProvider.notifier).clear();
         setState(() => _multiSelectMode = false);
-        ref.read(fileListProvider.notifier).silentRefresh();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('已删除 ${paths.length} 项')),
-          );
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('已删除 ${paths.length} 项')));
         }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('删除失败: $e'), backgroundColor: Colors.red),
           );
@@ -324,36 +379,43 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
   }
 
   Widget _emptyState(BuildContext context) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.folder_open, size: 64, color: const Color(0xFFAAB4BF)),
-            const SizedBox(height: 12),
-            Text('此目录为空', style: const TextStyle(fontSize: 16, color: Color(0xFF686F78))),
-          ],
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.folder_open, size: 64, color: Color(0xFFAAB4BF)),
+        const SizedBox(height: 12),
+        const Text(
+          '此目录为空',
+          style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _errorState(BuildContext context, Object e) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text('$e', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.read(fileListProvider.notifier).refresh(),
-                child: const Text('重试'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            '$e',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
           ),
-        ),
-      );
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => ref.read(fileListProvider.notifier).refresh(),
+            child: const Text('重试'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// 面包屑导航栏
@@ -368,12 +430,21 @@ class _BreadcrumbBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: List.generate(crumbs.length * 2 - 1, (i) {
-          if (i.isOdd) return const Icon(Icons.chevron_right, size: 16, color: Color(0xFFAAB4BF));
+          if (i.isOdd) {
+            return const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: Color(0xFFAAB4BF),
+            );
+          }
           final idx = i ~/ 2;
           final crumb = crumbs[idx];
           final isLast = idx == crumbs.length - 1;
           return TextButton(
-            onPressed: isLast ? null : () => ref.read(currentPathProvider.notifier).state = crumb.path,
+            onPressed: isLast
+                ? null
+                : () =>
+                      ref.read(currentPathProvider.notifier).state = crumb.path,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: Size.zero,
@@ -384,7 +455,9 @@ class _BreadcrumbBar extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isLast ? FontWeight.w600 : FontWeight.normal,
-                color: isLast ? Theme.of(context).colorScheme.primary : const Color(0xFFAAB4BF),
+                color: isLast
+                    ? Theme.of(context).colorScheme.primary
+                    : const Color(0xFFAAB4BF),
               ),
             ),
           );
@@ -397,6 +470,7 @@ class _BreadcrumbBar extends ConsumerWidget {
 /// 单个文件/目录列表项
 class _FileListTile extends ConsumerWidget {
   final FileItem file;
+  final List<FileItem> items;
   final bool multiSelect;
   final bool selected;
   final VoidCallback onTap;
@@ -405,6 +479,7 @@ class _FileListTile extends ConsumerWidget {
 
   const _FileListTile({
     required this.file,
+    required this.items,
     required this.multiSelect,
     required this.selected,
     required this.onTap,
@@ -418,7 +493,10 @@ class _FileListTile extends ConsumerWidget {
       leading: multiSelect
           ? Checkbox(value: selected, onChanged: (_) => onToggleSelect())
           : FileIcon(file: file),
-      title: Text(file.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      title: Text(
+        file.name,
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
       subtitle: Text(
         file.isDir ? '' : '${file.formattedSize}  ${_formatTime(file.modTime)}',
         style: const TextStyle(fontSize: 12),
@@ -426,15 +504,47 @@ class _FileListTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: file.isDir
-          ? Icon(Icons.chevron_right, size: 18, color: const Color(0xFFAAB4BF))
+          ? const Icon(Icons.chevron_right, size: 18, color: Color(0xFFAAB4BF))
           : PopupMenuButton<String>(
               onSelected: (v) => _handleFileAction(context, ref, v),
               itemBuilder: (_) => [
-                if (_isTextExt(file))
-                  const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, size: 20), title: Text('编辑'))),
-                const PopupMenuItem(value: 'rename', child: ListTile(leading: Icon(Icons.drive_file_rename_outline, size: 20), title: Text('重命名'))),
-                const PopupMenuItem(value: 'download', child: ListTile(leading: Icon(Icons.download, size: 20), title: Text('下载'))),
-                const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, size: 20, color: Colors.red), title: Text('删除', style: TextStyle(color: Colors.red)))),
+                if (isImageFile(file))
+                  const PopupMenuItem(
+                    value: 'preview',
+                    child: ListTile(
+                      leading: Icon(Icons.image, size: 20),
+                      title: Text('预览'),
+                    ),
+                  ),
+                if (isTextFile(file))
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit, size: 20),
+                      title: Text('编辑'),
+                    ),
+                  ),
+                const PopupMenuItem(
+                  value: 'rename',
+                  child: ListTile(
+                    leading: Icon(Icons.drive_file_rename_outline, size: 20),
+                    title: Text('重命名'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'download',
+                  child: ListTile(
+                    leading: Icon(Icons.download, size: 20),
+                    title: Text('下载'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(Icons.delete, size: 20, color: Colors.red),
+                    title: Text('删除', style: TextStyle(color: Colors.red)),
+                  ),
+                ),
               ],
             ),
       onTap: multiSelect ? onToggleSelect : onTap,
@@ -442,23 +552,29 @@ class _FileListTile extends ConsumerWidget {
     );
   }
 
-  bool _isTextExt(FileItem f) {
-    if (f.size > 10 * 1024 * 1024) return false;
-    final ext = f.extension?.toLowerCase() ?? '';
-    return ['txt', 'md', 'dart', 'js', 'ts', 'py', 'go', 'rs', 'java', 'c', 'cpp', 'h',
-            'css', 'html', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf',
-            'log', 'sh', 'bat', 'env', 'sql', 'rb', 'php', 'swift', 'kt', 'gradle', 'lock',
-            'gitignore', 'dockerfile', 'makefile'].contains(ext) ||
-           f.name.toLowerCase() == 'dockerfile' ||
-           f.name.toLowerCase() == 'makefile';
-  }
-
   void _handleFileAction(BuildContext context, WidgetRef ref, String action) {
     switch (action) {
+      case 'preview':
+        final images = items.where(isImageFile).toList();
+        final idx = images.indexOf(file);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FileImagePreviewPage(
+              images: images,
+              initialIndex: idx < 0 ? 0 : idx,
+            ),
+          ),
+        );
+        break;
       case 'edit':
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => FileEditorPage(filePath: file.path, fileName: file.name),
-        ));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                FileEditorPage(filePath: file.path, fileName: file.name),
+          ),
+        );
         break;
       case 'rename':
         _showRenameDialog(context, ref);
@@ -483,23 +599,31 @@ class _FileListTile extends ConsumerWidget {
           decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               final newName = ctrl.text.trim();
               if (newName.isEmpty) return;
               Navigator.pop(ctx);
               try {
-                await ref.read(fileListProvider.notifier).renameFile(file.path, newName);
+                await ref
+                    .read(fileListProvider.notifier)
+                    .renameFile(file.path, newName);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('已重命名为 $newName')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('已重命名为 $newName')));
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('重命名失败: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('重命名失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -518,21 +642,29 @@ class _FileListTile extends ConsumerWidget {
         title: const Text('确认删除'),
         content: Text('确定删除 ${file.name}？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await ref.read(fileListProvider.notifier).deleteFile(file.path, isDir: file.isDir);
+                await ref
+                    .read(fileListProvider.notifier)
+                    .deleteFile(file.path, isDir: file.isDir);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${file.name} 已删除')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('${file.name} 已删除')));
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('删除失败: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('删除失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }

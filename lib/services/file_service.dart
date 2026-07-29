@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/file_api.dart';
@@ -20,6 +22,12 @@ abstract class FileService {
   });
 
   Future<FileItem> getContent(String path);
+
+  /// 读取文本文件全文（明文），对应 1Panel `/files/content`。
+  Future<String> readFile(String path);
+
+  /// 读取文件原始字节（图片预览等），对应 1Panel `/files/download`。
+  Future<Uint8List> readFileBytes(String path);
 
   /// 按行分页读取（大文件用），对应 1Panel `/files/read`
   Future<FileLineResult> readByLine(
@@ -80,6 +88,12 @@ class ApiFileService implements FileService {
 
   @override
   Future<FileItem> getContent(String path) => FileApi.getContent(path);
+
+  @override
+  Future<String> readFile(String path) => FileApi.readFile(path);
+
+  @override
+  Future<Uint8List> readFileBytes(String path) => FileApi.readFileBytes(path);
 
   @override
   Future<FileLineResult> readByLine(

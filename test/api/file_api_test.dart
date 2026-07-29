@@ -92,21 +92,27 @@ void main() {
       expect(p.name, 'p.txt');
     });
 
-    test('readByLine 解析行 / totalLines / end', () async {
-      stub['/api/v2/files/read'] = {
+    test('readByLine 改用 /api/v2/files/content 返回整文件(按行切分, end=true)', () async {
+      stub['/api/v2/files/content'] = {
         'code': 200,
-        'data': {
-          'lines': ['l1', 'l2'],
-          'total': 2,
-          'totalLines': 5,
-          'end': false,
-          'path': '/f',
-        },
+        'data': {'name': 'f.txt', 'path': '/f', 'content': 'l1\nl2\nl3\n'},
       };
       final r = await FileApi.readByLine('/f');
-      expect(r.lines, ['l1', 'l2']);
-      expect(r.totalLines, 5);
-      expect(r.end, isFalse);
+      expect(r.lines, ['l1', 'l2', 'l3']);
+      expect(r.totalLines, 3);
+      expect(r.end, isTrue);
+      expect(seen, contains('/api/v2/files/content'));
+      expect(seen, isNot(contains('/api/v2/files/read')));
+    });
+
+    test('readByLine 空文件返回空行列表', () async {
+      stub['/api/v2/files/content'] = {
+        'code': 200,
+        'data': {'name': 'e.txt', 'path': '/e', 'content': ''},
+      };
+      final r = await FileApi.readByLine('/e');
+      expect(r.lines, isEmpty);
+      expect(r.end, isTrue);
     });
 
     test('getSize 解析 size/total/path', () async {
@@ -229,6 +235,31 @@ void main() {
       stub['/api/v2/files/download'] = [1, 2];
       final bytes = await ApiFileService().download('/d');
       expect(bytes, [1, 2]);
+    });
+
+    test('readFile 委托到 /api/v2/files/content 并返回明文(非 base64)', () async {
+      stub['/api/v2/files/content'] = {
+        'code': 200,
+        'data': {'name': 'c.txt', 'path': '/c.txt', 'content': 'hello world'},
+      };
+      final svc = ApiFileService();
+      expect(await svc.readFile('/c.txt'), 'hello world');
+      expect(seen, contains('/api/v2/files/content'));
+    });
+
+    test('readFileBytes 委托到 /api/v2/files/download 并返回原始字节', () async {
+      stub['/api/v2/files/download'] = [1, 2, 3, 4];
+      final svc = ApiFileService();
+      expect(await svc.readFileBytes('/c.bin'), [1, 2, 3, 4]);
+      expect(seen, contains('/api/v2/files/download'));
+    });
+
+    test('readFile 遇到非 200 抛 FileReadException', () async {
+      stub['/api/v2/files/content'] = {'code': 500, 'message': 'boom'};
+      expect(
+        () => ApiFileService().readFile('/x'),
+        throwsA(isA<FileReadException>()),
+      );
     });
   });
 

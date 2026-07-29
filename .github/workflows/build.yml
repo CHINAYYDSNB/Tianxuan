@@ -107,7 +107,7 @@ jobs:
             echo "Release for tag $TAG not found, creating..."
             CREATE=$(auth -X POST "$API/$REPO/-/releases" \
               -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"$TAG\",\"name\":\"CI APK (latest)\",\"body\":\"Auto-published from GitHub Actions on main.\"}")
+              -d "{\"tag_name\":\"$TAG\",\"name\":\"CI APK (latest)\",\"body\":\"Auto-published from GitHub Actions on main.\",\"target_commitish\":\"main\"}")
             RID=$(echo "$CREATE" | python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" 2>/dev/null || true)
           fi
           if [ -z "$RID" ]; then

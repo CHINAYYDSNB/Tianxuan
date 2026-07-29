@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 
 /// SSH service for APK — direct SSH via dartssh2.

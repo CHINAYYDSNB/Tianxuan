@@ -5,7 +5,6 @@ import '../widgets/animated_nav_bar.dart';
 import 'ai/ai_chat_page.dart';
 import 'dashboard/dashboard_page.dart';
 import 'resource/resource_page.dart';
-import 'script_store/script_store_page.dart';
 import 'settings/settings_page.dart';
 
 /// 未连接时阻止 API 请求, 显示添加按钮

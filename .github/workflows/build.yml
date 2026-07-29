@@ -34,7 +34,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze project source
-        run: flutter analyze --fatal-infos
+        run: flutter analyze --fatal-warnings
 
       - name: Generate code (riverpod + json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs

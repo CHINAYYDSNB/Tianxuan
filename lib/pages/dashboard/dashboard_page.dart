@@ -11,6 +11,7 @@ import '../../widgets/ring_chart.dart';
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
+  // ignore: unused_element // 供注释中的仪表盘信息行复用（feature stub）
   Widget _infoChip(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -36,6 +37,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element // 注释中的服务器切换入口（feature stub）
   void _showServerSwitcher(BuildContext context, WidgetRef ref) {
     final servers = ref.read(savedServersProvider);
     final notifier = ref.read(serverStatusProvider.notifier);

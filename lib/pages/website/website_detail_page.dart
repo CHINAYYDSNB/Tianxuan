@@ -313,9 +313,9 @@ class _OverviewTab extends StatelessWidget {
           _infoTile('类型', w.typeLabel),
           _infoTile('域名', w.primaryDomain),
           _infoTile('别名', w.alias),
-          if (w.remark != null && w.remark!.isNotEmpty) _infoTile('备注', w.remark!),
-          if (w.proxy != null && w.proxy!.isNotEmpty) _infoTile('代理地址', w.proxy!),
-          if (w.sitePath != null && w.sitePath!.isNotEmpty) _infoTile('网站路径', w.sitePath!),
+          if (w.remark.isNotEmpty) _infoTile('备注', w.remark),
+          if (w.proxy.isNotEmpty) _infoTile('代理地址', w.proxy),
+          if (w.sitePath.isNotEmpty) _infoTile('网站路径', w.sitePath),
           if (w.port > 0) _infoTile('端口', w.port.toString()),
         ]),
         const SizedBox(height: 12),
@@ -559,7 +559,6 @@ class _LogTabState extends ConsumerState<_LogTab> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: [
         Padding(

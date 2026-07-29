@@ -167,6 +167,12 @@ class _FileEditorPageState extends ConsumerState<FileEditorPage> {
         Expanded(
           child: CodeField(
             controller: _codeCtrl,
+            // 关键修复：显式多行配置，确保软键盘回车能插入换行符。
+            // CodeField 不暴露 keyboardType 参数，maxLines 赋值（非 null）会让
+            // 底层 EditableText 推断为 TextInputType.multiline，且不会套用
+            // 单行过滤器（singleLineFormatter），从而避免把 \n 过滤掉。
+            minLines: 1,
+            maxLines: 999,
             onChanged: (_) => _editor.onChanged(),
             textStyle: const TextStyle(
               fontFamily: 'monospace',

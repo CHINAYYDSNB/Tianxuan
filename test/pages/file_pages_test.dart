@@ -67,6 +67,25 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('CodeField 配置为多行以支持换行输入', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [fileServiceProvider.overrideWithValue(mock)],
+          child: const MaterialApp(
+            home: FileEditorPage(filePath: '/x/f.dart', fileName: 'f.dart'),
+          ),
+        ),
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final codeField = tester.widget<CodeField>(find.byType(CodeField));
+      // maxLines 非 1（这里固定为 999）确保底层 EditableText 推断为 multiline，
+      // 不会套用单行过滤器，软键盘回车才能插入换行符 \n。
+      expect(codeField.maxLines, 999);
+      expect(codeField.minLines, 1);
+    });
+
     testWidgets('编辑后保存调用 service', (tester) async {
       await tester.pumpWidget(
         ProviderScope(

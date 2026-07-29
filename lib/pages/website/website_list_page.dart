@@ -11,9 +11,7 @@ class WebsiteListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('网站列表'),
-      ),
+      appBar: AppBar(title: const Text('网站列表')),
       body: const WebsiteListBody(),
     );
   }
@@ -35,7 +33,10 @@ class WebsiteListBody extends ConsumerWidget {
                 children: [
                   Icon(Icons.language, size: 64, color: Color(0xFFAAB4BF)),
                   SizedBox(height: 12),
-                  Text('暂无网站', style: TextStyle(fontSize: 16, color: Color(0xFF686F78))),
+                  Text(
+                    '暂无网站',
+                    style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
+                  ),
                 ],
               ),
             )
@@ -93,7 +94,10 @@ class _WebsiteTile extends ConsumerWidget {
           title: const Text('确认删除'),
           content: Text('确定删除 ${website.primaryDomain}？'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('删除', style: TextStyle(color: Colors.red)),
@@ -103,17 +107,19 @@ class _WebsiteTile extends ConsumerWidget {
       ),
       onDismissed: (_) {
         ref.read(websitesProvider.notifier).deleteWebsite(website.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${website.primaryDomain} 已删除')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${website.primaryDomain} 已删除')));
       },
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withAlpha(38),
           child: Icon(Icons.language, color: color),
         ),
-        title: Text(website.primaryDomain,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          website.primaryDomain,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -121,50 +127,75 @@ class _WebsiteTile extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withAlpha(30),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(website.statusLabel,
-                      style: TextStyle(fontSize: 11, color: color)),
+                  child: Text(
+                    website.statusLabel,
+                    style: TextStyle(fontSize: 11, color: color),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                Text(website.typeLabel,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF686F78))),
-            ],
-          ),
-          if (website.sitePath != null && website.sitePath!.isNotEmpty)
-            Text(website.sitePath!,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF686F78))),
+                Text(
+                  website.typeLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF686F78),
+                  ),
+                ),
+              ],
+            ),
+            if (website.sitePath != null && website.sitePath!.isNotEmpty)
+              Text(
+                website.sitePath!,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF686F78)),
+              ),
           ],
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (action) {
-            ref.read(websitesProvider.notifier).operateWebsite(website.id, action);
+            ref
+                .read(websitesProvider.notifier)
+                .operateWebsite(website.id, action);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    '${website.primaryDomain}: ${action == "start" ? "启动" : action == "stop" ? "停止" : "重启"}中...'),
+                  '${website.primaryDomain}: ${action == "start"
+                      ? "启动"
+                      : action == "stop"
+                      ? "停止"
+                      : "重启"}中...',
+                ),
               ),
             );
           },
           itemBuilder: (_) => [
             const PopupMenuItem(
-                value: 'start',
-                child: ListTile(
-                    leading: Icon(Icons.play_arrow, color: Colors.green),
-                    title: Text('启动'))),
+              value: 'start',
+              child: ListTile(
+                leading: Icon(Icons.play_arrow, color: Colors.green),
+                title: Text('启动'),
+              ),
+            ),
             const PopupMenuItem(
-                value: 'stop',
-                child: ListTile(
-                    leading: Icon(Icons.stop, color: Colors.red),
-                    title: Text('停止'))),
+              value: 'stop',
+              child: ListTile(
+                leading: Icon(Icons.stop, color: Colors.red),
+                title: Text('停止'),
+              ),
+            ),
             const PopupMenuItem(
-                value: 'restart',
-                child: ListTile(
-                    leading: Icon(Icons.refresh, color: Colors.blue),
-                    title: Text('重启'))),
+              value: 'restart',
+              child: ListTile(
+                leading: Icon(Icons.refresh, color: Colors.blue),
+                title: Text('重启'),
+              ),
+            ),
           ],
         ),
         onTap: () {
@@ -179,9 +210,9 @@ class _WebsiteTile extends ConsumerWidget {
   }
 
   Color _statusColor(String status) => switch (status) {
-        'Running' => Colors.green,
-        'Stopped' => Colors.red,
-        'Error' => Colors.red,
-        _ => const Color(0xFFAAB4BF),
-      };
+    'Running' => Colors.green,
+    'Stopped' => Colors.red,
+    'Error' => Colors.red,
+    _ => const Color(0xFFAAB4BF),
+  };
 }

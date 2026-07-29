@@ -22,21 +22,25 @@ class ContainerDetailPage extends ConsumerWidget {
         children: [
           _InfoRow(label: '状态', value: container.stateLabel),
           _InfoRow(label: '镜像', value: container.imageName),
-          _InfoRow(label: '容器 ID', value: container.containerID.length > 12
-              ? container.containerID.substring(0, 12)
-              : container.containerID),
+          _InfoRow(
+            label: '容器 ID',
+            value: container.containerID.length > 12
+                ? container.containerID.substring(0, 12)
+                : container.containerID,
+          ),
           _InfoRow(label: '创建时间', value: container.createTime),
           if (container.runTime.isNotEmpty)
             _InfoRow(label: '运行时间', value: container.runTime),
           if (container.appName.isNotEmpty)
-            _InfoRow(label: '所属应用',
-                value: '${container.appName} (${container.appInstallName})'),
+            _InfoRow(
+              label: '所属应用',
+              value: '${container.appName} (${container.appInstallName})',
+            ),
           if (container.network.isNotEmpty)
             _InfoRow(label: '网络', value: container.network.join(', ')),
           if (container.ports != null && container.ports!.isNotEmpty)
             _InfoRow(label: '端口映射', value: container.ports!.join('\n')),
-          if (container.isFromCompose)
-            _InfoRow(label: '来源', value: 'Compose'),
+          if (container.isFromCompose) _InfoRow(label: '来源', value: 'Compose'),
           if (container.description.isNotEmpty)
             _InfoRow(label: '描述', value: container.description),
 
@@ -47,9 +51,12 @@ class ContainerDetailPage extends ConsumerWidget {
             data: (stats) => _StatGrid(stats: stats),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
-              child: Text('无法获取状态: $e',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.error)),
+              child: Text(
+                '无法获取状态: $e',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                ),
+              ),
             ),
           ),
 
@@ -62,8 +69,7 @@ class ContainerDetailPage extends ConsumerWidget {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ContainerLogPage(
-                    containerName: container.name),
+                builder: (_) => ContainerLogPage(containerName: container.name),
               ),
             ),
             icon: const Icon(Icons.terminal, size: 18),
@@ -90,16 +96,16 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 80,
-            child: Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(value,
-                style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -191,12 +197,13 @@ class _StatItem extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 4),
-          Text(value,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  )),
-          Text(label,
-              style: Theme.of(context).textTheme.labelSmall),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
         ],
       ),
     );
@@ -253,7 +260,11 @@ class _ActionButtons extends ConsumerWidget {
   }
 
   void _confirmAndRun(
-      BuildContext context, WidgetRef ref, String label, String action) {
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    String action,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -261,14 +272,15 @@ class _ActionButtons extends ConsumerWidget {
         content: Text('确定${label} ${container.name}？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('正在$label...')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('正在$label...')));
               ref
                   .read(containerListProvider.notifier)
                   .operate(container.name, action);

@@ -10,8 +10,10 @@ class SseClient {
   /// [path] is relative to /api/v2/, e.g. "/containers/search/log".
   /// [queryParams] are appended as query string.
   /// Returns a Stream of data lines (without "data: " prefix).
-  static Stream<String> connect(String path,
-      {Map<String, String>? queryParams}) async* {
+  static Stream<String> connect(
+    String path, {
+    Map<String, String>? queryParams,
+  }) async* {
     final serverUrl = kIsWeb
         ? 'http://localhost:25568'
         : (await StorageService.instance.getServerUrl() ?? '');
@@ -26,8 +28,9 @@ class SseClient {
     final raw = '1panel$apiKey$timestamp';
     final token = md5.convert(utf8.encode(raw)).toString();
 
-    final uri = Uri.parse('$serverUrl/api/v2$path')
-        .replace(queryParameters: queryParams);
+    final uri = Uri.parse(
+      '$serverUrl/api/v2$path',
+    ).replace(queryParameters: queryParams);
 
     var retries = 0;
     const maxRetries = 3;
@@ -50,7 +53,9 @@ class SseClient {
       } catch (e) {
         retries++;
         if (retries >= maxRetries) {
-          throw Exception('SSE connection failed after $maxRetries retries: $e');
+          throw Exception(
+            'SSE connection failed after $maxRetries retries: $e',
+          );
         }
         await Future.delayed(Duration(seconds: retries * 2));
       }

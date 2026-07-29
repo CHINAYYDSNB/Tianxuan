@@ -18,28 +18,29 @@ class ContainerListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('容器')),
       body: containers.when(
-      data: (list) => _ContainerListView(list: list, sshConnected: ssh != null),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text('$e', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () =>
-                  ref.read(containerListProvider.notifier).refresh(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('重试'),
-            ),
-          ],
+        data: (list) =>
+            _ContainerListView(list: list, sshConnected: ssh != null),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text('$e', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () =>
+                    ref.read(containerListProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('重试'),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -62,14 +63,21 @@ class _ContainerListView extends StatelessWidget {
               children: [
                 const Icon(Icons.link_off, size: 48, color: Color(0xFFAAB4BF)),
                 const SizedBox(height: 16),
-                const Text('SSH 未连接', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text(
+                  'SSH 未连接',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
-                const Text('Docker 管理需要 SSH 连接服务器',
-                    style: TextStyle(color: Color(0xFF686F78))),
+                const Text(
+                  'Docker 管理需要 SSH 连接服务器',
+                  style: TextStyle(color: Color(0xFF686F78)),
+                ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SshConfigPage()),
+                  ),
                   icon: const Icon(Icons.settings, size: 18),
                   label: const Text('设置 SSH 连接'),
                 ),
@@ -224,8 +232,7 @@ class _ContainerTile extends ConsumerWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              ContainerLogPage(containerName: container.name),
+          builder: (_) => ContainerLogPage(containerName: container.name),
         ),
       );
       return;
@@ -240,9 +247,9 @@ class _ContainerTile extends ConsumerWidget {
       _ => action,
     };
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('正在${label} ${container.name}...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('正在${label} ${container.name}...')));
 
     ref.read(containerListProvider.notifier).operate(container.name, action);
   }

@@ -57,7 +57,8 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    onChanged: (v) => ref.read(aiConfigProvider.notifier).updateEndpoint(v),
+                    onChanged: (v) =>
+                        ref.read(aiConfigProvider.notifier).updateEndpoint(v),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -69,7 +70,8 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
                       isDense: true,
                     ),
                     obscureText: true,
-                    onChanged: (v) => ref.read(aiConfigProvider.notifier).updateApiKey(v),
+                    onChanged: (v) =>
+                        ref.read(aiConfigProvider.notifier).updateApiKey(v),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -80,13 +82,16 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    onChanged: (v) => ref.read(aiConfigProvider.notifier).updateModel(v),
+                    onChanged: (v) =>
+                        ref.read(aiConfigProvider.notifier).updateModel(v),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Icon(
-                        config.isValid ? Icons.check_circle : Icons.error_outline,
+                        config.isValid
+                            ? Icons.check_circle
+                            : Icons.error_outline,
                         size: 16,
                         color: config.isValid ? Colors.green : Colors.orange,
                       ),
@@ -110,12 +115,18 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
                 children: [
                   Text('推荐模型', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Text('gpt-4o-mini — 快速便宜，适合日常使用',
-                      style: theme.textTheme.bodySmall),
-                  Text('gpt-4o — 更强能力，适合复杂分析',
-                      style: theme.textTheme.bodySmall),
-                  Text('DeepSeek / Claude 等兼容接口也可用',
-                      style: theme.textTheme.bodySmall),
+                  Text(
+                    'gpt-4o-mini — 快速便宜，适合日常使用',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Text(
+                    'gpt-4o — 更强能力，适合复杂分析',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Text(
+                    'DeepSeek / Claude 等兼容接口也可用',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),

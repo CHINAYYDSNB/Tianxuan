@@ -25,9 +25,10 @@ class SavedServer {
   String get displayUrl => url.replaceFirst('://', '://');
 }
 
-final savedServersProvider = StateNotifierProvider<SavedServersNotifier, List<SavedServer>>((ref) {
-  return SavedServersNotifier();
-});
+final savedServersProvider =
+    StateNotifierProvider<SavedServersNotifier, List<SavedServer>>((ref) {
+      return SavedServersNotifier();
+    });
 
 class SavedServersNotifier extends StateNotifier<List<SavedServer>> {
   SavedServersNotifier() : super([]) {
@@ -43,19 +44,23 @@ class SavedServersNotifier extends StateNotifier<List<SavedServer>> {
       for (final e in list) {
         final id = e['id'] as String;
         final apiKey = await StorageService.instance.getServerKey(id) ?? '';
-        loaded.add(SavedServer(
-          id: id,
-          name: e['name'] as String? ?? '',
-          url: e['url'] as String? ?? '',
-          apiKey: apiKey,
-        ));
+        loaded.add(
+          SavedServer(
+            id: id,
+            name: e['name'] as String? ?? '',
+            url: e['url'] as String? ?? '',
+            apiKey: apiKey,
+          ),
+        );
       }
       state = loaded;
     } catch (_) {}
   }
 
   Future<void> _save() async {
-    await StorageService.instance.saveServersJson(jsonEncode(state.map((e) => e.toJson()).toList()));
+    await StorageService.instance.saveServersJson(
+      jsonEncode(state.map((e) => e.toJson()).toList()),
+    );
     // apiKey 单独加密存储
     for (final s in state) {
       await StorageService.instance.saveServerKey(s.id, s.apiKey);

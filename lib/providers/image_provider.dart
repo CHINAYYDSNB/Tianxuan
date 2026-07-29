@@ -92,5 +92,5 @@ class ImageListNotifier extends AsyncNotifier<List<DockerImage>> {
 
 final imageListProvider =
     AsyncNotifierProvider<ImageListNotifier, List<DockerImage>>(
-  ImageListNotifier.new,
-);
+      ImageListNotifier.new,
+    );

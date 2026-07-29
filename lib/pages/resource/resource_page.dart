@@ -15,8 +15,13 @@ class ResourcePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final siteCount = ref.watch(websitesProvider).when(
-      data: (l) => l.length, loading: () => null, error: (_, __) => null);
+    final siteCount = ref
+        .watch(websitesProvider)
+        .when(
+          data: (l) => l.length,
+          loading: () => null,
+          error: (_, __) => null,
+        );
 
     return Scaffold(
       appBar: AppBar(title: const Text('资源')),
@@ -26,55 +31,96 @@ class ResourcePage extends ConsumerWidget {
           // ─── 容器生态 ───
           _SectionHeader(title: '容器生态'),
           const SizedBox(height: 8),
-          _CategoryCard(children: [
-            _ResourceRow(
-              icon: Icons.view_in_ar_outlined, iconColor: Colors.teal,
-              title: '容器', subtitle: '启动 / 停止 / 日志',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContainerListPage())),
-            ),
-            _ResourceRow(
-              icon: Icons.image_outlined, iconColor: Colors.teal,
-              title: '镜像', subtitle: '拉取 / 删除 / 构建',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImageListPage())),
-            ),
-            _ResourceRow(
-              icon: Icons.dns_outlined, iconColor: Colors.teal,
-              title: 'Compose', subtitle: '编排 / 启动 / 停止',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComposeListPage())),
-            ),
-          ]),
+          _CategoryCard(
+            children: [
+              _ResourceRow(
+                icon: Icons.view_in_ar_outlined,
+                iconColor: Colors.teal,
+                title: '容器',
+                subtitle: '启动 / 停止 / 日志',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ContainerListPage()),
+                ),
+              ),
+              _ResourceRow(
+                icon: Icons.image_outlined,
+                iconColor: Colors.teal,
+                title: '镜像',
+                subtitle: '拉取 / 删除 / 构建',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ImageListPage()),
+                ),
+              ),
+              _ResourceRow(
+                icon: Icons.dns_outlined,
+                iconColor: Colors.teal,
+                title: 'Compose',
+                subtitle: '编排 / 启动 / 停止',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ComposeListPage()),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           // ─── 网站 ───
           _SectionHeader(title: '网站'),
           const SizedBox(height: 8),
-          _CategoryCard(children: [
-            _ResourceRow(
-              icon: Icons.language, iconColor: Colors.blue,
-              title: '网站', subtitle: siteCount != null ? '$siteCount 个站点' : null,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WebsiteListPage())),
-            ),
-          ]),
+          _CategoryCard(
+            children: [
+              _ResourceRow(
+                icon: Icons.language,
+                iconColor: Colors.blue,
+                title: '网站',
+                subtitle: siteCount != null ? '$siteCount 个站点' : null,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const WebsiteListPage()),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           // ─── 系统工具 ───
           _SectionHeader(title: '系统工具'),
           const SizedBox(height: 8),
-          _CategoryCard(children: [
-            _ResourceRow(
-              icon: Icons.folder, iconColor: Colors.amber,
-              title: '文件管理', subtitle: '浏览 / 编辑 / 上传 / 下载',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FileListPage())),
-            ),
-            _ResourceRow(
-              icon: Icons.terminal, iconColor: Colors.green,
-              title: 'SSH 终端', subtitle: '远程服务器连接',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshHomePage())),
-            ),
-            _ResourceRow(
-              icon: Icons.article, iconColor: Colors.indigo,
-              title: '脚本商店', subtitle: '浏览 / 安装 / 执行脚本',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScriptStorePage())),
-            ),
-          ]),
+          _CategoryCard(
+            children: [
+              _ResourceRow(
+                icon: Icons.folder,
+                iconColor: Colors.amber,
+                title: '文件管理',
+                subtitle: '浏览 / 编辑 / 上传 / 下载',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FileListPage()),
+                ),
+              ),
+              _ResourceRow(
+                icon: Icons.terminal,
+                iconColor: Colors.green,
+                title: 'SSH 终端',
+                subtitle: '远程服务器连接',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SshHomePage()),
+                ),
+              ),
+              _ResourceRow(
+                icon: Icons.article,
+                iconColor: Colors.indigo,
+                title: '脚本商店',
+                subtitle: '浏览 / 安装 / 执行脚本',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ScriptStorePage()),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -89,7 +135,14 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFAAB4BF))),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFAAB4BF),
+        ),
+      ),
     );
   }
 }
@@ -102,10 +155,7 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: children,
-      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }
@@ -143,10 +193,20 @@ class _ResourceRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78))),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF686F78),
+                      ),
+                    ),
                   ],
                 ],
               ),

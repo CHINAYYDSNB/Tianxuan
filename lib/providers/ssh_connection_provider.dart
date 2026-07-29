@@ -4,7 +4,8 @@ import '../services/storage_service.dart';
 
 /// Manages SSH connection lifecycle.
 /// Auto-connects from saved credentials, falls back to detecting host from 1Panel.
-class SshConnectionNotifier extends StateNotifier<AsyncValue<SshCommandService?>> {
+class SshConnectionNotifier
+    extends StateNotifier<AsyncValue<SshCommandService?>> {
   SshCommandService? _service;
 
   SshConnectionNotifier() : super(const AsyncValue.data(null)) {
@@ -76,9 +77,10 @@ class SshConnectionNotifier extends StateNotifier<AsyncValue<SshCommandService?>
 }
 
 final sshConnectionProvider =
-    StateNotifierProvider<SshConnectionNotifier, AsyncValue<SshCommandService?>>(
-  (ref) => SshConnectionNotifier(),
-);
+    StateNotifierProvider<
+      SshConnectionNotifier,
+      AsyncValue<SshCommandService?>
+    >((ref) => SshConnectionNotifier());
 
 final sshServiceProvider = Provider<SshCommandService?>((ref) {
   return ref.watch(sshConnectionProvider).valueOrNull;

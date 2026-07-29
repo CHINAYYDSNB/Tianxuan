@@ -30,10 +30,13 @@ class ServerRequired extends ConsumerWidget {
             const SizedBox(height: 16),
             Text('未配置服务器', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text('请在登录页输入 1Panel 服务器地址和 API Key',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              '请在登录页输入 1Panel 服务器地址和 API Key',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/login'),

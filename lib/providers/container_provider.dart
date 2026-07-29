@@ -60,13 +60,15 @@ class ContainerListNotifier extends AsyncNotifier<List<Container>> {
 
 final containerListProvider =
     AsyncNotifierProvider<ContainerListNotifier, List<Container>>(
-  ContainerListNotifier.new,
-);
+      ContainerListNotifier.new,
+    );
 
 // ─── Container Stats ───
 
-final containerStatsProvider =
-    FutureProvider.family<ContainerStats, String>((ref, name) async {
+final containerStatsProvider = FutureProvider.family<ContainerStats, String>((
+  ref,
+  name,
+) async {
   final ssh = ref.read(sshServiceProvider);
   if (ssh == null) return ContainerStats();
   final svc = DockerService(ssh);

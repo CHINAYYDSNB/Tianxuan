@@ -13,11 +13,8 @@ class AiMessage {
   final String content;
   final DateTime timestamp;
 
-  AiMessage({
-    required this.role,
-    required this.content,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  AiMessage({required this.role, required this.content, DateTime? timestamp})
+    : timestamp = timestamp ?? DateTime.now();
 
   Map<String, String> toApiMap() => {'role': role, 'content': content};
   Map<String, dynamic> toJson() => {
@@ -28,7 +25,8 @@ class AiMessage {
   factory AiMessage.fromJson(Map<String, dynamic> json) => AiMessage(
     role: json['role'] as String,
     content: json['content'] as String,
-    timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+    timestamp:
+        DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
   );
 }
 
@@ -55,12 +53,15 @@ class AiConfigNotifier extends StateNotifier<AiConfig> {
     await p.setString('ai_config', jsonEncode(config.toJson()));
   }
 
-  Future<void> updateEndpoint(String v) async => save(state.copyWith(endpoint: v));
+  Future<void> updateEndpoint(String v) async =>
+      save(state.copyWith(endpoint: v));
   Future<void> updateApiKey(String v) async => save(state.copyWith(apiKey: v));
   Future<void> updateModel(String v) async => save(state.copyWith(model: v));
 }
 
-final aiConfigProvider = StateNotifierProvider<AiConfigNotifier, AiConfig>((ref) => AiConfigNotifier());
+final aiConfigProvider = StateNotifierProvider<AiConfigNotifier, AiConfig>(
+  (ref) => AiConfigNotifier(),
+);
 
 /// 聊天状态
 class AiChatNotifier extends StateNotifier<List<AiMessage>> {
@@ -87,7 +88,10 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
       final trimmed = state.length > _maxHistory
           ? state.sublist(state.length - _maxHistory)
           : state;
-      await p.setString('ai_chat_history', jsonEncode(trimmed.map((m) => m.toJson()).toList()));
+      await p.setString(
+        'ai_chat_history',
+        jsonEncode(trimmed.map((m) => m.toJson()).toList()),
+      );
     } catch (_) {}
   }
 
@@ -127,8 +131,12 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
       buf.write('\n\n当前服务器状态：');
       buf.write('\n- 运行时间: ${status.uptime}');
       buf.write('\n- CPU: ${status.cpuUsage.toStringAsFixed(1)}%');
-      buf.write('\n- 内存: ${status.memoryUsage.toStringAsFixed(1)}%（${status.memoryUsed}/${status.memoryTotal}）');
-      buf.write('\n- 磁盘: ${status.diskUsage.toStringAsFixed(1)}%（${status.diskUsed}/${status.diskTotal}）');
+      buf.write(
+        '\n- 内存: ${status.memoryUsage.toStringAsFixed(1)}%（${status.memoryUsed}/${status.memoryTotal}）',
+      );
+      buf.write(
+        '\n- 磁盘: ${status.diskUsage.toStringAsFixed(1)}%（${status.diskUsed}/${status.diskTotal}）',
+      );
       buf.write('\n- 操作系统: ${status.platform}');
       buf.write('\n- 主机名: ${status.hostname}');
     }
@@ -136,10 +144,11 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
     buf.write('\n\n你可以问：服务器状态、文件管理、容器、网站、Docker 相关问题。');
     return buf.toString();
   }
-
 }
 
-final aiChatProvider = StateNotifierProvider<AiChatNotifier, List<AiMessage>>((ref) => AiChatNotifier());
+final aiChatProvider = StateNotifierProvider<AiChatNotifier, List<AiMessage>>(
+  (ref) => AiChatNotifier(),
+);
 
 /// 发送消息 → 流式响应
 final aiSendProvider = Provider<AiSend>((ref) => AiSend(ref));
@@ -162,7 +171,8 @@ class AiSend {
       final system = await chat.buildSystemPrompt();
       final msgs = [
         {'role': 'system', 'content': system},
-        ..._ref.read(aiChatProvider)
+        ..._ref
+            .read(aiChatProvider)
             .where((m) => m.role != 'system')
             .map((m) => m.toApiMap()),
       ];

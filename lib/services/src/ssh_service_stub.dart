@@ -27,8 +27,11 @@ class SshService {
     String? proxyUrl,
   }) async {
     try {
-      final socket = await SSHSocket.connect(host, port,
-          timeout: const Duration(seconds: 10));
+      final socket = await SSHSocket.connect(
+        host,
+        port,
+        timeout: const Duration(seconds: 10),
+      );
 
       final client = SSHClient(
         socket,
@@ -39,11 +42,7 @@ class SshService {
       _client = client;
 
       final shell = await client.shell(
-        pty: const SSHPtyConfig(
-          type: 'xterm-256color',
-          width: 80,
-          height: 24,
-        ),
+        pty: const SSHPtyConfig(type: 'xterm-256color', width: 80, height: 24),
       );
       _session = shell;
 

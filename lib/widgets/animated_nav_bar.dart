@@ -5,7 +5,11 @@ class AnimatedNavItem {
   final IconData activeIcon;
   final String label;
 
-  const AnimatedNavItem({required this.icon, required this.activeIcon, required this.label});
+  const AnimatedNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
 
 class AnimatedNavBar extends StatelessWidget {
@@ -31,27 +35,28 @@ class AnimatedNavBar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(29),
         child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / items.length;
-          final indicatorWidth = itemWidth - 8;
-          final indicatorLeft = currentIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth / items.length;
+            final indicatorWidth = itemWidth - 8;
+            final indicatorLeft =
+                currentIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
 
-          return Stack(
-            children: [
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                left: indicatorLeft,
-                top: (58 - 50) / 2,
-                child: Container(
-                  width: indicatorWidth,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAECF0),
-                    borderRadius: BorderRadius.circular(25),
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  left: indicatorLeft,
+                  top: (58 - 50) / 2,
+                  child: Container(
+                    width: indicatorWidth,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAECF0),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
                   ),
                 ),
-              ),
                 Row(
                   children: List.generate(items.length, (i) {
                     final isSelected = i == currentIndex;
@@ -68,7 +73,9 @@ class AnimatedNavBar extends StatelessWidget {
                                 scale: isSelected ? 1.15 : 1.0,
                                 duration: const Duration(milliseconds: 200),
                                 child: Icon(
-                                  isSelected ? items[i].activeIcon : items[i].icon,
+                                  isSelected
+                                      ? items[i].activeIcon
+                                      : items[i].icon,
                                   size: 22,
                                   color: isSelected
                                       ? const Color(0xFF0062F5)
@@ -80,7 +87,9 @@ class AnimatedNavBar extends StatelessWidget {
                                 items[i].label,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                   color: isSelected
                                       ? const Color(0xFF0062F5)
                                       : const Color(0xFF686F78),

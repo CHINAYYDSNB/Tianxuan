@@ -6,7 +6,9 @@ class WebsiteApi {
   static Future<List<Website>> getList() async {
     final res = await ApiClient.instance.get('/websites/list');
     final list = res.data['data'] as List? ?? [];
-    return list.map((e) => Website.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => Website.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Search websites with pagination
@@ -28,7 +30,8 @@ class WebsiteApi {
     }
     final res = await ApiClient.instance.post('/websites/search', data: params);
     final data = res.data['data'] as Map? ?? {};
-    final items = (data['items'] as List?)?.map(
+    final items =
+        (data['items'] as List?)?.map(
           (e) => Website.fromJson(e as Map<String, dynamic>),
         ) ??
         <Website>[];
@@ -39,7 +42,9 @@ class WebsiteApi {
   static Future<Website> getDetail(int id) async {
     final res = await ApiClient.instance.get('/websites/$id');
     final raw = res.data['data'];
-    final data = (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
+    final data = (raw is Map
+        ? Map<String, dynamic>.from(raw)
+        : <String, dynamic>{});
     return Website.fromJson(data);
   }
 
@@ -61,37 +66,40 @@ class WebsiteApi {
 
   /// Operate website: start / stop / restart
   static Future<void> operate(int id, String action) async {
-    await ApiClient.instance.post('/websites/operate', data: {
-      'id': id,
-      'operate': action,
-    });
+    await ApiClient.instance.post(
+      '/websites/operate',
+      data: {'id': id, 'operate': action},
+    );
   }
 
   /// Update website basic info
   static Future<void> update(int id, Map<String, dynamic> data) async {
-    await ApiClient.instance.post('/websites/update', data: {
-      'id': id,
-      ...data,
-    });
+    await ApiClient.instance.post(
+      '/websites/update',
+      data: {'id': id, ...data},
+    );
   }
 
   /// Check domain before create
   static Future<bool> check(String primaryDomain, String type) async {
-    final res = await ApiClient.instance.post('/websites/check', data: {
-      'primaryDomain': primaryDomain,
-      'type': type,
-    });
+    final res = await ApiClient.instance.post(
+      '/websites/check',
+      data: {'primaryDomain': primaryDomain, 'type': type},
+    );
     return res.data['code'] == 200;
   }
 
   // ─── Nginx Config ───
 
   /// Get nginx config
-  static Future<String?> getConfig(int websiteId, {String scope = 'all'}) async {
-    final res = await ApiClient.instance.post('/websites/config', data: {
-      'websiteID': websiteId,
-      'scope': scope,
-    });
+  static Future<String?> getConfig(
+    int websiteId, {
+    String scope = 'all',
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/websites/config',
+      data: {'websiteID': websiteId, 'scope': scope},
+    );
     final data = res.data['data'];
     if (data is Map && data['content'] != null) {
       return data['content'].toString();
@@ -100,12 +108,15 @@ class WebsiteApi {
   }
 
   /// Update nginx config
-  static Future<void> updateNginx(int id, String content, {String scope = 'nginx'}) async {
-    await ApiClient.instance.post('/websites/nginx/update', data: {
-      'id': id,
-      'content': content,
-      'scope': scope,
-    });
+  static Future<void> updateNginx(
+    int id,
+    String content, {
+    String scope = 'nginx',
+  }) async {
+    await ApiClient.instance.post(
+      '/websites/nginx/update',
+      data: {'id': id, 'content': content, 'scope': scope},
+    );
   }
 
   // ─── HTTPS ───
@@ -127,12 +138,15 @@ class WebsiteApi {
   /// Read website log
   /// [logType]: 'access' or 'error'
   /// [operate]: 'read' or others
-  static Future<Map<String, dynamic>> getLog(int id, String logType, {String operate = 'read'}) async {
-    final res = await ApiClient.instance.post('/websites/log', data: {
-      'id': id,
-      'logType': logType,
-      'operate': operate,
-    });
+  static Future<Map<String, dynamic>> getLog(
+    int id,
+    String logType, {
+    String operate = 'read',
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/websites/log',
+      data: {'id': id, 'logType': logType, 'operate': operate},
+    );
     final raw = res.data['data'];
     return (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
   }
@@ -141,9 +155,10 @@ class WebsiteApi {
 
   /// Get available directories under website root
   static Future<Map<String, dynamic>> getDir(int id) async {
-    final res = await ApiClient.instance.post('/websites/dir', data: {
-      'id': id,
-    });
+    final res = await ApiClient.instance.post(
+      '/websites/dir',
+      data: {'id': id},
+    );
     final raw = res.data['data'];
     return (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
   }
@@ -153,7 +168,10 @@ class WebsiteApi {
   /// Get available PHP versions
   static Future<List<String>> getPhpVersions() async {
     try {
-      final res = await ApiClient.instance.post('/runtimes/installed/delete/check', data: {});
+      final res = await ApiClient.instance.post(
+        '/runtimes/installed/delete/check',
+        data: {},
+      );
       final data = res.data['data'];
       if (data is List) {
         return data.map((e) => e.toString()).toList();

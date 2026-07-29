@@ -41,13 +41,16 @@ class _SshHomeBodyState extends State<SshHomeBody> {
   Future<void> _load() async {
     final raw = await StorageService.instance.getSshConnections();
     if (raw != null && mounted) {
-      setState(() => _connections = raw.map((m) => _SavedSsh.fromJson(m)).toList());
+      setState(
+        () => _connections = raw.map((m) => _SavedSsh.fromJson(m)).toList(),
+      );
     }
   }
 
   Future<void> _save() async {
     await StorageService.instance.saveSshConnections(
-        _connections.map((c) => c.toJson()).toList());
+      _connections.map((c) => c.toJson()).toList(),
+    );
   }
 
   void _add() {
@@ -105,14 +108,21 @@ class _SshHomeBodyState extends State<SshHomeBody> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.terminal, size: 80,
-                        color: Theme.of(context).colorScheme.outline),
+                    Icon(
+                      Icons.terminal,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                     const SizedBox(height: 16),
-                    Text('暂无 SSH 连接',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      '暂无 SSH 连接',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
-                    Text('点击右下角 + 添加服务器',
-                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      '点击右下角 + 添加服务器',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               )
@@ -124,15 +134,27 @@ class _SshHomeBodyState extends State<SshHomeBody> {
                   itemBuilder: (_, i) {
                     final c = _connections[i];
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       child: ListTile(
-                        leading: const Icon(Icons.computer, color: Colors.green),
+                        leading: const Icon(
+                          Icons.computer,
+                          color: Colors.green,
+                        ),
                         title: Text(c.name.isNotEmpty ? c.name : c.host),
                         subtitle: Text('${c.username}@${c.host}:${c.port}'),
                         trailing: PopupMenuButton(
                           itemBuilder: (_) => [
-                            const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                            const PopupMenuItem(value: 'del', child: Text('删除')),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('编辑'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'del',
+                              child: Text('删除'),
+                            ),
                           ],
                           onSelected: (v) {
                             if (v == 'edit') _edit(i);
@@ -210,9 +232,11 @@ class _SshConnectPageState extends State<_SshConnectPage> {
       final clean = data.replaceAll('\r\n', '\n').trim();
       if (clean.isEmpty) return;
       if (clean.startsWith('[')) {
-        _addLog(clean.replaceAll('[', '').replaceAll(']', ''),
-            isError: clean.contains('错误'),
-            isOk: clean.contains('成功'));
+        _addLog(
+          clean.replaceAll('[', '').replaceAll(']', ''),
+          isError: clean.contains('错误'),
+          isOk: clean.contains('成功'),
+        );
         if (clean.contains('连接成功')) {
           _done = true;
           Future.delayed(const Duration(milliseconds: 500), () {
@@ -221,7 +245,8 @@ class _SshConnectPageState extends State<_SshConnectPage> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => SshTerminalPage(
-                    host: widget.host, port: widget.port,
+                    host: widget.host,
+                    port: widget.port,
                     username: widget.username,
                     password: widget.password,
                     privateKey: widget.privateKey,
@@ -276,12 +301,17 @@ class _SshConnectPageState extends State<_SshConnectPage> {
               children: [
                 if (!_done && !_failed)
                   const SizedBox(
-                    width: 16, height: 16,
+                    width: 16,
+                    height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 if (!_done && !_failed) const SizedBox(width: 8),
                 Text(
-                  _done ? '连接成功' : _failed ? '连接失败' : '正在连接...',
+                  _done
+                      ? '连接成功'
+                      : _failed
+                      ? '连接失败'
+                      : '正在连接...',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
@@ -306,9 +336,17 @@ class _SshConnectPageState extends State<_SshConnectPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        log.isError ? Icons.error : log.isOk ? Icons.check_circle : Icons.arrow_right,
+                        log.isError
+                            ? Icons.error
+                            : log.isOk
+                            ? Icons.check_circle
+                            : Icons.arrow_right,
                         size: 16,
-                        color: log.isError ? Colors.red : log.isOk ? Colors.green : Colors.grey,
+                        color: log.isError
+                            ? Colors.red
+                            : log.isOk
+                            ? Colors.green
+                            : Colors.grey,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -317,7 +355,11 @@ class _SshConnectPageState extends State<_SshConnectPage> {
                           style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'monospace',
-                            color: log.isError ? Colors.red : log.isOk ? Colors.green : null,
+                            color: log.isError
+                                ? Colors.red
+                                : log.isOk
+                                ? Colors.green
+                                : null,
                           ),
                         ),
                       ),
@@ -359,8 +401,12 @@ class _SavedSsh {
   });
 
   Map<String, dynamic> toJson() => {
-    'name': name, 'host': host, 'port': port,
-    'username': username, 'password': password, 'privateKey': privateKey,
+    'name': name,
+    'host': host,
+    'port': port,
+    'username': username,
+    'password': password,
+    'privateKey': privateKey,
   };
 
   factory _SavedSsh.fromJson(Map<String, dynamic> m) => _SavedSsh(
@@ -384,12 +430,24 @@ class _SshEditDialog extends StatefulWidget {
 }
 
 class _SshEditDialogState extends State<_SshEditDialog> {
-  late final _nameCtrl = TextEditingController(text: widget.initial?.name ?? '');
-  late final _hostCtrl = TextEditingController(text: widget.initial?.host ?? '');
-  late final _portCtrl = TextEditingController(text: (widget.initial?.port ?? 22).toString());
-  late final _userCtrl = TextEditingController(text: widget.initial?.username ?? 'root');
-  late final _passCtrl = TextEditingController(text: widget.initial?.password ?? '');
-  late final _keyCtrl = TextEditingController(text: widget.initial?.privateKey ?? '');
+  late final _nameCtrl = TextEditingController(
+    text: widget.initial?.name ?? '',
+  );
+  late final _hostCtrl = TextEditingController(
+    text: widget.initial?.host ?? '',
+  );
+  late final _portCtrl = TextEditingController(
+    text: (widget.initial?.port ?? 22).toString(),
+  );
+  late final _userCtrl = TextEditingController(
+    text: widget.initial?.username ?? 'root',
+  );
+  late final _passCtrl = TextEditingController(
+    text: widget.initial?.password ?? '',
+  );
+  late final _keyCtrl = TextEditingController(
+    text: widget.initial?.privateKey ?? '',
+  );
   late bool _useKey;
 
   @override
@@ -417,24 +475,45 @@ class _SshEditDialogState extends State<_SshEditDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: '名称（可选）', border: OutlineInputBorder())),
+            TextField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(
+                labelText: '名称（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 8),
-            TextField(controller: _hostCtrl,
-                decoration: const InputDecoration(labelText: '主机地址', border: OutlineInputBorder())),
+            TextField(
+              controller: _hostCtrl,
+              decoration: const InputDecoration(
+                labelText: '主机地址',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 8),
-            TextField(controller: _portCtrl,
-                decoration: const InputDecoration(labelText: '端口', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number),
+            TextField(
+              controller: _portCtrl,
+              decoration: const InputDecoration(
+                labelText: '端口',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
             const SizedBox(height: 8),
-            TextField(controller: _userCtrl,
-                decoration: const InputDecoration(labelText: '用户名', border: OutlineInputBorder())),
+            TextField(
+              controller: _userCtrl,
+              decoration: const InputDecoration(
+                labelText: '用户名',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _useKey ? _keyCtrl : _passCtrl,
               decoration: InputDecoration(
-                  labelText: _useKey ? '私钥内容' : '密码',
-                  border: const OutlineInputBorder()),
+                labelText: _useKey ? '私钥内容' : '密码',
+                border: const OutlineInputBorder(),
+              ),
               obscureText: !_useKey,
               maxLines: _useKey ? 4 : 1,
             ),
@@ -442,13 +521,17 @@ class _SshEditDialogState extends State<_SshEditDialog> {
               title: const Text('使用密钥'),
               value: _useKey,
               onChanged: (v) => setState(() => _useKey = v ?? false),
-              dense: true, contentPadding: EdgeInsets.zero,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
         FilledButton(onPressed: _save, child: const Text('保存')),
       ],
     );
@@ -457,14 +540,16 @@ class _SshEditDialogState extends State<_SshEditDialog> {
   void _save() {
     final host = _hostCtrl.text.trim();
     if (host.isEmpty) return;
-    widget.onSave(_SavedSsh(
-      name: _nameCtrl.text.trim(),
-      host: host,
-      port: int.tryParse(_portCtrl.text.trim()) ?? 22,
-      username: _userCtrl.text.trim(),
-      password: _useKey ? null : _passCtrl.text.trim(),
-      privateKey: _useKey ? _keyCtrl.text.trim() : null,
-    ));
+    widget.onSave(
+      _SavedSsh(
+        name: _nameCtrl.text.trim(),
+        host: host,
+        port: int.tryParse(_portCtrl.text.trim()) ?? 22,
+        username: _userCtrl.text.trim(),
+        password: _useKey ? null : _passCtrl.text.trim(),
+        privateKey: _useKey ? _keyCtrl.text.trim() : null,
+      ),
+    );
     Navigator.pop(context);
   }
 }

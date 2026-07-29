@@ -63,7 +63,7 @@ class FileItem {
     if (mode == null || mode!.isEmpty) return '';
     // mode 可能是 "0755" 形式
     if (mode!.startsWith('0') && mode!.length == 4) {
-      return _modeToStr(int.tryParse(mode!) ?? 0);
+      return _modeToStr(int.tryParse(mode!, radix: 8) ?? 0);
     }
     return mode!;
   }
@@ -83,7 +83,9 @@ class FileItem {
 
     List<FileItem>? parseItems(dynamic v) {
       if (v is! List) return null;
-      return v.map((e) => FileItem.fromJson(e as Map<String, dynamic>)).toList();
+      return v
+          .map((e) => FileItem.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
 
     return FileItem(

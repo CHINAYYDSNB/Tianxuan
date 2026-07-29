@@ -26,7 +26,11 @@ class RingChart extends StatelessWidget {
           width: 90,
           height: 90,
           child: CustomPaint(
-            painter: _RingPainter(value: value, color: color, trackColor: trackColor),
+            painter: _RingPainter(
+              value: value,
+              color: color,
+              trackColor: trackColor,
+            ),
             child: Center(
               child: Text(
                 '${value.toStringAsFixed(1)}%',
@@ -40,8 +44,10 @@ class RingChart extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(label, style: const TextStyle(fontSize: 14)),
-        Text(subtitle,
-            style: const TextStyle(fontSize: 11, color: Color(0xFFAAB4BF))),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 11, color: Color(0xFFAAB4BF)),
+        ),
       ],
     );
   }
@@ -52,7 +58,11 @@ class _RingPainter extends CustomPainter {
   final Color color;
   final Color trackColor;
 
-  _RingPainter({required this.value, required this.color, required this.trackColor});
+  _RingPainter({
+    required this.value,
+    required this.color,
+    required this.trackColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {

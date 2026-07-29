@@ -31,7 +31,13 @@ class SettingsPage extends ConsumerWidget {
             const Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
               ),
             )
           else
@@ -42,12 +48,17 @@ class SettingsPage extends ConsumerWidget {
                     ? () async {
                         await Navigator.push<bool>(
                           context,
-                          MaterialPageRoute(builder: (_) => const ProfilePage()),
+                          MaterialPageRoute(
+                            builder: (_) => const ProfilePage(),
+                          ),
                         );
                       }
                     : () => _startLogin(context, ref),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   child: Row(
                     children: [
                       if (auth.isLoggedIn && auth.avatarUrl.isNotEmpty)
@@ -64,7 +75,9 @@ class SettingsPage extends ConsumerWidget {
                       else
                         CircleAvatar(
                           radius: 22,
-                          backgroundImage: const AssetImage('assets/default_avatar.png'),
+                          backgroundImage: const AssetImage(
+                            'assets/default_avatar.png',
+                          ),
                         ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -73,12 +86,16 @@ class SettingsPage extends ConsumerWidget {
                           children: [
                             Text(
                               auth.isLoggedIn ? auth.name : 'Logto 登录',
-                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               auth.isLoggedIn ? '已登录 — 点击登出' : '点击登录以加密备份数据',
-                              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78)),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF686F78),
+                              ),
                             ),
                           ],
                         ),
@@ -98,25 +115,39 @@ class SettingsPage extends ConsumerWidget {
                   icon: Icons.terminal,
                   title: 'SSH 连接',
                   subtitle: '配置 Docker SSH 管理',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SshConfigPage()),
+                  ),
                 ),
                 _SettingRow(
                   icon: Icons.wifi_find_outlined,
                   title: '连接检测',
                   subtitle: connected ? '已连接服务器' : '未连接',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConnectionTestPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ConnectionTestPage(),
+                    ),
+                  ),
                 ),
                 _SettingRow(
                   icon: Icons.cloud_outlined,
                   title: '数据备份',
                   subtitle: '备份/恢复服务器配置',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CloudBackupPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CloudBackupPage()),
+                  ),
                 ),
                 _SettingRow(
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI 配置',
                   subtitle: 'OpenAI 兼容接口设置',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiConfigPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AiConfigPage()),
+                  ),
                 ),
               ],
             ),
@@ -126,7 +157,10 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.info_outline,
             title: '关于',
             subtitle: 'Tianxuan ${UpdateService.currentVersion}',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutPage()),
+            ),
           ),
         ],
       ),
@@ -141,9 +175,7 @@ void _startLogin(BuildContext context, WidgetRef ref) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LogtoLoginPage(
-          child: const _LoginSuccessPlaceholder(),
-        ),
+        builder: (_) => LogtoLoginPage(child: const _LoginSuccessPlaceholder()),
       ),
     );
   }
@@ -191,10 +223,20 @@ class _SettingsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
-                      Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78))),
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF686F78),
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -207,7 +249,6 @@ class _SettingsCard extends StatelessWidget {
     );
   }
 }
-
 
 class _SettingRow extends StatelessWidget {
   final IconData icon;
@@ -237,10 +278,20 @@ class _SettingRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF686F78))),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF686F78),
+                      ),
+                    ),
                   ],
                 ],
               ),

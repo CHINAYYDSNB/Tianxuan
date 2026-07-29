@@ -16,28 +16,28 @@ class ComposeListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Compose')),
       body: composes.when(
-      data: (list) => _ComposeView(list: list, sshConnected: ssh != null),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text('$e', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () =>
-                  ref.read(composeListProvider.notifier).refresh(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('重试'),
-            ),
-          ],
+        data: (list) => _ComposeView(list: list, sshConnected: ssh != null),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text('$e', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () =>
+                    ref.read(composeListProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('重试'),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -60,14 +60,21 @@ class _ComposeView extends StatelessWidget {
               children: [
                 const Icon(Icons.link_off, size: 48, color: Color(0xFFAAB4BF)),
                 const SizedBox(height: 16),
-                const Text('SSH 未连接', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text(
+                  'SSH 未连接',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
-                const Text('Compose 管理需要 SSH 连接服务器',
-                    style: TextStyle(color: Color(0xFF686F78))),
+                const Text(
+                  'Compose 管理需要 SSH 连接服务器',
+                  style: TextStyle(color: Color(0xFF686F78)),
+                ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const SshConfigPage())),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SshConfigPage()),
+                  ),
                   icon: const Icon(Icons.settings, size: 18),
                   label: const Text('设置 SSH 连接'),
                 ),
@@ -111,23 +118,35 @@ class _ComposeTile extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  width: 12, height: 12,
-                  decoration: BoxDecoration(color: runningColor, shape: BoxShape.circle),
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: runningColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(compose.name,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    compose.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: runningColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(compose.statusLabel,
-                      style: TextStyle(fontSize: 12, color: runningColor)),
+                  child: Text(
+                    compose.statusLabel,
+                    style: TextStyle(fontSize: 12, color: runningColor),
+                  ),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
@@ -149,33 +168,47 @@ class _ComposeTile extends ConsumerWidget {
                 _MiniStat(label: '运行', value: '${compose.runningCount}'),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Text(compose.createdBy,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: colorScheme.onSurfaceVariant)),
+                  child: Text(
+                    compose.createdBy,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               ],
             ),
             if (compose.createdAt.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(compose.createdAt,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: colorScheme.onSurfaceVariant)),
+                child: Text(
+                  compose.createdAt,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             if (compose.containers.isNotEmpty) ...[
               const Divider(height: 12),
-              ...compose.containers.take(3).map((c) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 8,
-                        color: c.state == 'running' ? Colors.green : Colors.red),
-                    const SizedBox(width: 8),
-                    Text(c.name,
-                        style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              )),
+              ...compose.containers
+                  .take(3)
+                  .map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.circle,
+                            size: 8,
+                            color: c.state == 'running'
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(c.name, style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ),
             ],
           ],
         ),
@@ -184,10 +217,12 @@ class _ComposeTile extends ConsumerWidget {
   }
 
   void _handleAction(BuildContext context, WidgetRef ref, String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('正在${action} ${compose.name}...')),
-    );
-    ref.read(composeListProvider.notifier).operate(compose.name, action, path: compose.path);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('正在${action} ${compose.name}...')));
+    ref
+        .read(composeListProvider.notifier)
+        .operate(compose.name, action, path: compose.path);
   }
 }
 
@@ -201,8 +236,12 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(value, style: Theme.of(context).textTheme.bodyMedium
-            ?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(width: 4),
         Text(label, style: Theme.of(context).textTheme.labelSmall),
       ],

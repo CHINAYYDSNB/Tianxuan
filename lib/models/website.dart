@@ -14,12 +14,12 @@ class Domain {
   });
 
   factory Domain.fromJson(Map<String, dynamic> json) => Domain(
-        id: _toInt(json['id']),
-        websiteId: _toInt(json['websiteId']),
-        domain: json['domain']?.toString() ?? '',
-        port: _toInt(json['port']),
-        ssl: json['ssl'] == true,
-      );
+    id: _toInt(json['id']),
+    websiteId: _toInt(json['websiteId']),
+    domain: json['domain']?.toString() ?? '',
+    port: _toInt(json['port']),
+    ssl: json['ssl'] == true,
+  );
 }
 
 class AcmeAccount {
@@ -28,14 +28,19 @@ class AcmeAccount {
   final String url;
   final String type;
 
-  const AcmeAccount({this.id = 0, this.email = '', this.url = '', this.type = ''});
+  const AcmeAccount({
+    this.id = 0,
+    this.email = '',
+    this.url = '',
+    this.type = '',
+  });
 
   factory AcmeAccount.fromJson(Map<String, dynamic> json) => AcmeAccount(
-        id: _toInt(json['id']),
-        email: json['email']?.toString() ?? '',
-        url: json['url']?.toString() ?? '',
-        type: json['type']?.toString() ?? '',
-      );
+    id: _toInt(json['id']),
+    email: json['email']?.toString() ?? '',
+    url: json['url']?.toString() ?? '',
+    type: json['type']?.toString() ?? '',
+  );
 }
 
 class DnsAccount {
@@ -46,10 +51,10 @@ class DnsAccount {
   const DnsAccount({this.id = 0, this.name = '', this.type = ''});
 
   factory DnsAccount.fromJson(Map<String, dynamic> json) => DnsAccount(
-        id: _toInt(json['id']),
-        name: json['name']?.toString() ?? '',
-        type: json['type']?.toString() ?? '',
-      );
+    id: _toInt(json['id']),
+    name: json['name']?.toString() ?? '',
+    type: json['type']?.toString() ?? '',
+  );
 }
 
 class WebSiteSSL {
@@ -84,24 +89,24 @@ class WebSiteSSL {
   });
 
   factory WebSiteSSL.fromJson(Map<String, dynamic> json) => WebSiteSSL(
-        id: _toInt(json['id']),
-        primaryDomain: json['primaryDomain']?.toString() ?? '',
-        type: json['type']?.toString() ?? '',
-        provider: json['provider']?.toString() ?? '',
-        organization: json['organization']?.toString() ?? '',
-        status: json['status']?.toString() ?? '',
-        expireDate: json['expireDate']?.toString() ?? '',
-        startDate: json['startDate']?.toString() ?? '',
-        autoRenew: json['autoRenew'] == true,
-        certURL: json['certURL']?.toString() ?? '',
-        domains: json['domains']?.toString() ?? '',
-        acmeAccount: json['acmeAccount'] != null
-            ? AcmeAccount.fromJson(json['acmeAccount'])
-            : const AcmeAccount(),
-        dnsAccount: json['dnsAccount'] != null
-            ? DnsAccount.fromJson(json['dnsAccount'])
-            : const DnsAccount(),
-      );
+    id: _toInt(json['id']),
+    primaryDomain: json['primaryDomain']?.toString() ?? '',
+    type: json['type']?.toString() ?? '',
+    provider: json['provider']?.toString() ?? '',
+    organization: json['organization']?.toString() ?? '',
+    status: json['status']?.toString() ?? '',
+    expireDate: json['expireDate']?.toString() ?? '',
+    startDate: json['startDate']?.toString() ?? '',
+    autoRenew: json['autoRenew'] == true,
+    certURL: json['certURL']?.toString() ?? '',
+    domains: json['domains']?.toString() ?? '',
+    acmeAccount: json['acmeAccount'] != null
+        ? AcmeAccount.fromJson(json['acmeAccount'])
+        : const AcmeAccount(),
+    dnsAccount: json['dnsAccount'] != null
+        ? DnsAccount.fromJson(json['dnsAccount'])
+        : const DnsAccount(),
+  );
 }
 
 class Website {
@@ -205,7 +210,9 @@ class Website {
     // Parse type field - handle both detail and search response formats
     final domainsRaw = json['domains'];
     final List<Domain> domains = domainsRaw is List
-        ? domainsRaw.map((e) => Domain.fromJson(e as Map<String, dynamic>)).toList()
+        ? domainsRaw
+              .map((e) => Domain.fromJson(e as Map<String, dynamic>))
+              .toList()
         : [];
 
     final sslRaw = json['webSiteSSL'];
@@ -262,47 +269,47 @@ class Website {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'primaryDomain': primaryDomain,
-        'type': type,
-        'alias': alias,
-        'status': status,
-        'remark': remark,
-        'proxy': proxy,
-        'redirectURL': redirectURL,
-        'sitePath': sitePath,
-        'port': port,
-        'errorLogPath': errorLogPath,
-        'accessLogPath': accessLogPath,
-        'errorLog': errorLog,
-        'accessLog': accessLog,
-        'favorite': favorite,
-        'defaultServer': defaultServer,
-        'iPV6': iPV6,
-        'openBaseDir': openBaseDir,
-        'webSiteGroupId': webSiteGroupId,
-        'protocol': protocol,
-        'httpConfig': httpConfig,
-        'proxyType': proxyType,
-        'expireDate': expireDate,
-        'rewrite': rewrite,
-        'appName': appName,
-        'runtimeName': runtimeName,
-        'webRuntimeType': webRuntimeType,
-        'sslStatus': sslStatus,
-        'sslExpireDate': sslExpireDate,
-        'siteDir': siteDir,
-        'user': user,
-        'group': group,
-        'dbType': dbType,
-        'algorithm': algorithm,
-        'webSiteSSLId': webSiteSSLId,
-        'runtimeID': runtimeID,
-        'appInstallId': appInstallId,
-        'ftpId': ftpId,
-        'parentWebsiteID': parentWebsiteID,
-        'dbID': dbID,
-      };
+    'id': id,
+    'primaryDomain': primaryDomain,
+    'type': type,
+    'alias': alias,
+    'status': status,
+    'remark': remark,
+    'proxy': proxy,
+    'redirectURL': redirectURL,
+    'sitePath': sitePath,
+    'port': port,
+    'errorLogPath': errorLogPath,
+    'accessLogPath': accessLogPath,
+    'errorLog': errorLog,
+    'accessLog': accessLog,
+    'favorite': favorite,
+    'defaultServer': defaultServer,
+    'iPV6': iPV6,
+    'openBaseDir': openBaseDir,
+    'webSiteGroupId': webSiteGroupId,
+    'protocol': protocol,
+    'httpConfig': httpConfig,
+    'proxyType': proxyType,
+    'expireDate': expireDate,
+    'rewrite': rewrite,
+    'appName': appName,
+    'runtimeName': runtimeName,
+    'webRuntimeType': webRuntimeType,
+    'sslStatus': sslStatus,
+    'sslExpireDate': sslExpireDate,
+    'siteDir': siteDir,
+    'user': user,
+    'group': group,
+    'dbType': dbType,
+    'algorithm': algorithm,
+    'webSiteSSLId': webSiteSSLId,
+    'runtimeID': runtimeID,
+    'appInstallId': appInstallId,
+    'ftpId': ftpId,
+    'parentWebsiteID': parentWebsiteID,
+    'dbID': dbID,
+  };
 
   /// Display-friendly type name
   String get typeLabel {
@@ -379,7 +386,8 @@ class WebsiteCreateRequest {
     };
     if (remark != null && remark!.isNotEmpty) m['remark'] = remark;
     if (proxy != null && proxy!.isNotEmpty) m['proxy'] = proxy;
-    if (redirectURL != null && redirectURL!.isNotEmpty) m['redirectURL'] = redirectURL;
+    if (redirectURL != null && redirectURL!.isNotEmpty)
+      m['redirectURL'] = redirectURL;
     if (port != null && port! > 0) m['port'] = port;
     if (appInstallID > 0) m['appInstallID'] = appInstallID;
     if (runtimeID > 0) m['runtimeID'] = runtimeID;

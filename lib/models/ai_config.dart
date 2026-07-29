@@ -1,8 +1,8 @@
 /// AI 助手配置
 class AiConfig {
-  final String endpoint;    // e.g. https://api.openai.com/v1
+  final String endpoint; // e.g. https://api.openai.com/v1
   final String apiKey;
-  final String model;       // e.g. gpt-4o-mini
+  final String model; // e.g. gpt-4o-mini
 
   const AiConfig({
     this.endpoint = 'https://api.openai.com/v1',
@@ -10,11 +10,7 @@ class AiConfig {
     this.model = 'gpt-4o-mini',
   });
 
-  AiConfig copyWith({
-    String? endpoint,
-    String? apiKey,
-    String? model,
-  }) {
+  AiConfig copyWith({String? endpoint, String? apiKey, String? model}) {
     return AiConfig(
       endpoint: endpoint ?? this.endpoint,
       apiKey: apiKey ?? this.apiKey,
@@ -22,7 +18,8 @@ class AiConfig {
     );
   }
 
-  bool get isValid => endpoint.isNotEmpty && apiKey.isNotEmpty && model.isNotEmpty;
+  bool get isValid =>
+      endpoint.isNotEmpty && apiKey.isNotEmpty && model.isNotEmpty;
 
   Map<String, dynamic> toJson() => {
     'endpoint': endpoint,

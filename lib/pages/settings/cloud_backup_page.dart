@@ -29,7 +29,11 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
   }
 
   Future<void> _upload() async {
-    setState(() { _busy = true; _statusMsg = null; _isError = false; });
+    setState(() {
+      _busy = true;
+      _statusMsg = null;
+      _isError = false;
+    });
     try {
       final servers = ref.read(savedServersProvider);
       await CloudBackupService.backup(servers: servers);
@@ -43,7 +47,10 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
         _isError = false;
       });
     } catch (e) {
-      setState(() { _statusMsg = '上传失败: $e'; _isError = true; });
+      setState(() {
+        _statusMsg = '上传失败: $e';
+        _isError = true;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -56,25 +63,40 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
         title: const Text('恢复备份'),
         content: const Text('这将覆盖当前所有服务器配置和阈值设置，确定继续？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确定恢复')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确定恢复'),
+          ),
         ],
       ),
     );
     if (confirm != true) return;
 
-    setState(() { _busy = true; _statusMsg = null; _isError = false; });
+    setState(() {
+      _busy = true;
+      _statusMsg = null;
+      _isError = false;
+    });
     try {
       final data = await CloudBackupService.restore();
       if (data == null) {
-        setState(() { _statusMsg = '未找到备份文件'; _isError = true; });
+        setState(() {
+          _statusMsg = '未找到备份文件';
+          _isError = true;
+        });
         return;
       }
 
       // 恢复服务器列表
       final notifier = ref.read(savedServersProvider.notifier);
       for (final s in data.servers) {
-        try { await notifier.add(s); } catch (_) {}
+        try {
+          await notifier.add(s);
+        } catch (_) {}
       }
 
       await _loadBackupTime();
@@ -83,7 +105,10 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
         _isError = false;
       });
     } catch (e) {
-      setState(() { _statusMsg = '恢复失败: $e'; _isError = true; });
+      setState(() {
+        _statusMsg = '恢复失败: $e';
+        _isError = true;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -113,12 +138,16 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('存储路径: /opt/1panel/.tianxuan-backup.json',
-                      style: theme.textTheme.bodySmall),
+                  Text(
+                    '存储路径: /opt/1panel/.tianxuan-backup.json',
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 4),
                   if (_lastBackupTime != null)
-                    Text('上次备份: ${_lastBackupTime!.substring(0, 19).replaceAll('T', ' ')}',
-                        style: theme.textTheme.bodySmall),
+                    Text(
+                      '上次备份: ${_lastBackupTime!.substring(0, 19).replaceAll('T', ' ')}',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   const SizedBox(height: 16),
 
                   Row(
@@ -128,8 +157,12 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                           onPressed: _busy ? null : _upload,
                           icon: _busy
                               ? const SizedBox(
-                                  width: 18, height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2))
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : const Icon(Icons.cloud_upload),
                           label: Text(_busy ? '上传中...' : '上传备份'),
                         ),
@@ -161,7 +194,9 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                 child: Row(
                   children: [
                     Icon(
-                      _isError ? Icons.error_outline : Icons.check_circle_outline,
+                      _isError
+                          ? Icons.error_outline
+                          : Icons.check_circle_outline,
                       size: 20,
                       color: _isError
                           ? theme.colorScheme.error
@@ -169,7 +204,10 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(_statusMsg!, style: theme.textTheme.bodySmall),
+                      child: Text(
+                        _statusMsg!,
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ),
                   ],
                 ),
@@ -213,7 +251,9 @@ class _Bullet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+          ),
         ],
       ),
     );

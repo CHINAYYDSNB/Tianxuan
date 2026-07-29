@@ -34,7 +34,8 @@ class WebsiteDetailPage extends ConsumerWidget {
               Text('加载失败: $e'),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => ref.invalidate(websiteDetailProvider(websiteId)),
+                onPressed: () =>
+                    ref.invalidate(websiteDetailProvider(websiteId)),
                 child: const Text('重试'),
               ),
             ],
@@ -99,16 +100,20 @@ class _DetailContentState extends ConsumerState<_DetailContent>
                 const SizedBox(height: 8),
 
                 // Info row
-                Text('类型: ${w.typeLabel}  |  别名: ${w.alias}',
-                    style: theme.textTheme.bodyMedium),
+                Text(
+                  '类型: ${w.typeLabel}  |  别名: ${w.alias}',
+                  style: theme.textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 4),
                 if (w.sitePath != null && w.sitePath!.isNotEmpty)
                   Text('路径: ${w.sitePath}', style: theme.textTheme.bodySmall),
                 const SizedBox(height: 8),
 
                 // Date
-                Text('创建于: ${_fmtDate(w.createdAt)}',
-                    style: theme.textTheme.bodySmall),
+                Text(
+                  '创建于: ${_fmtDate(w.createdAt)}',
+                  style: theme.textTheme.bodySmall,
+                ),
 
                 const SizedBox(height: 12),
 
@@ -182,14 +187,22 @@ class _DetailContentState extends ConsumerState<_DetailContent>
       ref.invalidate(websitesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${action == "start" ? "启动" : action == "stop" ? "停止" : "重启"}成功')),
+          SnackBar(
+            content: Text(
+              '${action == "start"
+                  ? "启动"
+                  : action == "stop"
+                  ? "停止"
+                  : "重启"}成功',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('操作失败: $e')));
       }
     }
   }
@@ -201,8 +214,14 @@ class _DetailContentState extends ConsumerState<_DetailContent>
         title: const Text('确认删除'),
         content: Text('确定要删除 ${w.primaryDomain} 吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -213,9 +232,9 @@ class _DetailContentState extends ConsumerState<_DetailContent>
         if (context.mounted) Navigator.of(context).pop();
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('删除失败: $e')));
         }
       }
     }
@@ -223,16 +242,14 @@ class _DetailContentState extends ConsumerState<_DetailContent>
 
   Future<void> _openDir(BuildContext context, Website w) async {
     if (w.sitePath == null || w.sitePath!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('网站路径未设置')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('网站路径未设置')));
       return;
     }
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => FileListPage(initialPath: w.sitePath),
-      ),
+      MaterialPageRoute(builder: (_) => FileListPage(initialPath: w.sitePath)),
     );
   }
 
@@ -266,7 +283,14 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -314,8 +338,10 @@ class _OverviewTab extends StatelessWidget {
           _infoTile('域名', w.primaryDomain),
           _infoTile('别名', w.alias),
           if (w.remark.isNotEmpty) _infoTile('备注', w.remark),
-          if (w.proxy.isNotEmpty) _infoTile('代理地址', w.proxy),
-          if (w.sitePath.isNotEmpty) _infoTile('网站路径', w.sitePath),
+          if (w.proxy != null && w.proxy!.isNotEmpty)
+            _infoTile('代理地址', w.proxy!),
+          if (w.sitePath != null && w.sitePath!.isNotEmpty)
+            _infoTile('网站路径', w.sitePath!),
           if (w.port > 0) _infoTile('端口', w.port.toString()),
         ]),
         const SizedBox(height: 12),
@@ -329,10 +355,10 @@ class _OverviewTab extends StatelessWidget {
         const SizedBox(height: 12),
         if (w.domains.isNotEmpty)
           _infoCard(context, '绑定域名 (${w.domains.length})', [
-            ...w.domains.map((d) => _infoTile(
-                  d.domain,
-                  '端口 ${d.port} ${d.ssl ? "(SSL)" : ""}',
-                )),
+            ...w.domains.map(
+              (d) =>
+                  _infoTile(d.domain, '端口 ${d.port} ${d.ssl ? "(SSL)" : ""}'),
+            ),
           ]),
         const SizedBox(height: 12),
         _infoCard(context, '日志', [
@@ -371,7 +397,10 @@ class _OverviewTab extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: const TextStyle(color: Color(0xFF686F78), fontSize: 13)),
+            child: Text(
+              label,
+              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+            ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
@@ -398,35 +427,50 @@ class _SslTabState extends ConsumerState<_SslTab> {
         content: TextField(
           controller: emailCtrl,
           decoration: const InputDecoration(
-            labelText: '邮箱地址', hintText: 'admin@example.com',
+            labelText: '邮箱地址',
+            hintText: 'admin@example.com',
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, emailCtrl.text), child: const Text('申请')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, emailCtrl.text),
+            child: const Text('申请'),
+          ),
         ],
       ),
     );
     if (email == null || email.isEmpty || !mounted) return;
     try {
       await WebsiteApi.updateHttps(widget.websiteId, {
-        'enable': true, 'type': 'letsencrypt', 'email': email, 'primaryDomain': '',
+        'enable': true,
+        'type': 'letsencrypt',
+        'email': email,
+        'primaryDomain': '',
       });
       if (mounted) {
         ref.invalidate(websiteHttpsProvider(widget.websiteId));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已提交申请')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已提交申请')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('失败: $e')));
     }
   }
 
   Future<void> _uploadCert() async {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请使用 1Panel 管理页面上传证书')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请使用 1Panel 管理页面上传证书')));
     }
   }
 
@@ -435,10 +479,15 @@ class _SslTabState extends ConsumerState<_SslTab> {
       await WebsiteApi.updateHttps(widget.websiteId, {'enable': enable});
       if (mounted) {
         ref.invalidate(websiteHttpsProvider(widget.websiteId));
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(enable ? '已启用 HTTPS' : '已禁用 HTTPS')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(enable ? '已启用 HTTPS' : '已禁用 HTTPS')),
+        );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('失败: $e')));
     }
   }
 
@@ -454,8 +503,10 @@ class _SslTabState extends ConsumerState<_SslTab> {
           children: [
             Card(
               child: ListTile(
-                leading: Icon(enable ? Icons.lock : Icons.lock_open,
-                    color: enable ? Colors.green : const Color(0xFFAAB4BF)),
+                leading: Icon(
+                  enable ? Icons.lock : Icons.lock_open,
+                  color: enable ? Colors.green : const Color(0xFFAAB4BF),
+                ),
                 title: Text(enable ? 'HTTPS 已启用' : 'HTTPS 未启用'),
                 subtitle: Text(enable ? '证书已配置' : '点击下方按钮配置 SSL 证书'),
               ),
@@ -468,7 +519,10 @@ class _SslTabState extends ConsumerState<_SslTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('证书信息', style: Theme.of(context).textTheme.titleSmall),
+                      Text(
+                        '证书信息',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                       const Divider(),
                       _info('域名', ssl['primaryDomain']?.toString() ?? '-'),
                       _info('颁发者', ssl['provider']?.toString() ?? '-'),
@@ -489,23 +543,32 @@ class _SslTabState extends ConsumerState<_SslTab> {
                   children: [
                     Text('操作', style: Theme.of(context).textTheme.titleSmall),
                     const Divider(),
-                    SizedBox(width: double.infinity, child: FilledButton.icon(
-                      onPressed: _applyLetsEncrypt,
-                      icon: const Icon(Icons.security),
-                      label: const Text("申请 Let's Encrypt"),
-                    )),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _applyLetsEncrypt,
+                        icon: const Icon(Icons.security),
+                        label: const Text("申请 Let's Encrypt"),
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    SizedBox(width: double.infinity, child: OutlinedButton.icon(
-                      onPressed: _uploadCert,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('上传证书'),
-                    )),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _uploadCert,
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('上传证书'),
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    SizedBox(width: double.infinity, child: TextButton.icon(
-                      onPressed: () => _toggleHttps(!enable),
-                      icon: Icon(enable ? Icons.lock_open : Icons.lock),
-                      label: Text(enable ? '禁用 HTTPS' : '启用 HTTPS'),
-                    )),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () => _toggleHttps(!enable),
+                        icon: Icon(enable ? Icons.lock_open : Icons.lock),
+                        label: Text(enable ? '禁用 HTTPS' : '启用 HTTPS'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -524,7 +587,13 @@ class _SslTabState extends ConsumerState<_SslTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Color(0xFF686F78), fontSize: 13))),
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+            ),
+          ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
@@ -589,25 +658,29 @@ class _LogTabState extends ConsumerState<_LogTab> {
           child: _loading && _lines.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : _error != null && _lines.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, size: 48, color: Color(0xFFAAB4BF)),
-                          const SizedBox(height: 8),
-                          Text(_error!),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            onPressed: () => _loadLog(reset: true),
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('重试'),
-                          ),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Color(0xFFAAB4BF),
                       ),
-                    )
-                  : _lines.isEmpty
-                      ? const Center(child: Text('日志为空'))
-                      : _buildLines(),
+                      const SizedBox(height: 8),
+                      Text(_error!),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => _loadLog(reset: true),
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('重试'),
+                      ),
+                    ],
+                  ),
+                )
+              : _lines.isEmpty
+              ? const Center(child: Text('日志为空'))
+              : _buildLines(),
         ),
       ],
     );
@@ -626,8 +699,11 @@ class _LogTabState extends ConsumerState<_LogTab> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Center(
                     child: _loadingMore
-                        ? const SizedBox(width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : TextButton.icon(
                             onPressed: () => _loadLog(reset: false),
                             icon: const Icon(Icons.expand_more, size: 18),
@@ -638,8 +714,14 @@ class _LogTabState extends ConsumerState<_LogTab> {
               }
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 1),
-                child: SelectableText(_lines[i],
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.4)),
+                child: SelectableText(
+                  _lines[i],
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
               );
             },
           ),
@@ -682,7 +764,10 @@ class _LogTabState extends ConsumerState<_LogTab> {
         final data = await WebsiteApi.getLog(widget.websiteId, _logType);
         final c = data['content']?.toString() ?? '';
         if (c.isNotEmpty) {
-          setState(() { _lines = c.split('\n'); _loading = false; });
+          setState(() {
+            _lines = c.split('\n');
+            _loading = false;
+          });
           return;
         }
       } catch (_) {}
@@ -691,7 +776,10 @@ class _LogTabState extends ConsumerState<_LogTab> {
     // 2) Try /files/preview
     final fp = _filePath;
     if (fp.isEmpty) {
-      setState(() { _loading = false; _error ??= '日志路径未配置'; });
+      setState(() {
+        _loading = false;
+        _error ??= '日志路径未配置';
+      });
       return;
     }
 
@@ -699,7 +787,10 @@ class _LogTabState extends ConsumerState<_LogTab> {
       try {
         final item = await FileApi.preview(fp);
         if (item.content != null && item.content!.isNotEmpty) {
-          setState(() { _lines = item.content!.split('\n'); _loading = false; });
+          setState(() {
+            _lines = item.content!.split('\n');
+            _loading = false;
+          });
           return;
         }
       } catch (_) {}
@@ -707,8 +798,10 @@ class _LogTabState extends ConsumerState<_LogTab> {
 
     // 3) Fallback: /files/read — 分页
     try {
-      if (_page == 1) setState(() => _loading = true);
-      else setState(() => _loadingMore = true);
+      if (_page == 1)
+        setState(() => _loading = true);
+      else
+        setState(() => _loadingMore = true);
 
       // Try path param first, then name
       try {
@@ -725,12 +818,17 @@ class _LogTabState extends ConsumerState<_LogTab> {
         // readByLine might need different params, retry with just name
       }
 
-      setState(() { _loading = false; _loadingMore = false; });
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+      });
       if (_lines.isEmpty) _error = '无法读取日志文件';
     } catch (e) {
-      setState(() { _loading = false; _loadingMore = false; });
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+      });
       if (_lines.isEmpty) _error = '读取失败: $e';
     }
   }
 }
-

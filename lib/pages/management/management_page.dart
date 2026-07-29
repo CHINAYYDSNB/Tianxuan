@@ -14,18 +14,47 @@ class ManagementPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildCard(context, Icons.folder_outlined, '文件', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FileListPage()))),
+            _buildCard(
+              context,
+              Icons.folder_outlined,
+              '文件',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FileListPage()),
+              ),
+            ),
             const SizedBox(height: 12),
-            _buildCard(context, Icons.terminal, 'SSH', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SshHomePage()))),
+            _buildCard(
+              context,
+              Icons.terminal,
+              'SSH',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SshHomePage()),
+              ),
+            ),
             const SizedBox(height: 12),
-            _buildCard(context, Icons.view_in_ar_outlined, '容器', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DockerHomePage()))),
+            _buildCard(
+              context,
+              Icons.view_in_ar_outlined,
+              '容器',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DockerHomePage()),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCard(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildCard(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return Card(
       child: ListTile(
         leading: Icon(icon),

@@ -18,12 +18,12 @@ class SshConfig {
   });
 
   Map<String, dynamic> toJson() => {
-        'host': host,
-        'port': port,
-        'username': username,
-        if (password != null) 'password': password,
-        if (privateKey != null) 'privateKey': privateKey,
-      };
+    'host': host,
+    'port': port,
+    'username': username,
+    if (password != null) 'password': password,
+    if (privateKey != null) 'privateKey': privateKey,
+  };
 }
 
 class SshResult {
@@ -31,11 +31,7 @@ class SshResult {
   final String stdout;
   final String stderr;
 
-  const SshResult({
-    required this.exitCode,
-    this.stdout = '',
-    this.stderr = '',
-  });
+  const SshResult({required this.exitCode, this.stdout = '', this.stderr = ''});
 
   bool get isSuccess => exitCode == 0;
 }
@@ -59,10 +55,7 @@ class SshCommandService {
     await _channel!.ready;
 
     // Send connect config
-    _channel!.sink.add(jsonEncode({
-      'type': 'connect',
-      ...config.toJson(),
-    }));
+    _channel!.sink.add(jsonEncode({'type': 'connect', ...config.toJson()}));
 
     // Wait for ready
     final completer = Completer<void>();
@@ -78,20 +71,27 @@ class SshCommandService {
             case 'exec-result':
               final id = msg['id'] as String?;
               if (id != null && _pending.containsKey(id)) {
-                _pending.remove(id)!.complete(SshResult(
-                  exitCode: (msg['exitCode'] as num?)?.toInt() ?? -1,
-                  stdout: utf8.decode(
-                      base64Decode((msg['stdout'] as String?) ?? '')),
-                  stderr: utf8.decode(
-                      base64Decode((msg['stderr'] as String?) ?? '')),
-                ));
+                _pending
+                    .remove(id)!
+                    .complete(
+                      SshResult(
+                        exitCode: (msg['exitCode'] as num?)?.toInt() ?? -1,
+                        stdout: utf8.decode(
+                          base64Decode((msg['stdout'] as String?) ?? ''),
+                        ),
+                        stderr: utf8.decode(
+                          base64Decode((msg['stderr'] as String?) ?? ''),
+                        ),
+                      ),
+                    );
               }
               break;
             case 'stream-data':
               final id = msg['id'] as String?;
               if (id != null) {
                 final data = utf8.decode(
-                    base64Decode((msg['data'] as String?) ?? ''));
+                  base64Decode((msg['data'] as String?) ?? ''),
+                );
                 _streamCtrl[id]?.add(data);
               }
               break;
@@ -105,16 +105,14 @@ class SshCommandService {
             case 'stream-error':
               final id = msg['id'] as String?;
               if (id != null) {
-                _streamCtrl[id]
-                    ?.addError('${msg['message']}');
+                _streamCtrl[id]?.addError('${msg['message']}');
                 _streamCtrl[id]?.close();
                 _streamCtrl.remove(id);
               }
               break;
             case 'error':
               if (!completer.isCompleted) {
-                completer.completeError(
-                    '${msg['message']}');
+                completer.completeError('${msg['message']}');
               }
               break;
           }
@@ -137,10 +135,7 @@ class SshCommandService {
     );
   }
 
-  Future<SshResult> execute(
-    String command, {
-    Duration? timeout,
-  }) async {
+  Future<SshResult> execute(String command, {Duration? timeout}) async {
     if (!_connected || _channel == null) {
       return const SshResult(exitCode: -1, stderr: 'SSH not connected');
     }
@@ -149,12 +144,14 @@ class SshCommandService {
     final completer = Completer<SshResult>();
     _pending[id] = completer;
 
-    _channel!.sink.add(jsonEncode({
-      'type': 'exec',
-      'id': id,
-      'command': command,
-      'timeout': timeout?.inSeconds ?? 30,
-    }));
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'exec',
+        'id': id,
+        'command': command,
+        'timeout': timeout?.inSeconds ?? 30,
+      }),
+    );
 
     try {
       return await completer.future.timeout(
@@ -175,11 +172,9 @@ class SshCommandService {
     final controller = StreamController<String>();
     _streamCtrl[id] = controller;
 
-    _channel?.sink.add(jsonEncode({
-      'type': 'stream-exec',
-      'id': id,
-      'command': command,
-    }));
+    _channel?.sink.add(
+      jsonEncode({'type': 'stream-exec', 'id': id, 'command': command}),
+    );
 
     return controller.stream;
   }

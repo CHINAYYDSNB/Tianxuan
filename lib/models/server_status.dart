@@ -78,7 +78,9 @@ class ServerStatus {
 
     // diskData 是数组，取第一个（根分区）
     final diskData = info['diskData'] as List<dynamic>? ?? [];
-    final disk0 = diskData.isNotEmpty ? (diskData[0] as Map<String, dynamic>? ?? {}) : <String, dynamic>{};
+    final disk0 = diskData.isNotEmpty
+        ? (diskData[0] as Map<String, dynamic>? ?? {})
+        : <String, dynamic>{};
 
     return ServerStatus(
       hostname: json['hostname']?.toString() ?? '',
@@ -90,8 +92,13 @@ class ServerStatus {
       cpuUsage: parse(info['cpuUsedPercent']),
       memoryUsage: parse(info['memoryUsedPercent']),
       diskUsage: parse(disk0['usedPercent']),
-      uptime: info['timeSinceUptime']?.toString() ?? info['uptime']?.toString() ?? '',
-      uptimeSeconds: (info['uptime'] is num) ? (info['uptime'] as num).toInt() : 0,
+      uptime:
+          info['timeSinceUptime']?.toString() ??
+          info['uptime']?.toString() ??
+          '',
+      uptimeSeconds: (info['uptime'] is num)
+          ? (info['uptime'] as num).toInt()
+          : 0,
       memoryTotal: fmt(info['memoryTotal']),
       memoryUsed: fmt(info['memoryUsed']),
       diskTotal: fmt(disk0['total']),

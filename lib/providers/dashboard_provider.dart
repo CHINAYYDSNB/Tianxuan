@@ -20,7 +20,9 @@ final tickingUptimeProvider = Provider<String>((ref) {
   return status.when(
     data: (data) {
       final notifier = ref.read(serverStatusProvider.notifier);
-      final elapsed = DateTime.now().difference(notifier.lastFetchTime).inSeconds;
+      final elapsed = DateTime.now()
+          .difference(notifier.lastFetchTime)
+          .inSeconds;
       final total = data.uptimeSeconds + elapsed;
       if (total <= 0) return data.uptime;
       final days = total ~/ 86400;
@@ -45,7 +47,8 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
   @override
   Future<ServerStatus> build() async {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _autoRefresh());    ref.onDispose(() => _timer?.cancel());
+    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _autoRefresh());
+    ref.onDispose(() => _timer?.cancel());
     _lastFetchTime = DateTime.now();
     return DashboardApi.getStatus();
   }
@@ -101,5 +104,5 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
 
 final serverStatusProvider =
     AsyncNotifierProvider<ServerStatusNotifier, ServerStatus>(
-  ServerStatusNotifier.new,
-);
+      ServerStatusNotifier.new,
+    );

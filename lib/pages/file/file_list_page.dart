@@ -103,12 +103,13 @@ class _FileListPageState extends ConsumerState<FileListPage> {
             onPressed: () async {
               final name = ctrl.text.trim();
               if (name.isEmpty) return;
-              final parent = ref.read(currentPathProvider);
+              final parent = ref.read(currentPathProvider.notifier).state;
               Navigator.pop(ctx);
               try {
+                final sep = parent.endsWith('/') ? '' : '/';
                 await ref
                     .read(fileListProvider.notifier)
-                    .createItem('$parent/$name', isDir: true);
+                    .createItem('$parent$sep$name', isDir: true);
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
@@ -136,7 +137,7 @@ class _FileListPageState extends ConsumerState<FileListPage> {
     try {
       final result = await FilePicker.platform.pickFiles();
       if (result == null || !mounted) return;
-      final path = ref.read(currentPathProvider);
+      final path = ref.read(currentPathProvider.notifier).state;
       final filePath = result.files.single.path;
       if (filePath == null) return;
       await ref.read(fileListProvider.notifier).uploadFile(path, filePath);

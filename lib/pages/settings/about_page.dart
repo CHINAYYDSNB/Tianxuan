@@ -17,14 +17,24 @@ class _AboutPageState extends State<AboutPage> {
   String? _error;
 
   Future<void> _checkUpdate() async {
-    setState(() { _checking = true; _error = null; _result = null; });
+    setState(() {
+      _checking = true;
+      _error = null;
+      _result = null;
+    });
     try {
       final r = await UpdateService.check();
       if (!mounted) return;
-      setState(() { _result = r; _checking = false; });
+      setState(() {
+        _result = r;
+        _checking = false;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _checking = false; });
+      setState(() {
+        _error = e.toString();
+        _checking = false;
+      });
     }
   }
 
@@ -51,15 +61,28 @@ class _AboutPageState extends State<AboutPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text('Tianxuan', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('1Panel 第三方管理器', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    'Tianxuan',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '1Panel 第三方管理器',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.tag, size: 16, color: Color(0xFFAAB4BF)),
                       const SizedBox(width: 4),
-                      Text(UpdateService.currentVersion, style: theme.textTheme.titleMedium),
+                      Text(
+                        UpdateService.currentVersion,
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ],
                   ),
                 ],
@@ -79,7 +102,9 @@ class _AboutPageState extends State<AboutPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _result!.newer ? Icons.system_update : Icons.check_circle,
+                          _result!.newer
+                              ? Icons.system_update
+                              : Icons.check_circle,
                           color: _result!.newer ? Colors.orange : Colors.green,
                           size: 28,
                         ),
@@ -108,7 +133,13 @@ class _AboutPageState extends State<AboutPage> {
                         color: theme.colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(_error!, style: TextStyle(fontSize: 12, color: theme.colorScheme.onErrorContainer)),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -117,7 +148,11 @@ class _AboutPageState extends State<AboutPage> {
                     child: OutlinedButton.icon(
                       onPressed: _checking ? null : _checkUpdate,
                       icon: _checking
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.refresh),
                       label: Text(_checking ? '检查中...' : '检查更新'),
                     ),
@@ -142,8 +177,14 @@ class _AboutPageState extends State<AboutPage> {
               leading: const Icon(Icons.people, color: Colors.blue),
               title: const Text('贡献者'),
               subtitle: const Text('感谢为项目做出贡献的开发者'),
-              trailing: const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContributorsPage())),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color(0xFFAAB4BF),
+              ),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ContributorsPage()),
+              ),
             ),
           ),
         ],

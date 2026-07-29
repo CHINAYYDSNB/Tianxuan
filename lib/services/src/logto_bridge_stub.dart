@@ -1,5 +1,6 @@
 /// Native Logto bridge — url_launcher + MethodChannel/EventChannel for deep links
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,7 +17,7 @@ class LogtoBridge {
         throw Exception('launchUrl returned false');
       }
     } catch (e) {
-      print('LogtoBridge.redirect error: $e');
+      log('LogtoBridge.redirect error', error: e);
       rethrow;
     }
   }
@@ -33,16 +34,15 @@ class LogtoBridge {
 
   /// Stream of incoming deep links (from onNewIntent)
   static Stream<Uri> get onCallback {
-    return _eventChannel
-        .receiveBroadcastStream()
-        .map((e) => Uri.parse(e.toString()));
+    return _eventChannel.receiveBroadcastStream().map(
+      (e) => Uri.parse(e.toString()),
+    );
   }
 
   /// Get initial deep link that launched the app
   static Future<Uri?> getInitialLink() async {
     try {
-      final link =
-          await _methodChannel.invokeMethod<String>('getInitialLink');
+      final link = await _methodChannel.invokeMethod<String>('getInitialLink');
       if (link != null && link.isNotEmpty) return Uri.parse(link);
     } catch (_) {}
     return null;

@@ -31,15 +31,14 @@ class LogtoAuthState {
     String? name,
     String? email,
     String? avatarUrl,
-  }) =>
-      LogtoAuthState(
-        isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-        checking: checking ?? this.checking,
-        userId: userId ?? this.userId,
-        name: name ?? this.name,
-        email: email ?? this.email,
-        avatarUrl: avatarUrl ?? this.avatarUrl,
-      );
+  }) => LogtoAuthState(
+    isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+    checking: checking ?? this.checking,
+    userId: userId ?? this.userId,
+    name: name ?? this.name,
+    email: email ?? this.email,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+  );
 }
 
 class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
@@ -201,5 +200,5 @@ class _LogtoLifecycleObserver extends WidgetsBindingObserver {
 /// 唯一 Logto 认证 provider — 全局单例，所有页面从这里读登录状态
 final logtoAuthProvider =
     StateNotifierProvider<LogtoAuthNotifier, LogtoAuthState>((ref) {
-  return LogtoAuthNotifier();
-});
+      return LogtoAuthNotifier();
+    });

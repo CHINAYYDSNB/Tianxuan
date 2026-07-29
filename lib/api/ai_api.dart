@@ -15,7 +15,11 @@ class AiApi {
   /// 非流式聊天补全
   Future<String> chat(List<Map<String, String>> messages) async {
     final url = Uri.parse('${config.endpoint}/chat/completions');
-    final resp = await _client.post(url, headers: _headers, body: _body(messages));
+    final resp = await _client.post(
+      url,
+      headers: _headers,
+      body: _body(messages),
+    );
     if (resp.statusCode != 200) {
       throw Exception('AI API error ${resp.statusCode}: ${resp.body}');
     }
@@ -65,10 +69,9 @@ class AiApi {
   };
 
   String _body(List<Map<String, String>> messages, {bool stream = false}) {
-    final m = messages.map((msg) => {
-      'role': msg['role'],
-      'content': msg['content'],
-    }).toList();
+    final m = messages
+        .map((msg) => {'role': msg['role'], 'content': msg['content']})
+        .toList();
     return jsonEncode({
       'model': config.model,
       'messages': m,

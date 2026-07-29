@@ -27,7 +27,8 @@ class ApiClient {
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _dio.options.responseType = ResponseType.json;
-    debugPrint('ApiClient configured: serverUrl=$serverUrl, apiKey=${apiKey.substring(0, 4)}...');
+    final masked = apiKey.length >= 4 ? apiKey.substring(0, 4) : apiKey;
+    debugPrint('ApiClient configured: serverUrl=$serverUrl, apiKey=$masked...');
   }
 
   /// 组装完整请求 URL
@@ -64,6 +65,11 @@ class ApiClient {
     _authInterceptor.setApiKey('');
   }
 
+  /// 仅供测试：跳过 StorageService 直接配置 baseUrl / apiKey，
+  /// 使 [FileApi] 能在单测里指向本地 mock server。
+  void testConfigure(String serverUrl, String apiKey) =>
+      _configure(serverUrl, apiKey);
+
   Future<Response> get(String path, {Map<String, dynamic>? params}) {
     final url = _fullUrl(path);
     debugPrint('GET $url');
@@ -71,7 +77,10 @@ class ApiClient {
   }
 
   /// GET with binary response (for file downloads)
-  Future<Response<List<int>>> getBytes(String path, {Map<String, dynamic>? params}) async {
+  Future<Response<List<int>>> getBytes(
+    String path, {
+    Map<String, dynamic>? params,
+  }) async {
     final url = _fullUrl(path);
     debugPrint('GET $url (bytes)');
     final bytesDio = Dio();
@@ -104,7 +113,10 @@ class AuthInterceptor extends Interceptor {
   void setApiKey(String key) => _apiKey = key;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     // 如果 _apiKey 为空, 尝试从 StorageService 自救加载
     if (_apiKey.isEmpty) {
       try {
@@ -117,8 +129,12 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (_apiKey.isNotEmpty) {
-      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).floor().toString();
-      final token = md5.convert(utf8.encode('1panel$_apiKey$timestamp')).toString();
+      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000)
+          .floor()
+          .toString();
+      final token = md5
+          .convert(utf8.encode('1panel$_apiKey$timestamp'))
+          .toString();
       options.headers['1Panel-Token'] = token;
       options.headers['1Panel-Timestamp'] = timestamp;
     }
@@ -133,11 +149,13 @@ class ErrorInterceptor extends Interceptor {
     if (err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.sendTimeout) {
-      handler.reject(DioException(
-        requestOptions: err.requestOptions,
-        message: '',
-        type: err.type,
-      ));
+      handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          message: '',
+          type: err.type,
+        ),
+      );
       return;
     }
 
@@ -148,10 +166,12 @@ class ErrorInterceptor extends Interceptor {
       500 => '服务器错误',
       _ => err.message ?? '网络错误',
     };
-    handler.reject(DioException(
-      requestOptions: err.requestOptions,
-      message: msg,
-      error: msg,
-    ));
+    handler.reject(
+      DioException(
+        requestOptions: err.requestOptions,
+        message: msg,
+        error: msg,
+      ),
+    );
   }
 }

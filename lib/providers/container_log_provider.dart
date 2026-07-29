@@ -45,10 +45,13 @@ class ContainerLogNotifier extends StateNotifier<ContainerLogState> {
   final int _tailLines;
   final SshCommandService? _ssh;
 
-  ContainerLogNotifier(this._containerName, {int tailLines = 200, SshCommandService? ssh})
-      : _tailLines = tailLines,
-        _ssh = ssh,
-        super(const ContainerLogState());
+  ContainerLogNotifier(
+    this._containerName, {
+    int tailLines = 200,
+    SshCommandService? ssh,
+  }) : _tailLines = tailLines,
+       _ssh = ssh,
+       super(const ContainerLogState());
 
   void connect({LogSource? source}) {
     _subscription?.cancel();
@@ -148,9 +151,11 @@ class ContainerLogNotifier extends StateNotifier<ContainerLogState> {
 }
 
 final containerLogProvider =
-    StateNotifierProvider.family<ContainerLogNotifier, ContainerLogState, String>(
-  (ref, containerName) {
-    final ssh = ref.watch(sshServiceProvider);
-    return ContainerLogNotifier(containerName, ssh: ssh);
-  },
-);
+    StateNotifierProvider.family<
+      ContainerLogNotifier,
+      ContainerLogState,
+      String
+    >((ref, containerName) {
+      final ssh = ref.watch(sshServiceProvider);
+      return ContainerLogNotifier(containerName, ssh: ssh);
+    });

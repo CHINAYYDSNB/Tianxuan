@@ -43,51 +43,61 @@ class WebsitesNotifier extends AsyncNotifier<List<Website>> {
   }
 }
 
-final websitesProvider =
-    AsyncNotifierProvider<WebsitesNotifier, List<Website>>(
+final websitesProvider = AsyncNotifierProvider<WebsitesNotifier, List<Website>>(
   WebsitesNotifier.new,
 );
 
 // ─── Website Detail ───
 
-final websiteDetailProvider =
-    FutureProvider.family<Website, int>((ref, id) async {
+final websiteDetailProvider = FutureProvider.family<Website, int>((
+  ref,
+  id,
+) async {
   return WebsiteApi.getDetail(id);
 });
 
 // ─── Nginx Config ───
 
-final websiteConfigProvider =
-    FutureProvider.family<String?, int>((ref, id) async {
+final websiteConfigProvider = FutureProvider.family<String?, int>((
+  ref,
+  id,
+) async {
   return WebsiteApi.getConfig(id);
 });
 
 // ─── HTTPS ───
 
-final websiteHttpsProvider =
-    FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
+final websiteHttpsProvider = FutureProvider.family<Map<String, dynamic>, int>((
+  ref,
+  id,
+) async {
   return WebsiteApi.getHttps(id);
 });
 
 // ─── Log ───
 
 final websiteLogProvider =
-    FutureProvider.family<Map<String, dynamic>, ({int id, String logType})>(
-        (ref, params) async {
-  return WebsiteApi.getLog(params.id, params.logType);
-});
+    FutureProvider.family<Map<String, dynamic>, ({int id, String logType})>((
+      ref,
+      params,
+    ) async {
+      return WebsiteApi.getLog(params.id, params.logType);
+    });
 
 // ─── Directory ───
 
-final websiteDirProvider =
-    FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
+final websiteDirProvider = FutureProvider.family<Map<String, dynamic>, int>((
+  ref,
+  id,
+) async {
   return WebsiteApi.getDir(id);
 });
 
 // ─── Create Website ───
 
-final websiteCreateProvider = FutureProvider.family<int, WebsiteCreateRequest>(
-  (ref, req) async {
-    return WebsiteApi.create(req);
-  },
-);
+final websiteCreateProvider = FutureProvider.family<int, WebsiteCreateRequest>((
+  ref,
+  req,
+) async {
+  return WebsiteApi.create(req);
+});

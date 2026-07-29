@@ -71,7 +71,10 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
       return;
     }
 
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     final config = SshConfig(
       host: host,
@@ -127,7 +130,9 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
                 children: [
                   Icon(
                     _isConnected ? Icons.check_circle : Icons.link_off,
-                    color: _isConnected ? Colors.green : const Color(0xFF686F78),
+                    color: _isConnected
+                        ? Colors.green
+                        : const Color(0xFF686F78),
                     size: 28,
                   ),
                   const SizedBox(width: 12),
@@ -138,13 +143,18 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
                         loading: () => '连接中...',
                         error: (e, _) => '连接失败',
                       ),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   if (_isConnected)
                     TextButton(
                       onPressed: _disconnect,
-                      child: const Text('断开', style: TextStyle(color: Colors.red)),
+                      child: const Text(
+                        '断开',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                 ],
               ),
@@ -158,9 +168,18 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 16,
+                      color: Colors.red,
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -237,7 +256,14 @@ class _SshConfigPageState extends ConsumerState<SshConfigPage> {
             child: FilledButton.icon(
               onPressed: _loading ? null : _connect,
               icon: _loading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Icon(Icons.link),
               label: Text(_loading ? '连接中...' : '连接'),
             ),

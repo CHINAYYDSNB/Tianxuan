@@ -27,7 +27,11 @@ class ContributorsPage extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Icon(Icons.favorite, size: 40, color: Colors.red.withAlpha(180)),
+                  Icon(
+                    Icons.favorite,
+                    size: 40,
+                    color: Colors.red.withAlpha(180),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     '除了作者以外，这些开发者也为软件的开发做出了巨大贡献，谢谢你们！',
@@ -39,20 +43,25 @@ class ContributorsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ..._contributors.map((c) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(c.avatarUrl),
+          ..._contributors.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(c.avatarUrl),
+                  ),
+                  title: Text(
+                    c.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('@${c.login}'),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => openUrl(c.htmlUrl),
                 ),
-                title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('@${c.login}'),
-                trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () => openUrl(c.htmlUrl),
               ),
             ),
-          )),
+          ),
         ],
       ),
     );

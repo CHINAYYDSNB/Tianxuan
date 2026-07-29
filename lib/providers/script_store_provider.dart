@@ -8,7 +8,10 @@ final scriptIndexProvider = FutureProvider<ScriptIndex>((ref) {
 });
 
 /// 脚本详情 (family 按 id)
-final scriptDetailProvider = FutureProvider.family<ScriptDetail, String>((ref, id) {
+final scriptDetailProvider = FutureProvider.family<ScriptDetail, String>((
+  ref,
+  id,
+) {
   return ScriptStoreApi.fetchDetail(id);
 });
 
@@ -16,12 +19,20 @@ final scriptDetailProvider = FutureProvider.family<ScriptDetail, String>((ref, i
 final scriptSearchProvider = StateProvider<String>((ref) => '');
 
 /// 下载状态
-enum ScriptDownloadState { idle, downloading, preview, confirmed, running, done, failed }
+enum ScriptDownloadState {
+  idle,
+  downloading,
+  preview,
+  confirmed,
+  running,
+  done,
+  failed,
+}
 
 final scriptDownloadStateProvider =
     StateNotifierProvider<ScriptDownloadStateNotifier, ScriptDownloadState>(
-  (ref) => ScriptDownloadStateNotifier(),
-);
+      (ref) => ScriptDownloadStateNotifier(),
+    );
 
 class ScriptDownloadStateNotifier extends StateNotifier<ScriptDownloadState> {
   ScriptDownloadStateNotifier() : super(ScriptDownloadState.idle);

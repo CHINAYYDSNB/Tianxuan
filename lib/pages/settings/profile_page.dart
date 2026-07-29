@@ -65,8 +65,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         title: const Text('登出'),
         content: const Text('确定要登出 Logto 吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('登出')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('登出'),
+          ),
         ],
       ),
     );
@@ -101,17 +107,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   CircleAvatar(
                     radius: 48,
                     backgroundColor: theme.colorScheme.primary.withAlpha(20),
-                    backgroundImage: auth.avatarUrl.isNotEmpty ? NetworkImage(auth.avatarUrl) : null,
+                    backgroundImage: auth.avatarUrl.isNotEmpty
+                        ? NetworkImage(auth.avatarUrl)
+                        : null,
                     child: auth.avatarUrl.isEmpty
-                        ? Icon(Icons.person, size: 48, color: theme.colorScheme.primary)
+                        ? Icon(
+                            Icons.person,
+                            size: 48,
+                            color: theme.colorScheme.primary,
+                          )
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  Text(auth.name.isNotEmpty ? auth.name : '未设置昵称',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    auth.name.isNotEmpty ? auth.name : '未设置昵称',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   if (auth.email.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(auth.email, style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF686F78))),
+                    Text(
+                      auth.email,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF686F78),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -147,11 +168,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       isDense: true,
                       prefixIcon: Icon(Icons.email_outlined, size: 20),
                     ),
-                    controller: TextEditingController(text: auth.email.isNotEmpty ? auth.email : '未绑定'),
+                    controller: TextEditingController(
+                      text: auth.email.isNotEmpty ? auth.email : '未绑定',
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('邮箱由 Logto 管理，如需修改请联系管理员',
-                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFAAB4BF))),
+                  Text(
+                    '邮箱由 Logto 管理，如需修改请联系管理员',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFAAB4BF),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Divider(color: theme.colorScheme.outline.withAlpha(40)),
                   const SizedBox(height: 12),
@@ -174,18 +201,31 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 4),
-                  Text('输入图片 URL，点击右侧刷新图标预览',
-                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFAAB4BF))),
+                  Text(
+                    '输入图片 URL，点击右侧刷新图标预览',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFAAB4BF),
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('哎呀，上传图片什么的。。。。。。有服务器了再说嘛',
-                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFAAB4BF), fontStyle: FontStyle.italic)),
+                  Text(
+                    '哎呀，上传图片什么的。。。。。。有服务器了再说嘛',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFAAB4BF),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: _saving ? null : _saveProfile,
                       icon: _saving
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.save, size: 18),
                       label: Text(_saving ? '保存中...' : '保存修改'),
                     ),

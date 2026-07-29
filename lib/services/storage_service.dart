@@ -125,12 +125,10 @@ class StorageService {
       _write('srv_key_$serverId', apiKey);
 
   /// Decrypt/load a single saved server's apiKey.
-  Future<String?> getServerKey(String serverId) =>
-      _read('srv_key_$serverId');
+  Future<String?> getServerKey(String serverId) => _read('srv_key_$serverId');
 
   /// Delete a single saved server's apiKey.
-  Future<void> deleteServerKey(String serverId) =>
-      _delete('srv_key_$serverId');
+  Future<void> deleteServerKey(String serverId) => _delete('srv_key_$serverId');
 
   // ─── First-launch migration (SharedPreferences → secure storage) ───
 
@@ -150,7 +148,8 @@ class StorageService {
     final serversRaw = p.getString('saved_servers');
     if (serversRaw != null) {
       try {
-        final list = (jsonDecode(serversRaw) as List).cast<Map<String, dynamic>>();
+        final list = (jsonDecode(serversRaw) as List)
+            .cast<Map<String, dynamic>>();
         for (final s in list) {
           final key = s['apiKey'] as String?;
           final id = s['id'] as String?;
@@ -174,7 +173,10 @@ class StorageService {
   // ─── Logto OIDC Pending (PKCE verifier + state 暂存) ───
 
   Future<void> saveLogtoPending(String verifier, String state) async {
-    await _write('logto_pending', jsonEncode({'verifier': verifier, 'state': state}));
+    await _write(
+      'logto_pending',
+      jsonEncode({'verifier': verifier, 'state': state}),
+    );
   }
 
   Future<Map<String, String>?> getLogtoPending() async {
@@ -227,7 +229,9 @@ class StorageService {
 
   // ─── SSH 连接保存 ───
 
-  Future<void> saveSshConnections(List<Map<String, dynamic>> connections) async {
+  Future<void> saveSshConnections(
+    List<Map<String, dynamic>> connections,
+  ) async {
     await _write('ssh_connections', jsonEncode(connections));
   }
 

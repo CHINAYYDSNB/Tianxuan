@@ -8,9 +8,7 @@ class CloudBackupService {
   static const _backupPath = '/opt/1panel/.tianxuan-backup.json';
 
   /// 备份：当前连接 + 已保存服务器 + API Key(加密) + 设置 → 写到 1Panel
-  static Future<void> backup({
-    required List<SavedServer> servers,
-  }) async {
+  static Future<void> backup({required List<SavedServer> servers}) async {
     // 0. 包含当前服务器（如果已连接）
     final allServers = List<SavedServer>.from(servers);
     final currentUrl = await StorageService.instance.getServerUrl();
@@ -18,12 +16,15 @@ class CloudBackupService {
     if (currentUrl != null && currentUrl.isNotEmpty && currentKey != null) {
       final alreadyInList = allServers.any((s) => s.url == currentUrl);
       if (!alreadyInList) {
-        allServers.insert(0, SavedServer(
-          id: 'current',
-          name: '当前服务器',
-          url: currentUrl,
-          apiKey: currentKey,
-        ));
+        allServers.insert(
+          0,
+          SavedServer(
+            id: 'current',
+            name: '当前服务器',
+            url: currentUrl,
+            apiKey: currentKey,
+          ),
+        );
       }
     }
     // 1. 加密 API Keys
@@ -48,8 +49,12 @@ class CloudBackupService {
     // 3. 写文件 — 先确保文件存在
     final json = jsonEncode(data);
     final dir = _backupPath.substring(0, _backupPath.lastIndexOf('/'));
-    try { await FileApi.create(dir, isDir: true, mode: 493); } catch (_) {}
-    try { await FileApi.create(_backupPath, isDir: false); } catch (e) {
+    try {
+      await FileApi.create(dir, isDir: true, mode: 493);
+    } catch (_) {}
+    try {
+      await FileApi.create(_backupPath, isDir: false);
+    } catch (e) {
       // 文件已存在 → 忽略
     }
     await FileApi.save(_backupPath, json);
@@ -80,14 +85,16 @@ class CloudBackupService {
           final decrypted = _decrypt(encryptedKeysStr, key);
           if (decrypted != null) {
             keysMap.addAll(
-              (jsonDecode(decrypted) as Map<String, dynamic>)
-                  .map((k, v) => MapEntry(k, v.toString())),
+              (jsonDecode(decrypted) as Map<String, dynamic>).map(
+                (k, v) => MapEntry(k, v.toString()),
+              ),
             );
           }
         } else if (!keyEncrypted) {
           keysMap.addAll(
-            (jsonDecode(encryptedKeysStr) as Map<String, dynamic>)
-                .map((k, v) => MapEntry(k, v.toString())),
+            (jsonDecode(encryptedKeysStr) as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
           );
         }
       }
@@ -95,12 +102,14 @@ class CloudBackupService {
       for (final e in serversRaw) {
         final m = e as Map<String, dynamic>;
         final id = m['id']?.toString() ?? '';
-        servers.add(SavedServer(
-          id: id,
-          name: m['name']?.toString() ?? '',
-          url: m['url']?.toString() ?? '',
-          apiKey: keysMap[id] ?? '',
-        ));
+        servers.add(
+          SavedServer(
+            id: id,
+            name: m['name']?.toString() ?? '',
+            url: m['url']?.toString() ?? '',
+            apiKey: keysMap[id] ?? '',
+          ),
+        );
       }
 
       return BackupData(
@@ -145,7 +154,10 @@ class CloudBackupService {
   /// XOR 加密（可逆）
   static String _encrypt(String plain, List<int> key) {
     final bytes = utf8.encode(plain);
-    final result = List<int>.generate(bytes.length, (i) => bytes[i] ^ key[i % key.length]);
+    final result = List<int>.generate(
+      bytes.length,
+      (i) => bytes[i] ^ key[i % key.length],
+    );
     return base64Url.encode(result);
   }
 
@@ -153,7 +165,10 @@ class CloudBackupService {
   static String? _decrypt(String cipher, List<int> key) {
     try {
       final bytes = base64Url.decode(cipher);
-      final result = List<int>.generate(bytes.length, (i) => bytes[i] ^ key[i % key.length]);
+      final result = List<int>.generate(
+        bytes.length,
+        (i) => bytes[i] ^ key[i % key.length],
+      );
       return utf8.decode(result);
     } catch (_) {
       return null;
@@ -165,8 +180,5 @@ class BackupData {
   final List<SavedServer> servers;
   final String exportedAt;
 
-  BackupData({
-    required this.servers,
-    this.exportedAt = '',
-  });
+  BackupData({required this.servers, this.exportedAt = ''});
 }

@@ -19,12 +19,12 @@ class SshConfig {
   });
 
   Map<String, dynamic> toJson() => {
-        'host': host,
-        'port': port,
-        'username': username,
-        if (password != null) 'password': password,
-        if (privateKey != null) 'privateKey': privateKey,
-      };
+    'host': host,
+    'port': port,
+    'username': username,
+    if (password != null) 'password': password,
+    if (privateKey != null) 'privateKey': privateKey,
+  };
 }
 
 class SshResult {
@@ -32,11 +32,7 @@ class SshResult {
   final String stdout;
   final String stderr;
 
-  const SshResult({
-    required this.exitCode,
-    this.stdout = '',
-    this.stderr = '',
-  });
+  const SshResult({required this.exitCode, this.stdout = '', this.stderr = ''});
 
   bool get isSuccess => exitCode == 0;
 }
@@ -96,10 +92,7 @@ class SshCommandService {
     return keyInput;
   }
 
-  Future<SshResult> execute(
-    String command, {
-    Duration? timeout,
-  }) async {
+  Future<SshResult> execute(String command, {Duration? timeout}) async {
     if (_client == null) {
       return const SshResult(exitCode: -1, stderr: 'SSH not connected');
     }

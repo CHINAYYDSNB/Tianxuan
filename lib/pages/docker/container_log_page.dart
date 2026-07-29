@@ -27,9 +27,7 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
 
   @override
   void dispose() {
-    ref
-        .read(containerLogProvider(widget.containerName).notifier)
-        .disconnect();
+    ref.read(containerLogProvider(widget.containerName).notifier).disconnect();
     _scrollController.dispose();
     super.dispose();
   }
@@ -50,7 +48,9 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(containerLogProvider(widget.containerName));
-    final notifier = ref.read(containerLogProvider(widget.containerName).notifier);
+    final notifier = ref.read(
+      containerLogProvider(widget.containerName).notifier,
+    );
     final theme = Theme.of(context);
 
     // Auto-scroll when new lines arrive
@@ -88,7 +88,9 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
           // Auto-scroll toggle
           IconButton(
             icon: Icon(
-              _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
+              _autoScroll
+                  ? Icons.vertical_align_bottom
+                  : Icons.vertical_align_center,
             ),
             tooltip: _autoScroll ? '自动滚动' : '手动滚动',
             onPressed: () => setState(() => _autoScroll = !_autoScroll),
@@ -117,8 +119,11 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
               color: theme.colorScheme.errorContainer,
               child: Row(
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 16, color: theme.colorScheme.onErrorContainer),
+                  Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -140,9 +145,12 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               color: Colors.orange.withValues(alpha: 0.2),
-              child: Text('已暂停',
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: Colors.orange)),
+              child: Text(
+                '已暂停',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.orange,
+                ),
+              ),
             ),
           // Log content
           Expanded(
@@ -151,7 +159,9 @@ class _ContainerLogPageState extends ConsumerState<ContainerLogPage> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     itemCount: state.lines.length,
                     itemBuilder: (ctx, i) {
                       final line = state.lines[i];

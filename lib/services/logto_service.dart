@@ -13,9 +13,8 @@ import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
 
 class LogtoService {
-  static String get _clientId => kIsWeb
-      ? 'pti5kd1hbra1svpzaq9em'
-      : 'wgfs6xi6v7815b0mdfxwn';
+  static String get _clientId =>
+      kIsWeb ? 'pti5kd1hbra1svpzaq9em' : 'wgfs6xi6v7815b0mdfxwn';
   static const _authEndpoint = 'https://logto.lingqi.vip/oidc/auth';
   static const _tokenEndpoint = 'https://logto.lingqi.vip/oidc/token';
   static const _scopes = 'openid profile email';
@@ -88,7 +87,8 @@ class LogtoService {
   static const _managementApi = 'https://logto.lingqi.vip/api';
 
   /// 从 ID Token 解码用户信息
-  static Future<({String sub, String name, String email, String picture})?> getUserInfo() async {
+  static Future<({String sub, String name, String email, String picture})?>
+  getUserInfo() async {
     final idToken = await StorageService.instance.getLogtoIdToken();
     if (idToken == null || idToken.isEmpty) return null;
     try {
@@ -100,7 +100,12 @@ class LogtoService {
       final json = jsonDecode(decoded) as Map<String, dynamic>;
       return (
         sub: (json['sub'] ?? '').toString(),
-        name: (json['name'] ?? json['username'] ?? json['preferred_username'] ?? '').toString(),
+        name:
+            (json['name'] ??
+                    json['username'] ??
+                    json['preferred_username'] ??
+                    '')
+                .toString(),
         email: (json['email'] ?? '').toString(),
         picture: (json['picture'] ?? '').toString(),
       );

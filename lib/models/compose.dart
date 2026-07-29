@@ -39,8 +39,10 @@ class ComposeItem {
       path: s(json['path']),
       containers: json['containers'] is List
           ? (json['containers'] as List)
-              .map((e) => ComposeContainer.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map(
+                  (e) => ComposeContainer.fromJson(e as Map<String, dynamic>),
+                )
+                .toList()
           : [],
       env: s(json['env']),
     );

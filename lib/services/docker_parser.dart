@@ -56,7 +56,8 @@ class DockerParser {
     final nets = s(j['Networks']);
     if (nets.isNotEmpty) {
       networks.addAll(
-          nets.split(',').map((n) => n.trim()).where((n) => n.isNotEmpty));
+        nets.split(',').map((n) => n.trim()).where((n) => n.isNotEmpty),
+      );
     }
     return Container(
       containerID: s(j['ID']),
@@ -75,8 +76,7 @@ class DockerParser {
     final trimmed = jsonl.trim();
     if (trimmed.isEmpty) return ContainerStats();
     try {
-      final j =
-          jsonDecode(trimmed.split('\n').first) as Map<String, dynamic>;
+      final j = jsonDecode(trimmed.split('\n').first) as Map<String, dynamic>;
       String s(dynamic v) => v?.toString() ?? '';
       final cpuRaw = s(j['CPUPerc']).replaceAll('%', '');
       final cpu = double.tryParse(cpuRaw) ?? 0;
@@ -85,8 +85,7 @@ class DockerParser {
       final netRaw = s(j['NetIO']);
       final netParts = netRaw.split(' / ');
       final netRx = _parseByteSize(netParts.isNotEmpty ? netParts[0] : '0B');
-      final netTx =
-          _parseByteSize(netParts.length > 1 ? netParts[1] : '0B');
+      final netTx = _parseByteSize(netParts.length > 1 ? netParts[1] : '0B');
       final ioRaw = s(j['BlockIO']);
       final ioParts = ioRaw.split(' / ');
       final ioR = _parseByteSize(ioParts.isNotEmpty ? ioParts[0] : '0B');
@@ -188,11 +187,13 @@ class DockerParser {
       try {
         final j = jsonDecode(line.trim()) as Map<String, dynamic>;
         String s(dynamic v) => v?.toString() ?? '';
-        out.add(ComposeItem(
-          name: s(j['Name']),
-          path: s(j['ConfigFiles']),
-          composeFileExists: true,
-        ));
+        out.add(
+          ComposeItem(
+            name: s(j['Name']),
+            path: s(j['ConfigFiles']),
+            composeFileExists: true,
+          ),
+        );
       } catch (_) {}
     }
     return out;
@@ -203,11 +204,7 @@ class DockerParser {
     return text.split('\n').where((l) => l.trim().isNotEmpty).map((path) {
       final parts = path.trim().split('/');
       final dir = parts.length > 2 ? parts[parts.length - 2] : path.trim();
-      return ComposeItem(
-        name: dir,
-        path: path.trim(),
-        composeFileExists: true,
-      );
+      return ComposeItem(name: dir, path: path.trim(), composeFileExists: true);
     }).toList();
   }
 

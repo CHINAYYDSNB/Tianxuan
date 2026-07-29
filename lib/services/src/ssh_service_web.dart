@@ -96,20 +96,17 @@ class SshService {
 
   void resize(int cols, int rows) {
     if (!_connected || _channel == null) return;
-    _channel!.sink.add(jsonEncode({
-      'type': 'resize',
-      'cols': cols,
-      'rows': rows,
-    }));
+    _channel!.sink.add(
+      jsonEncode({'type': 'resize', 'cols': cols, 'rows': rows}),
+    );
   }
 
   void write(String input) {
     if (!_connected || _channel == null) return;
     final bytes = utf8.encode(input);
-    _channel!.sink.add(jsonEncode({
-      'type': 'input',
-      'data': base64Encode(bytes),
-    }));
+    _channel!.sink.add(
+      jsonEncode({'type': 'input', 'data': base64Encode(bytes)}),
+    );
   }
 
   Future<bool> ping() async {

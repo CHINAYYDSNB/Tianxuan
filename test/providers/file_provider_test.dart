@@ -112,6 +112,107 @@ void main() {
     });
   });
 
+  group('FileListNotifier 额外', () {
+    late MockFileService mock;
+    late ProviderContainer container;
+
+    setUp(() {
+      mock = MockFileService();
+      container = ProviderContainer(
+        overrides: [fileServiceProvider.overrideWithValue(mock)],
+      );
+    });
+    tearDown(() => container.dispose());
+
+    test('setSort 触发刷新并带参', () async {
+      final calls = <Map<Symbol, dynamic>>[];
+      when(
+        () => mock.list(
+          path: any(named: 'path'),
+          sortBy: any(named: 'sortBy'),
+          sortOrder: any(named: 'sortOrder'),
+          search: any(named: 'search'),
+        ),
+      ).thenAnswer((inv) {
+        calls.add(inv.namedArguments);
+        return Future.value(FileListResult(items: [], total: 0));
+      });
+      container.read(fileListProvider.notifier).setSort('name', 'asc');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        calls.any((m) => m[#sortBy] == 'name' && m[#sortOrder] == 'asc'),
+        isTrue,
+      );
+    });
+
+    test('setSearch 空串触发刷新', () async {
+      final calls = <Map<Symbol, dynamic>>[];
+      when(
+        () => mock.list(
+          path: any(named: 'path'),
+          sortBy: any(named: 'sortBy'),
+          sortOrder: any(named: 'sortOrder'),
+          search: any(named: 'search'),
+        ),
+      ).thenAnswer((inv) {
+        calls.add(inv.namedArguments);
+        return Future.value(FileListResult(items: [], total: 0));
+      });
+      container.read(fileListProvider.notifier).setSearch('');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // 初始 build + setSearch 后的刷新，至少两次加载
+      expect(calls.length, greaterThanOrEqualTo(2));
+    });
+
+    test('createItem 创建后刷新', () async {
+      when(
+        () => mock.list(path: any(named: 'path')),
+      ).thenAnswer((_) async => FileListResult(items: [], total: 0));
+      when(
+        () => mock.create(any(), isDir: any(named: 'isDir')),
+      ).thenAnswer((_) async {});
+      await container
+          .read(fileListProvider.notifier)
+          .createItem('/x/new', isDir: true);
+      verify(() => mock.create('/x/new', isDir: true)).called(1);
+    });
+
+    test('silentRefresh 成功替换数据', () async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('ok.txt')], total: 1),
+      );
+      await container.read(fileListProvider.notifier).silentRefresh();
+      final st = container.read(fileListProvider);
+      expect(st.hasValue, isTrue);
+      expect(st.value!.items.first.name, 'ok.txt');
+    });
+
+    test('silentRefresh 失败且原无数据时报错', () async {
+      when(
+        () => mock.list(path: any(named: 'path')),
+      ).thenAnswer((_) async => throw Exception('network'));
+      await container.read(fileListProvider.notifier).silentRefresh();
+      expect(container.read(fileListProvider).hasError, isTrue);
+    });
+  });
+
+  group('FileSelectionNotifier', () {
+    test('toggle 增删', () {
+      final notifier = FileSelectionNotifier();
+      notifier.toggle('/a');
+      expect(notifier.state.contains('/a'), isTrue);
+      notifier.toggle('/a');
+      expect(notifier.state.contains('/a'), isFalse);
+    });
+    test('selectAll / clear', () {
+      final notifier = FileSelectionNotifier();
+      notifier.selectAll(['/a', '/b']);
+      expect(notifier.state.length, 2);
+      notifier.clear();
+      expect(notifier.state.isEmpty, isTrue);
+    });
+  });
+
   group('FileEditorController', () {
     late MockFileService mock;
     late ProviderContainer container;

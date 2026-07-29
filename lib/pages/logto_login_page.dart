@@ -13,9 +13,7 @@ class LogtoLoginPage extends ConsumerWidget {
     final auth = ref.watch(logtoAuthProvider);
 
     if (auth.checking) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (auth.isLoggedIn) return child;
@@ -27,19 +25,21 @@ class LogtoLoginPage extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SvgPicture.asset(
-                'assets/Tianxuan.svg',
-                width: 100,
-                height: 100,
-              ),
+              SvgPicture.asset('assets/Tianxuan.svg', width: 100, height: 100),
               const SizedBox(height: 24),
-              Text('天璇 Tianxuan',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold)),
+              Text(
+                '天璇 Tianxuan',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text('1Panel 第三方管理器',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                '1Panel 第三方管理器',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
@@ -49,7 +49,10 @@ class LogtoLoginPage extends ConsumerWidget {
                     ref.read(logtoAuthProvider.notifier).login();
                   },
                   icon: const Icon(Icons.login),
-                  label: const Text('使用 Logto 登录', style: TextStyle(fontSize: 16)),
+                  label: const Text(
+                    '使用 Logto 登录',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

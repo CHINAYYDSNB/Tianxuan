@@ -41,7 +41,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     if (text.isEmpty || _sending) return;
     _ctrl.clear();
 
-    setState(() { _sending = true; _error = null; });
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
 
     try {
       await ref.read(aiSendProvider)(text);
@@ -80,9 +83,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                       tooltip: '关闭',
                     ),
                   Expanded(
-                    child: Text('AI 助手',
-                        style: theme.textTheme.titleMedium,
-                        textAlign: TextAlign.center),
+                    child: Text(
+                      'AI 助手',
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   if (messages.isNotEmpty)
                     IconButton(
@@ -93,8 +98,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                       },
                       tooltip: '清空对话',
                     ),
-                  if (messages.isEmpty)
-                    const SizedBox(width: 48), // 平衡布局
+                  if (messages.isEmpty) const SizedBox(width: 48), // 平衡布局
                 ],
               ),
             ),
@@ -107,10 +111,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(8),
             color: theme.colorScheme.errorContainer,
-            child: Text(_error!, style: TextStyle(
-              color: theme.colorScheme.onErrorContainer,
-              fontSize: 12,
-            )),
+            child: Text(
+              _error!,
+              style: TextStyle(
+                color: theme.colorScheme.onErrorContainer,
+                fontSize: 12,
+              ),
+            ),
           ),
 
         // 消息列表
@@ -139,12 +146,20 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome, size: 64, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
+          Icon(
+            Icons.auto_awesome,
+            size: 64,
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 16),
           Text('AI 助手', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text('可以问服务器状态、容器、网站等问题',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            '可以问服务器状态、容器、网站等问题',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -167,13 +182,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text('AI 助手',
-                        style: theme.textTheme.titleMedium,
-                        textAlign: TextAlign.center),
+                    child: Text(
+                      'AI 助手',
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-                if (widget.onClose != null)
-                  const SizedBox(width: 48),
+                if (widget.onClose != null) const SizedBox(width: 48),
               ],
             ),
           ),
@@ -185,13 +201,21 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.smart_toy_outlined, size: 80, color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 80,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                  ),
                   const SizedBox(height: 24),
                   Text('尚未配置 AI 接口', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 12),
-                  Text('请前往设置 → AI 配置，填写 OpenAI 兼容接口信息',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    '请前往设置 → AI 配置，填写 OpenAI 兼容接口信息',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     onPressed: () => _openSettings(theme),
@@ -214,7 +238,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         title: const Text('AI 配置'),
         content: const _AiConfigForm(),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
         ],
       ),
     );
@@ -242,9 +269,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                   ),
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
@@ -261,7 +292,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.send),
               ),
@@ -289,20 +323,28 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.onPrimaryContainer),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isUser
@@ -318,7 +360,9 @@ class _MessageBubble extends StatelessWidget {
                   : Text(
                       message.content,
                       style: TextStyle(
-                        color: isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                        color: isUser
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
             ),
@@ -328,7 +372,11 @@ class _MessageBubble extends StatelessWidget {
             CircleAvatar(
               radius: 16,
               backgroundColor: theme.colorScheme.secondaryContainer,
-              child: Icon(Icons.person, size: 16, color: theme.colorScheme.onSecondaryContainer),
+              child: Icon(
+                Icons.person,
+                size: 16,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
             ),
           ],
         ],
@@ -379,7 +427,9 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -435,7 +485,8 @@ class _AiConfigFormState extends ConsumerState<_AiConfigForm> {
               helperText: 'OpenAI 兼容接口地址',
               border: OutlineInputBorder(),
             ),
-            onChanged: (v) => ref.read(aiConfigProvider.notifier).updateEndpoint(v),
+            onChanged: (v) =>
+                ref.read(aiConfigProvider.notifier).updateEndpoint(v),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -446,7 +497,8 @@ class _AiConfigFormState extends ConsumerState<_AiConfigForm> {
               border: OutlineInputBorder(),
             ),
             obscureText: true,
-            onChanged: (v) => ref.read(aiConfigProvider.notifier).updateApiKey(v),
+            onChanged: (v) =>
+                ref.read(aiConfigProvider.notifier).updateApiKey(v),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -456,7 +508,8 @@ class _AiConfigFormState extends ConsumerState<_AiConfigForm> {
               hintText: 'gpt-4o-mini',
               border: OutlineInputBorder(),
             ),
-            onChanged: (v) => ref.read(aiConfigProvider.notifier).updateModel(v),
+            onChanged: (v) =>
+                ref.read(aiConfigProvider.notifier).updateModel(v),
           ),
         ],
       ),

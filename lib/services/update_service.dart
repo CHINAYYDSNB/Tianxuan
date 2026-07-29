@@ -47,7 +47,11 @@ class UpdateService {
       final url = data['html_url']?.toString() ?? '';
       if (tag.isEmpty) return null;
 
-      return (tag: tag, url: url, newer: _compareVersion(tag, currentVersion) > 0);
+      return (
+        tag: tag,
+        url: url,
+        newer: _compareVersion(tag, currentVersion) > 0,
+      );
     } catch (e) {
       debugPrint('Update check error: $e');
       return null;

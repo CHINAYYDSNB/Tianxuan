@@ -15,14 +15,22 @@ class EmptyStatePage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.dns_outlined, size: 80,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+            Icon(
+              Icons.dns_outlined,
+              size: 80,
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 24),
             Text('添加服务器', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text('点右下角 + 添加你的 1Panel 服务器',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              '点右下角 + 添加你的 1Panel 服务器',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             if (error != null) ...[
               const SizedBox(height: 24),
               Container(
@@ -34,20 +42,28 @@ class EmptyStatePage extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline,
-                        color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(error,
-                          style: TextStyle(fontSize: 12,
-                              color: Theme.of(context).colorScheme.onErrorContainer)),
+                      child: Text(
+                        error,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/login'),
                 child: const Text('重新配置服务器'),
               ),
             ],

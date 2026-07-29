@@ -22,7 +22,16 @@ class FileIcon extends StatelessWidget {
 
     final ext = file.extension?.toLowerCase() ?? '';
 
-    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'].contains(ext)) {
+    if ([
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'svg',
+      'webp',
+      'ico',
+    ].contains(ext)) {
       return (Icons.image, Colors.green);
     }
     if (['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv'].contains(ext)) {
@@ -34,10 +43,37 @@ class FileIcon extends StatelessWidget {
     if (['zip', 'tar', 'gz', 'bz2', 'xz', 'rar', '7z'].contains(ext)) {
       return (Icons.archive, Colors.brown);
     }
-    if (['txt', 'md', 'log', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf'].contains(ext)) {
+    if ([
+      'txt',
+      'md',
+      'log',
+      'yaml',
+      'yml',
+      'toml',
+      'ini',
+      'cfg',
+      'conf',
+    ].contains(ext)) {
       return (Icons.description, Colors.blueGrey);
     }
-    if (['dart', 'js', 'ts', 'py', 'java', 'go', 'rs', 'c', 'cpp', 'h', 'css', 'html', 'json', 'xml', 'sh', 'bat'].contains(ext)) {
+    if ([
+      'dart',
+      'js',
+      'ts',
+      'py',
+      'java',
+      'go',
+      'rs',
+      'c',
+      'cpp',
+      'h',
+      'css',
+      'html',
+      'json',
+      'xml',
+      'sh',
+      'bat',
+    ].contains(ext)) {
       return (Icons.code, Colors.blue);
     }
     if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].contains(ext)) {

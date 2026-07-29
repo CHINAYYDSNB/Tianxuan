@@ -12,14 +12,17 @@ class LogtoBridge {
   static Map<String, String> extractCallbackParams() {
     final uri = Uri.parse(html.window.location.href);
     return {
-      if (uri.queryParameters['code'] != null) 'code': uri.queryParameters['code']!,
-      if (uri.queryParameters['state'] != null) 'state': uri.queryParameters['state']!,
+      if (uri.queryParameters['code'] != null)
+        'code': uri.queryParameters['code']!,
+      if (uri.queryParameters['state'] != null)
+        'state': uri.queryParameters['state']!,
     };
   }
 
   /// 清除 URL 中的 OAuth 参数
   static void clearCallbackParams() {
-    final url = '${html.window.location.origin}${html.window.location.pathname}';
+    final url =
+        '${html.window.location.origin}${html.window.location.pathname}';
     html.window.history.replaceState(null, '', url);
   }
 

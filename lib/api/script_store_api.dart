@@ -15,7 +15,8 @@ class ScriptStoreApi {
     ),
     _Source(
       name: 'GitHub',
-      rawBase: 'https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts',
+      rawBase:
+          'https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts',
     ),
   ];
 
@@ -33,18 +34,20 @@ class ScriptStoreApi {
     for (final src in _sources) {
       final url = buildUrl(src);
       // ignore: unawaited_futures
-      http.get(Uri.parse(url)).timeout(timeout).then((r) {
-        if (r.statusCode == 200 && !completer.isCompleted) {
-          completer.complete((src: src, body: r.body));
-        }
-      }).catchError((_) {
-        failCount++;
-        if (failCount >= _sources.length && !completer.isCompleted) {
-          completer.completeError(
-            Exception('所有脚本源均不可用，请检查网络连接'),
-          );
-        }
-      });
+      http
+          .get(Uri.parse(url))
+          .timeout(timeout)
+          .then((r) {
+            if (r.statusCode == 200 && !completer.isCompleted) {
+              completer.complete((src: src, body: r.body));
+            }
+          })
+          .catchError((_) {
+            failCount++;
+            if (failCount >= _sources.length && !completer.isCompleted) {
+              completer.completeError(Exception('所有脚本源均不可用，请检查网络连接'));
+            }
+          });
     }
 
     final result = await completer.future;
@@ -64,9 +67,7 @@ class ScriptStoreApi {
 
     // 竞速直连源
     try {
-      final body = await _race(
-        (src) => '${src.rawBase}/index.json',
-      );
+      final body = await _race((src) => '${src.rawBase}/index.json');
       return ScriptIndex.fromJson(jsonDecode(body));
     } catch (e) {
       // 竞速失败，尝试已有最快源
@@ -74,7 +75,8 @@ class ScriptStoreApi {
         final r = await http
             .get(Uri.parse('${_fastest!.rawBase}/index.json'))
             .timeout(const Duration(seconds: 10));
-        if (r.statusCode == 200) return ScriptIndex.fromJson(jsonDecode(r.body));
+        if (r.statusCode == 200)
+          return ScriptIndex.fromJson(jsonDecode(r.body));
       }
       rethrow;
     }
@@ -97,7 +99,8 @@ class ScriptStoreApi {
         final r = await http
             .get(Uri.parse('${base.rawBase}/details/$id.json'))
             .timeout(const Duration(seconds: 10));
-        if (r.statusCode == 200) return ScriptDetail.fromJson(jsonDecode(r.body));
+        if (r.statusCode == 200)
+          return ScriptDetail.fromJson(jsonDecode(r.body));
       } catch (_) {}
     }
 
@@ -114,25 +117,37 @@ class ScriptStoreApi {
     // 先试本地代理
     try {
       final r = await http
-          .get(Uri.parse('$_proxyBase/api/script-download?url=${Uri.encodeComponent(url)}'))
+          .get(
+            Uri.parse(
+              '$_proxyBase/api/script-download?url=${Uri.encodeComponent(url)}',
+            ),
+          )
           .timeout(const Duration(seconds: 10));
       if (r.statusCode == 200) return r.body;
     } catch (_) {}
 
     // 直连
-    final r = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+    final r = await http
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 15));
     if (r.statusCode != 200) throw Exception('下载失败 (${r.statusCode})');
     return r.body;
   }
 
   /// 上传脚本到 1Panel
   static Future<void> uploadToServer(String path, String content) async {
-    await ApiClient.instance.post('/files/save', data: {'path': path, 'content': content});
+    await ApiClient.instance.post(
+      '/files/save',
+      data: {'path': path, 'content': content},
+    );
   }
 
   /// 通过 server.mjs 执行脚本
   static Future<String> executeViaProxy(String scriptPath) async {
-    final url = ApiClient.instance.serverUrl.replaceAll(RegExp(r':\d+$'), ':25568');
+    final url = ApiClient.instance.serverUrl.replaceAll(
+      RegExp(r':\d+$'),
+      ':25568',
+    );
     final r = await http.post(
       Uri.parse('$url/api/script/exec'),
       headers: {'Content-Type': 'application/json'},

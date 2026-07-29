@@ -93,7 +93,10 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     try {
       final req = WebsiteCreateRequest(
@@ -111,9 +114,9 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
       await WebsiteApi.create(req);
       if (mounted) {
         ref.invalidate(websitesProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('网站创建成功')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('网站创建成功')));
         Navigator.of(context).pop();
       }
     } catch (e, st) {
@@ -166,7 +169,8 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : Text(_currentStep == 2 ? '创建' : '下一步'),
                   ),
                   const SizedBox(width: 12),
@@ -294,7 +298,8 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
               hintText: 'http://127.0.0.1:8080',
               border: OutlineInputBorder(),
             ),
-            validator: (v) => _type == 'proxy' && (v == null || v.trim().isEmpty)
+            validator: (v) =>
+                _type == 'proxy' && (v == null || v.trim().isEmpty)
                 ? '请输入代理地址'
                 : null,
           ),
@@ -311,8 +316,8 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
             ),
             validator: (v) =>
                 _type == 'redirect' && (v == null || v.trim().isEmpty)
-                    ? '请输入重定向地址'
-                    : null,
+                ? '请输入重定向地址'
+                : null,
           ),
           const SizedBox(height: 16),
         ],
@@ -442,7 +447,8 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
         _summaryRow('别名', _aliasCtrl.text),
         if (_remarkCtrl.text.isNotEmpty) _summaryRow('备注', _remarkCtrl.text),
         if (_proxyCtrl.text.isNotEmpty) _summaryRow('代理地址', _proxyCtrl.text),
-        if (_redirectCtrl.text.isNotEmpty) _summaryRow('重定向', _redirectCtrl.text),
+        if (_redirectCtrl.text.isNotEmpty)
+          _summaryRow('重定向', _redirectCtrl.text),
         if (_portCtrl.text.isNotEmpty) _summaryRow('端口', _portCtrl.text),
         if (_createDB) _summaryRow('数据库', '${_dbType}: ${_dbNameCtrl.text}'),
         if (_createFTP) _summaryRow('FTP', _ftpUserCtrl.text),
@@ -462,10 +468,13 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
         children: [
           SizedBox(
             width: 80,
-            child: Text(label, style: const TextStyle(
-              color: const Color(0xFF686F78),
-              fontWeight: FontWeight.w500,
-            )),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: const Color(0xFF686F78),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Expanded(child: Text(value)),
         ],

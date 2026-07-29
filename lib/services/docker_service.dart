@@ -82,7 +82,10 @@ class DockerService {
 
   /// docker pull <image> (non-streaming, returns when done)
   Future<SshResult> pullSync(String image) {
-    return _ssh.execute('docker pull $image', timeout: const Duration(minutes: 10));
+    return _ssh.execute(
+      'docker pull $image',
+      timeout: const Duration(minutes: 10),
+    );
   }
 
   /// docker rmi [-f] <id>
@@ -100,7 +103,9 @@ class DockerService {
   /// Check if newer version of image exists
   /// docker manifest inspect <image> (remote) vs docker image inspect <image> (local)
   Future<SshResult> checkImageUpdate(String image) {
-    return _ssh.execute('docker manifest inspect $image 2>/dev/null || echo "{}"');
+    return _ssh.execute(
+      'docker manifest inspect $image 2>/dev/null || echo "{}"',
+    );
   }
 
   /// docker image inspect <image>
@@ -121,7 +126,9 @@ class DockerService {
 
   /// docker compose ls --format json
   Future<SshResult> listComposes() {
-    return _ssh.execute('docker compose ls --format json 2>/dev/null || echo "[]"');
+    return _ssh.execute(
+      'docker compose ls --format json 2>/dev/null || echo "[]"',
+    );
   }
 
   /// docker compose -f <file> ps --format json
@@ -133,11 +140,7 @@ class DockerService {
   }
 
   /// docker compose -f <file> up -d / down / stop / restart / pull
-  Future<SshResult> composeOp(
-    String workdir,
-    String op, {
-    String? file,
-  }) {
+  Future<SshResult> composeOp(String workdir, String op, {String? file}) {
     final f = file ?? 'docker-compose.yml';
     final cmd = switch (op) {
       'up' => 'up -d',
@@ -189,19 +192,25 @@ class DockerService {
 
   /// systemctl reload docker
   Future<SshResult> reloadDaemon() {
-    return _ssh.execute('sudo systemctl reload docker 2>/dev/null || sudo systemctl restart docker');
+    return _ssh.execute(
+      'sudo systemctl reload docker 2>/dev/null || sudo systemctl restart docker',
+    );
   }
 
   // ─── Docker Daemon ───
 
   /// docker info --format '{{json .}}'
   Future<SshResult> dockerInfo() {
-    return _ssh.execute("docker info --format '{{json .}}' 2>/dev/null || echo '{}'");
+    return _ssh.execute(
+      "docker info --format '{{json .}}' 2>/dev/null || echo '{}'",
+    );
   }
 
   /// systemctl status docker
   Future<SshResult> daemonStatus() {
-    return _ssh.execute('systemctl status docker --no-pager 2>/dev/null || echo "inactive"');
+    return _ssh.execute(
+      'systemctl status docker --no-pager 2>/dev/null || echo "inactive"',
+    );
   }
 
   /// systemctl start|stop|restart docker

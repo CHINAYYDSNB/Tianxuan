@@ -39,7 +39,10 @@ class FileApi {
   /// Load file content
   /// POST /files/content
   static Future<FileItem> getContent(String path) async {
-    final res = await ApiClient.instance.post('/files/content', data: {'path': path});
+    final res = await ApiClient.instance.post(
+      '/files/content',
+      data: {'path': path},
+    );
     final body = _parseBody(res);
     return FileItem.fromJson(body);
   }
@@ -47,20 +50,26 @@ class FileApi {
   /// Preview file content
   /// POST /files/preview
   static Future<FileItem> preview(String path) async {
-    final res = await ApiClient.instance.post('/files/preview', data: {'path': path});
+    final res = await ApiClient.instance.post(
+      '/files/preview',
+      data: {'path': path},
+    );
     final body = _parseBody(res);
     return FileItem.fromJson(body);
   }
 
   /// Read file by line (for large files)
   /// POST /files/read
-  static Future<FileLineResult> readByLine(String path, {int page = 1, int pageSize = 100, String type = 'text'}) async {
-    final res = await ApiClient.instance.post('/files/read', data: {
-      'path': path,
-      'page': page,
-      'pageSize': pageSize,
-      'type': type,
-    });
+  static Future<FileLineResult> readByLine(
+    String path, {
+    int page = 1,
+    int pageSize = 100,
+    String type = 'text',
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/files/read',
+      data: {'path': path, 'page': page, 'pageSize': pageSize, 'type': type},
+    );
     final body = _parseBody(res);
     return FileLineResult(
       lines: (body['lines'] as List?)?.map((e) => e.toString()).toList() ?? [],
@@ -74,16 +83,21 @@ class FileApi {
   /// Save file content
   /// POST /files/save
   static Future<void> save(String path, String content) async {
-    await ApiClient.instance.post('/files/save', data: {
-      'path': path,
-      'content': content,
-    });
+    await ApiClient.instance.post(
+      '/files/save',
+      data: {'path': path, 'content': content},
+    );
   }
 
   /// Create file or directory
   /// POST /files
   /// mode: 数字权限如 493 (0755), null=API 默认
-  static Future<void> create(String path, {bool isDir = false, int? mode, String? content}) async {
+  static Future<void> create(
+    String path, {
+    bool isDir = false,
+    int? mode,
+    String? content,
+  }) async {
     final data = <String, dynamic>{'path': path, 'isDir': isDir};
     if (mode != null) data['mode'] = mode;
     if (content != null) data['content'] = content;
@@ -93,19 +107,19 @@ class FileApi {
   /// Rename file/directory
   /// POST /files/rename
   static Future<void> rename(String oldName, String newName) async {
-    await ApiClient.instance.post('/files/rename', data: {
-      'oldName': oldName,
-      'newName': newName,
-    });
+    await ApiClient.instance.post(
+      '/files/rename',
+      data: {'oldName': oldName, 'newName': newName},
+    );
   }
 
   /// Delete file/directory
   /// POST /files/del
   static Future<void> delete(String path, {bool isDir = false}) async {
-    await ApiClient.instance.post('/files/del', data: {
-      'path': path,
-      'isDir': isDir,
-    });
+    await ApiClient.instance.post(
+      '/files/del',
+      data: {'path': path, 'isDir': isDir},
+    );
   }
 
   /// Batch delete
@@ -118,57 +132,68 @@ class FileApi {
   /// POST /files/mode
   /// mode: 数字权限如 420 (0644)
   static Future<void> changeMode(String path, int mode) async {
-    await ApiClient.instance.post('/files/mode', data: {
-      'path': path,
-      'mode': mode,
-    });
+    await ApiClient.instance.post(
+      '/files/mode',
+      data: {'path': path, 'mode': mode},
+    );
   }
 
   /// Change file owner
   /// POST /files/owner
-  static Future<void> changeOwner(String path, String user, String group) async {
-    await ApiClient.instance.post('/files/owner', data: {
-      'path': path,
-      'user': user,
-      'group': group,
-    });
+  static Future<void> changeOwner(
+    String path,
+    String user,
+    String group,
+  ) async {
+    await ApiClient.instance.post(
+      '/files/owner',
+      data: {'path': path, 'user': user, 'group': group},
+    );
   }
 
   /// Move file(s) to new location
   /// POST /files/move
   static Future<void> move(List<String> oldPaths, String newPath) async {
-    await ApiClient.instance.post('/files/move', data: {
-      'oldPaths': oldPaths,
-      'newPath': newPath,
-      'type': 'move',
-    });
+    await ApiClient.instance.post(
+      '/files/move',
+      data: {'oldPaths': oldPaths, 'newPath': newPath, 'type': 'move'},
+    );
   }
 
   /// Compress files
   /// POST /files/compress
-  static Future<void> compress(List<String> files, String dst, String name, {String type = 'zip'}) async {
-    await ApiClient.instance.post('/files/compress', data: {
-      'files': files,
-      'dst': dst,
-      'name': name,
-      'type': type,
-    });
+  static Future<void> compress(
+    List<String> files,
+    String dst,
+    String name, {
+    String type = 'zip',
+  }) async {
+    await ApiClient.instance.post(
+      '/files/compress',
+      data: {'files': files, 'dst': dst, 'name': name, 'type': type},
+    );
   }
 
   /// Decompress file
   /// POST /files/decompress
-  static Future<void> decompress(String path, String dst, {String type = 'zip'}) async {
-    await ApiClient.instance.post('/files/decompress', data: {
-      'path': path,
-      'dst': dst,
-      'type': type,
-    });
+  static Future<void> decompress(
+    String path,
+    String dst, {
+    String type = 'zip',
+  }) async {
+    await ApiClient.instance.post(
+      '/files/decompress',
+      data: {'path': path, 'dst': dst, 'type': type},
+    );
   }
 
   /// Get directory size
   /// POST /files/size
   static Future<DirSizeInfo> getSize(String path) async {
-    final res = await ApiClient.instance.post('/files/size', data: {'path': path});
+    final res = await ApiClient.instance.post(
+      '/files/size',
+      data: {'path': path},
+    );
     final body = _parseBody(res);
     return DirSizeInfo(
       size: (body['size'] as num?)?.toInt() ?? 0,
@@ -183,7 +208,9 @@ class FileApi {
     final res = await ApiClient.instance.post('/files/mount');
     final data = res.data['data'];
     if (data is List) {
-      return data.map((e) => MountInfo.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => MountInfo.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }
@@ -194,22 +221,29 @@ class FileApi {
   static Future<UserGroupInfo> getUserGroup() async {
     final res = await ApiClient.instance.post('/files/user/group');
     final body = _parseBody(res);
-    final users = (body['users'] as List?)?.map((e) {
-      if (e is Map) {
-        final uname = e['username']?.toString() ?? e['user']?.toString() ?? '';
-        final gname = e['group']?.toString() ?? '';
-        return '$uname ($gname)';
-      }
-      return e.toString();
-    }).toList() ?? [];
-    final groups = (body['groups'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final users =
+        (body['users'] as List?)?.map((e) {
+          if (e is Map) {
+            final uname =
+                e['username']?.toString() ?? e['user']?.toString() ?? '';
+            final gname = e['group']?.toString() ?? '';
+            return '$uname ($gname)';
+          }
+          return e.toString();
+        }).toList() ??
+        [];
+    final groups =
+        (body['groups'] as List?)?.map((e) => e.toString()).toList() ?? [];
     return UserGroupInfo(users: users, groups: groups);
   }
 
   /// Download file — returns bytes
   /// GET /files/download?path=xxx
   static Future<List<int>> download(String path) async {
-    final res = await ApiClient.instance.getBytes('/files/download', params: {'path': path});
+    final res = await ApiClient.instance.getBytes(
+      '/files/download',
+      params: {'path': path},
+    );
     return res.data ?? [];
   }
 
@@ -225,7 +259,11 @@ class FileApi {
 
   /// Upload file bytes (multipart)
   /// POST /files/upload
-  static Future<void> uploadBytes(String path, String fileName, List<int> bytes) async {
+  static Future<void> uploadBytes(
+    String path,
+    String fileName,
+    List<int> bytes,
+  ) async {
     final formData = FormData.fromMap({
       'file': MultipartFile.fromBytes(bytes, filename: fileName),
       'path': path,
@@ -236,7 +274,10 @@ class FileApi {
   /// Check if file exists
   /// POST /files/check
   static Future<bool> checkExists(String path) async {
-    final res = await ApiClient.instance.post('/files/check', data: {'path': path});
+    final res = await ApiClient.instance.post(
+      '/files/check',
+      data: {'path': path},
+    );
     return res.data['data'] == true;
   }
 

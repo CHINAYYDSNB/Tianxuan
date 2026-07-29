@@ -188,9 +188,15 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
           _buffer.flushNow();
           _startKeepAlive();
           if (mounted) {
-            setState(() { _connecting = false; _error = null; });
+            setState(() {
+              _connecting = false;
+              _error = null;
+            });
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('SSH 已重新连接'), backgroundColor: Colors.green),
+              const SnackBar(
+                content: Text('SSH 已重新连接'),
+                backgroundColor: Colors.green,
+              ),
             );
           }
           return;
@@ -222,10 +228,11 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
         privateKey: widget.privateKey,
       );
     } catch (e) {
-      if (mounted) setState(() {
-        _connecting = false;
-        _error = e.toString();
-      });
+      if (mounted)
+        setState(() {
+          _connecting = false;
+          _error = e.toString();
+        });
     }
   }
 
@@ -267,58 +274,66 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
                 children: [
                   CircularProgressIndicator(color: Colors.greenAccent),
                   SizedBox(height: 16),
-                  Text('正在连接 SSH...',
-                      style: TextStyle(color: Colors.grey)),
+                  Text('正在连接 SSH...', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             )
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            size: 48, color: Colors.redAccent),
-                        const SizedBox(height: 12),
-                        Text('连接失败',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(color: Colors.white)),
-                        const SizedBox(height: 8),
-                        Text(_error!,
-                            style: const TextStyle(color: Colors.grey),
-                            textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () {
-                            setState(() {
-                              _error = null;
-                              _connecting = true;
-                            });
-                            _connect();
-                          },
-                          child: const Text('重试'),
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.redAccent,
                     ),
-                  ),
-                )
-              : TerminalView(
-                  _terminal,
-                  theme: _termTheme,
-                  textStyle: const TerminalStyle(
-                    fontSize: 14,
-                    height: 1.3,
-                    fontFamilyFallback: [
-                      'Menlo', 'Consolas', 'Courier New',
-                      'Noto Sans Mono CJK SC', 'monospace',
-                    ],
-                  ),
-                  autofocus: true,
+                    const SizedBox(height: 12),
+                    Text(
+                      '连接失败',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () {
+                        setState(() {
+                          _error = null;
+                          _connecting = true;
+                        });
+                        _connect();
+                      },
+                      child: const Text('重试'),
+                    ),
+                  ],
                 ),
+              ),
+            )
+          : TerminalView(
+              _terminal,
+              theme: _termTheme,
+              textStyle: const TerminalStyle(
+                fontSize: 14,
+                height: 1.3,
+                fontFamilyFallback: [
+                  'Menlo',
+                  'Consolas',
+                  'Courier New',
+                  'Noto Sans Mono CJK SC',
+                  'monospace',
+                ],
+              ),
+              autofocus: true,
+            ),
     );
   }
 
@@ -326,9 +341,8 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF2D2D2D),
-      builder: (ctx) => _TerminalKeyboard(
-        onKey: (key) => _terminal.textInput(key),
-      ),
+      builder: (ctx) =>
+          _TerminalKeyboard(onKey: (key) => _terminal.textInput(key)),
     );
   }
 }
@@ -363,8 +377,10 @@ class _TerminalKeyboard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('虚拟键盘',
-              style: TextStyle(color: Colors.white, fontSize: 12)),
+          const Text(
+            '虚拟键盘',
+            style: TextStyle(color: Colors.white, fontSize: 12),
+          ),
           const SizedBox(height: 8),
           for (final row in rows)
             Padding(
@@ -384,9 +400,13 @@ class _TerminalKeyboard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          child: Text(key,
-                              style: const TextStyle(color: Colors.white)),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            key,
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                     ),
@@ -437,27 +457,34 @@ class _QuickSshDialogState extends State<QuickSshDialog> {
             TextField(
               controller: _hostCtrl,
               decoration: const InputDecoration(
-                  labelText: '主机地址', border: OutlineInputBorder()),
+                labelText: '主机地址',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _portCtrl,
               decoration: const InputDecoration(
-                  labelText: '端口', border: OutlineInputBorder()),
+                labelText: '端口',
+                border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _userCtrl,
               decoration: const InputDecoration(
-                  labelText: '用户名', border: OutlineInputBorder()),
+                labelText: '用户名',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _passCtrl,
               decoration: InputDecoration(
-                  labelText: _useKey ? '私钥内容' : '密码',
-                  border: const OutlineInputBorder()),
+                labelText: _useKey ? '私钥内容' : '密码',
+                border: const OutlineInputBorder(),
+              ),
               obscureText: !_useKey,
               maxLines: _useKey ? 4 : 1,
             ),
@@ -476,10 +503,7 @@ class _QuickSshDialogState extends State<QuickSshDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
-        FilledButton(
-          onPressed: _connect,
-          child: const Text('连接'),
-        ),
+        FilledButton(onPressed: _connect, child: const Text('连接')),
       ],
     );
   }

@@ -84,5 +84,5 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
 
 final composeListProvider =
     AsyncNotifierProvider<ComposeListNotifier, List<ComposeItem>>(
-  ComposeListNotifier.new,
-);
+      ComposeListNotifier.new,
+    );

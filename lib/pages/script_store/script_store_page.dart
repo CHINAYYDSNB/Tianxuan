@@ -40,13 +40,20 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                     decoration: InputDecoration(
                       hintText: '搜索脚本...',
                       prefixIcon: const Icon(Icons.search, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       isDense: true,
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      fillColor: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3),
                     ),
-                    onChanged: (v) => ref.read(scriptSearchProvider.notifier).state = v,
+                    onChanged: (v) =>
+                        ref.read(scriptSearchProvider.notifier).state = v,
                   ),
                 ),
                 IconButton(
@@ -63,15 +70,20 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                 var items = idx.scripts;
                 if (search.isNotEmpty) {
                   final q = search.toLowerCase();
-                  items = items.where((s) =>
-                    s.name.toLowerCase().contains(q) ||
-                    s.author.toLowerCase().contains(q)
-                  ).toList();
+                  items = items
+                      .where(
+                        (s) =>
+                            s.name.toLowerCase().contains(q) ||
+                            s.author.toLowerCase().contains(q),
+                      )
+                      .toList();
                 }
                 if (items.isEmpty) {
                   return Center(
-                    child: Text(search.isEmpty ? '暂无脚本' : '没有匹配的脚本',
-                        style: theme.textTheme.bodyLarge),
+                    child: Text(
+                      search.isEmpty ? '暂无脚本' : '没有匹配的脚本',
+                      style: theme.textTheme.bodyLarge,
+                    ),
                   );
                 }
                 return ListView.builder(
@@ -87,7 +99,11 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      icon: Icon(Icons.cloud_off, size: 36, color: theme.colorScheme.error),
+                      icon: Icon(
+                        Icons.cloud_off,
+                        size: 36,
+                        color: theme.colorScheme.error,
+                      ),
                       title: const Text('脚本商店不可用'),
                       content: Text('$e', style: theme.textTheme.bodySmall),
                       actions: [
@@ -113,10 +129,18 @@ class _ScriptStorePageState extends ConsumerState<ScriptStorePage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
+                        Icon(
+                          Icons.cloud_off,
+                          size: 48,
+                          color: theme.colorScheme.error,
+                        ),
                         const SizedBox(height: 12),
                         Text('加载失败', style: theme.textTheme.titleMedium),
-                        Text('$e', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+                        Text(
+                          '$e',
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           onPressed: () => ref.invalidate(scriptIndexProvider),
@@ -166,9 +190,19 @@ class _ScriptCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      item.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (item.author.isNotEmpty)
-                      Text(item.author, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                      Text(
+                        item.author,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -196,7 +230,11 @@ class _LangBadge extends StatelessWidget {
       ),
       child: Text(
         isPy ? 'Python' : 'Shell',
-        style: TextStyle(fontSize: 11, color: isPy ? Colors.blue : Colors.green, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 11,
+          color: isPy ? Colors.blue : Colors.green,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

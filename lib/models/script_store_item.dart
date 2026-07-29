@@ -12,12 +12,13 @@ class ScriptIndexItem {
     this.author = '',
   });
 
-  factory ScriptIndexItem.fromJson(Map<String, dynamic> json) => ScriptIndexItem(
-    id: json['id'] as String? ?? '',
-    name: json['name'] as String? ?? '',
-    language: json['language'] as String? ?? 'sh',
-    author: json['author'] as String? ?? '',
-  );
+  factory ScriptIndexItem.fromJson(Map<String, dynamic> json) =>
+      ScriptIndexItem(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        language: json['language'] as String? ?? 'sh',
+        author: json['author'] as String? ?? '',
+      );
 }
 
 /// 脚本商店索引
@@ -31,9 +32,11 @@ class ScriptIndex {
   factory ScriptIndex.fromJson(Map<String, dynamic> json) => ScriptIndex(
     version: json['version'] as int? ?? 1,
     updatedAt: json['updatedAt'] as String? ?? '',
-    scripts: (json['scripts'] as List?)
-        ?.map((e) => ScriptIndexItem.fromJson(e as Map<String, dynamic>))
-        .toList() ?? [],
+    scripts:
+        (json['scripts'] as List?)
+            ?.map((e) => ScriptIndexItem.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
   );
 }
 
@@ -67,7 +70,9 @@ class ScriptDetail {
     id: json['id'] as String? ?? '',
     name: json['name'] as String? ?? '',
     description: json['description'] as String? ?? '',
-    author: ScriptAuthor.fromJson(json['author'] as Map<String, dynamic>? ?? {}),
+    author: ScriptAuthor.fromJson(
+      json['author'] as Map<String, dynamic>? ?? {},
+    ),
     language: json['language'] as String? ?? 'sh',
     dependencies: (json['dependencies'] as List?)?.cast<String>() ?? [],
     downloadUrl: json['downloadUrl'] as String? ?? '',
@@ -84,7 +89,12 @@ class ScriptAuthor {
   final String avatar;
   final String email;
 
-  ScriptAuthor({this.logtoId = '', this.name = '', this.avatar = '', this.email = ''});
+  ScriptAuthor({
+    this.logtoId = '',
+    this.name = '',
+    this.avatar = '',
+    this.email = '',
+  });
 
   bool get hasInfo => name.isNotEmpty;
 

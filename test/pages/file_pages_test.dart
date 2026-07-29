@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:tianxuan/api/file_api.dart';
 import 'package:tianxuan/models/file_item.dart';
+import 'package:tianxuan/providers/file_provider.dart';
 import 'package:tianxuan/pages/file/file_editor_page.dart';
 import 'package:tianxuan/pages/file/file_image_preview_page.dart';
 import 'package:tianxuan/pages/file/file_list_page.dart';
@@ -86,6 +87,33 @@ void main() {
       }
       verify(() => mock.save('/x/f.dart', 'edited content')).called(1);
     });
+
+    testWidgets('加载失败显示错误与重试', (tester) async {
+      when(
+        () => mock.readByLine(
+          any(),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) => throw Exception('boom'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [fileServiceProvider.overrideWithValue(mock)],
+          child: const MaterialApp(
+            home: FileEditorPage(filePath: '/x/f.dart', fileName: 'f.dart'),
+          ),
+        ),
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('加载失败'), findsWidgets);
+      await tester.tap(find.text('重试'));
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    });
   });
 
   group('FileListPage 路由', () {
@@ -134,6 +162,167 @@ void main() {
       await tester.tap(find.text('a.dart'));
       await tester.pumpAndSettle();
       expect(find.byType(FileEditorPage), findsOneWidget);
+    });
+  });
+
+  group('FileListPage 交互', () {
+    late MockFileService mock;
+    late ProviderContainer container;
+
+    setUp(() {
+      mock = MockFileService();
+      container = ProviderContainer(
+        overrides: [fileServiceProvider.overrideWithValue(mock)],
+      );
+    });
+    tearDown(() => container.dispose());
+
+    Future<void> pumpList(tester) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: FileListPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('搜索框切换与提交', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      await pumpList(tester);
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsWidgets);
+      await tester.enterText(find.byType(TextField).first, 'query');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('新建文件夹对话框调用 createItem', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      when(
+        () => mock.create(any(), isDir: any(named: 'isDir')),
+      ).thenAnswer((_) async {});
+      await pumpList(tester);
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('新建文件夹'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'newdir');
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+      verify(() => mock.create('/newdir', isDir: true)).called(1);
+      expect(find.text('已创建 newdir'), findsWidgets);
+    });
+
+    testWidgets('点击目录切换当前路径', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('sub', isDir: true)], total: 1),
+      );
+      await pumpList(tester);
+      await tester.tap(find.text('sub'));
+      await tester.pumpAndSettle();
+      expect(container.read(currentPathProvider.notifier).state, '/x/sub');
+    });
+
+    testWidgets('长按进入多选并批量删除', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(
+          items: [fi('a.dart'), fi('b.png'), fi('sub', isDir: true)],
+          total: 3,
+        ),
+      );
+      when(() => mock.batchDelete(any())).thenAnswer((_) async {});
+      await pumpList(tester);
+      await tester.longPress(find.text('a.dart'));
+      await tester.pumpAndSettle();
+      expect(find.text('已选 1 项'), findsWidgets);
+      await tester.tap(find.widgetWithText(InkWell, '删除'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, '删除'));
+      await tester.pumpAndSettle();
+      verify(() => mock.batchDelete(any())).called(1);
+    });
+
+    testWidgets('重命名菜单调用 renameFile', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      when(() => mock.rename(any(), any())).thenAnswer((_) async {});
+      await pumpList(tester);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('重命名'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'renamed.dart');
+      await tester.pump();
+      await tester.tap(find.text('确认'));
+      await tester.pumpAndSettle();
+      verify(() => mock.rename('/x/a.dart', 'renamed.dart')).called(1);
+    });
+
+    testWidgets('删除菜单调用 deleteFile', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      when(
+        () => mock.delete(any(), isDir: any(named: 'isDir')),
+      ).thenAnswer((_) async {});
+      await pumpList(tester);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, '删除'));
+      await tester.pumpAndSettle();
+      verify(() => mock.delete('/x/a.dart', isDir: false)).called(1);
+    });
+
+    testWidgets('下载菜单项为 no-op', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      await pumpList(tester);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下载'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('面包屑点击切换路径', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('sub', isDir: true)], total: 1),
+      );
+      await pumpList(tester);
+      await tester.tap(find.text('sub'));
+      await tester.pumpAndSettle();
+      expect(container.read(currentPathProvider.notifier).state, '/x/sub');
+      await tester.tap(find.widgetWithText(TextButton, '/'));
+      await tester.pumpAndSettle();
+      expect(container.read(currentPathProvider.notifier).state, '/');
+    });
+
+    testWidgets('加载失败显示错误与重试', (tester) async {
+      when(
+        () => mock.list(path: any(named: 'path')),
+      ).thenAnswer((_) async => throw Exception('boom'));
+      await pumpList(tester);
+      expect(find.text('加载失败'), findsWidgets);
+      await tester.tap(find.text('重试'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('空目录显示空状态', (tester) async {
+      when(
+        () => mock.list(path: any(named: 'path')),
+      ).thenAnswer((_) async => FileListResult(items: [], total: 0));
+      await pumpList(tester);
+      expect(find.text('此目录为空'), findsWidgets);
     });
   });
 }

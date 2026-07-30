@@ -40,7 +40,11 @@ void main() {
 
   test('getIndex 解析 JSON 数组', () async {
     when(() => client.get(any())).thenAnswer(
-      (_) async => http.Response.bytes(utf8.encode(_indexJson), 200, headers: {'content-type': 'application/json'}),
+      (_) async => http.Response.bytes(
+        utf8.encode(_indexJson),
+        200,
+        headers: {'content-type': 'application/json'},
+      ),
     );
     final list = await service.getIndex();
     expect(list.length, 2);
@@ -51,7 +55,11 @@ void main() {
 
   test('getDetail 解析 JSON 对象', () async {
     when(() => client.get(any())).thenAnswer(
-      (_) async => http.Response.bytes(utf8.encode(_detailJson), 200, headers: {'content-type': 'application/json'}),
+      (_) async => http.Response.bytes(
+        utf8.encode(_detailJson),
+        200,
+        headers: {'content-type': 'application/json'},
+      ),
     );
     final d = await service.getDetail('clamav');
     expect(d.id, 'clamav');
@@ -67,7 +75,10 @@ void main() {
     );
     expect(() => service.getIndex(), throwsA(isA<ScriptStoreException>()));
     expect(() => service.getDetail('x'), throwsA(isA<ScriptStoreException>()));
-    expect(() => service.fetchText('https://x'), throwsA(isA<ScriptStoreException>()));
+    expect(
+      () => service.fetchText('https://x'),
+      throwsA(isA<ScriptStoreException>()),
+    );
   });
 
   test('fetchText 返回纯文本', () async {

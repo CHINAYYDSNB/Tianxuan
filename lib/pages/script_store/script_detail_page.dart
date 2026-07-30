@@ -46,7 +46,11 @@ class _ScriptDetailPageState extends ConsumerState<ScriptDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       snap.error.toString(),
@@ -154,8 +158,9 @@ class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
                     children: [
                       Text(
                         d.name,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(d.desc, style: theme.textTheme.bodyMedium),
@@ -294,23 +299,27 @@ class _InstallTerminalState extends State<_InstallTerminal> {
   Future<void> _run() async {
     try {
       _append('> 下载脚本: ${widget.detail.downloadUrl}');
-      final script = await ScriptStoreService().fetchText(widget.detail.downloadUrl);
+      final script = await ScriptStoreService().fetchText(
+        widget.detail.downloadUrl,
+      );
       final dir = await getTemporaryDirectory();
       final file = File(p.join(dir.path, 'script_${widget.detail.id}.sh'));
       await file.writeAsString(script);
       _append('> 已保存到 ${file.path}');
       _append('\$ bash ${file.path}');
 
-      _sub = widget.ssh.stream('bash ${file.path}').listen(
-        (chunk) {
-          _append(chunk);
-          if (chunk.startsWith('Error:')) _hadError = true;
-        },
-        onDone: () {
-          _append(_hadError ? '✗ 安装失败' : '✓ 安装完成');
-          if (mounted) setState(() => _running = false);
-        },
-      );
+      _sub = widget.ssh
+          .stream('bash ${file.path}')
+          .listen(
+            (chunk) {
+              _append(chunk);
+              if (chunk.startsWith('Error:')) _hadError = true;
+            },
+            onDone: () {
+              _append(_hadError ? '✗ 安装失败' : '✓ 安装完成');
+              if (mounted) setState(() => _running = false);
+            },
+          );
     } catch (e) {
       _append('错误: $e');
       if (mounted) setState(() => _running = false);

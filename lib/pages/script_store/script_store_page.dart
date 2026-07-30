@@ -48,11 +48,16 @@ class _ScriptStorePageState extends State<ScriptStorePage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return _ErrorState(message: snap.error.toString(), onRetry: _refresh);
+            return _ErrorState(
+              message: snap.error.toString(),
+              onRetry: _refresh,
+            );
           }
           final items = snap.data!;
           if (items.isEmpty) {
-            return Center(child: Text('暂无脚本', style: theme.textTheme.bodyLarge));
+            return Center(
+              child: Text('暂无脚本', style: theme.textTheme.bodyLarge),
+            );
           }
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -91,16 +96,18 @@ class _ScriptCard extends StatelessWidget {
                   children: [
                     Text(
                       item.name,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       item.desc,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.outline),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
                   ],
                 ),

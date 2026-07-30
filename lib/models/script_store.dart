@@ -25,7 +25,8 @@ class ScriptSummary {
       desc: json['desc'] as String? ?? (json['description'] as String? ?? ''),
       category: json['category'] as String? ?? '',
       downloadUrl:
-          json['downloadUrl'] as String? ?? (json['download_url'] as String? ?? ''),
+          json['downloadUrl'] as String? ??
+          (json['download_url'] as String? ?? ''),
     );
   }
 }
@@ -53,7 +54,8 @@ class ScriptDetail extends ScriptSummary {
       desc: json['desc'] as String? ?? (json['description'] as String? ?? ''),
       category: json['category'] as String? ?? '',
       downloadUrl:
-          json['downloadUrl'] as String? ?? (json['download_url'] as String? ?? ''),
+          json['downloadUrl'] as String? ??
+          (json['download_url'] as String? ?? ''),
       author: json['author'] as String? ?? '',
       source: json['source'] as String? ?? '',
       rawUrl: json['rawUrl'] as String? ?? (json['raw_url'] as String? ?? ''),

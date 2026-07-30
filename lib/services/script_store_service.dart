@@ -21,8 +21,7 @@ class ScriptStoreService {
 
   final http.Client _client;
 
-  ScriptStoreService({http.Client? client})
-      : _client = client ?? http.Client();
+  ScriptStoreService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<List<ScriptSummary>> getIndex() async {
     final resp = await _client.get(Uri.parse('$_baseUrl/index.json'));

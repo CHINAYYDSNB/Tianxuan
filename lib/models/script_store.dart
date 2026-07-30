@@ -9,6 +9,7 @@ class ScriptSummary {
   final String desc;
   final String category;
   final String downloadUrl;
+  final String language;
 
   const ScriptSummary({
     required this.id,
@@ -16,6 +17,7 @@ class ScriptSummary {
     required this.desc,
     required this.category,
     required this.downloadUrl,
+    this.language = '',
   });
 
   factory ScriptSummary.fromJson(Map<String, dynamic> json) {
@@ -27,6 +29,7 @@ class ScriptSummary {
       downloadUrl:
           json['downloadUrl'] as String? ??
           (json['download_url'] as String? ?? ''),
+      language: json['language'] as String? ?? '',
     );
   }
 }
@@ -42,23 +45,33 @@ class ScriptDetail extends ScriptSummary {
     required super.desc,
     required super.category,
     required super.downloadUrl,
-    required this.author,
-    required this.source,
-    required this.rawUrl,
+    this.author = '',
+    this.source = '',
+    this.rawUrl = '',
   });
 
   factory ScriptDetail.fromJson(Map<String, dynamic> json) {
+    final downloadUrl =
+        json['downloadUrl'] as String? ??
+        (json['download_url'] as String? ?? '');
+    // author 可能为字符串，也可能为 { "name": ... } 对象。
+    final authorRaw = json['author'];
+    final author = authorRaw is Map
+        ? (authorRaw['name'] as String? ?? '')
+        : (authorRaw as String? ?? '');
+    // rawUrl 缺失时回退到 downloadUrl（仓库中二者通常指向同一份源码）。
+    final rawUrl =
+        json['rawUrl'] as String? ??
+        (json['raw_url'] as String? ?? downloadUrl);
     return ScriptDetail(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       desc: json['desc'] as String? ?? (json['description'] as String? ?? ''),
       category: json['category'] as String? ?? '',
-      downloadUrl:
-          json['downloadUrl'] as String? ??
-          (json['download_url'] as String? ?? ''),
-      author: json['author'] as String? ?? '',
+      downloadUrl: downloadUrl,
+      author: author,
       source: json['source'] as String? ?? '',
-      rawUrl: json['rawUrl'] as String? ?? (json['raw_url'] as String? ?? ''),
+      rawUrl: rawUrl,
     );
   }
 }

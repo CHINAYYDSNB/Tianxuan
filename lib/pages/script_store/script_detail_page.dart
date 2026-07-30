@@ -169,7 +169,10 @@ class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
                         children: [
                           const Icon(Icons.category_outlined, size: 16),
                           const SizedBox(width: 4),
-                          Text(d.category, style: theme.textTheme.bodySmall),
+                          Text(
+                            d.category.isEmpty ? '未分类' : d.category,
+                            style: theme.textTheme.bodySmall,
+                          ),
                           const Spacer(),
                           const Icon(Icons.person_outline, size: 16),
                           const SizedBox(width: 4),

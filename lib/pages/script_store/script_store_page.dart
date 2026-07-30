@@ -102,7 +102,7 @@ class _ScriptCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      item.desc,
+                      item.desc.isEmpty ? '暂无简介' : item.desc,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -119,7 +119,12 @@ class _ScriptCard extends StatelessWidget {
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(item.category, style: theme.textTheme.labelSmall),
+                child: Text(
+                  item.category.isNotEmpty
+                      ? item.category
+                      : (item.language.isNotEmpty ? item.language : '未分类'),
+                  style: theme.textTheme.labelSmall,
+                ),
               ),
             ],
           ),

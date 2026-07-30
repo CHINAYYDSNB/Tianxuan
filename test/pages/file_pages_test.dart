@@ -45,7 +45,9 @@ void main() {
         ),
       );
       when(() => mock.save(any(), any())).thenAnswer((_) async {});
-      when(() => mock.readFile(any())).thenAnswer((_) async => 'server-content');
+      when(
+        () => mock.readFile(any()),
+      ).thenAnswer((_) async => 'server-content');
     });
 
     testWidgets('加载内容并渲染 CodeField', (tester) async {
@@ -107,7 +109,9 @@ void main() {
       }
       verify(() => mock.save('/x/f.dart', 'edited content')).called(1);
       // 保存成功后应以服务端为准刷新编辑器（单一事实来源），而非停留在用户输入。
-      final editedCtrl = tester.widget<CodeField>(find.byType(CodeField)).controller;
+      final editedCtrl = tester
+          .widget<CodeField>(find.byType(CodeField))
+          .controller;
       expect(editedCtrl.text, 'server-content');
       expect(find.text('保存成功'), findsWidgets);
     });

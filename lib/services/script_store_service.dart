@@ -11,10 +11,10 @@ class ScriptStoreException implements Exception {
   String toString() => 'ScriptStoreException: $message';
 }
 
-/// 脚本商店服务：从 Tianxuan 仓库的静态目录（GitHub raw）拉取索引与详情。
+/// 脚本商店服务：从 Gitee 仓库的静态目录拉取索引与详情。
 ///
-/// 数据源位于 `CHINAYYDSNB/Tianxuan` 仓库的 `scripts/` 目录，通过
-/// raw.githubusercontent.com 以纯文本形式提供，无需鉴权。
+/// 数据源位于 `happyfurry/scripts_store` 仓库的 `scripts/` 目录，通过
+/// gitee.com 的 raw 以纯文本形式提供，无需鉴权。
 /// 若响应非正常 JSON（网页、404 文本等），统一抛出 [ScriptStoreException]。
 class ScriptStoreService {
   static const String _baseUrl =
@@ -25,7 +25,7 @@ class ScriptStoreService {
   ScriptStoreService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<List<ScriptSummary>> getIndex() async {
-    final resp = await _client.get(Uri.parse('$_baseUrl/index.json'));
+    final resp = await _client.get(Uri.parse('$_baseUrl/store.json'));
     if (resp.statusCode != 200) {
       throw ScriptStoreException('索引拉取失败 (HTTP ${resp.statusCode})');
     }

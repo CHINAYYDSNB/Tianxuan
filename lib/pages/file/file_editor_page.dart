@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/file_editor_provider.dart';
+import '../../services/file_service.dart';
 import '../../utils/code_language.dart';
 
 class FileEditorPage extends ConsumerStatefulWidget {
@@ -45,7 +46,19 @@ class _FileEditorPageState extends ConsumerState<FileEditorPage> {
   }
 
   Future<void> _save() async {
+    final fileSvc = ref.read(fileServiceProvider);
     await _editor.save(_codeCtrl.text);
+    // 保存成功后以服务端为准重新读取，确保编辑器反映服务器真实状态（单一事实来源）。
+    final newContent = await fileSvc.readFile(widget.filePath);
+    _codeCtrl.value = TextEditingValue(
+      text: newContent,
+      selection: TextSelection.collapsed(offset: newContent.length),
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('保存成功')));
+    }
   }
 
   Future<bool> _onWillPop() async {

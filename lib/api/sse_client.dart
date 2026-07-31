@@ -15,7 +15,11 @@ class SseClient {
     Map<String, String>? queryParams,
   }) async* {
     final serverUrl = kIsWeb
-        ? 'http://localhost:25568'
+        ? (() {
+            final b = Uri.base;
+            final s = b.scheme == 'https' ? 'https' : 'http';
+            return '$s://${b.authority}';
+          })()
         : (await StorageService.instance.getServerUrl() ?? '');
     if (serverUrl.isEmpty) throw Exception('Server URL not configured');
 

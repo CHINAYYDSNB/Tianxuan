@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/docker_service.dart';
-import '../services/docker_parser.dart';
+import '../services/server_service.dart';
 import '../models/container.dart';
-import 'ssh_connection_provider.dart';
 
 // ─── Container List ───
 
@@ -19,12 +17,8 @@ class ContainerListNotifier extends AsyncNotifier<List<Container>> {
   }
 
   Future<List<Container>> _fetch() async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return [];
-    final svc = DockerService(ssh);
-    final result = await svc.listContainers();
-    if (!result.isSuccess) return [];
-    return DockerParser.parsePs(result.stdout);
+    final svc = ref.read(serverServiceProvider);
+    return svc.listContainers();
   }
 
   Future<void> _autoRefresh() async {
@@ -50,10 +44,8 @@ class ContainerListNotifier extends AsyncNotifier<List<Container>> {
   }
 
   Future<void> operate(String name, String action) async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return;
-    final svc = DockerService(ssh);
-    await svc.operate(name, action);
+    final svc = ref.read(serverServiceProvider);
+    await svc.operateContainer(name, action);
     await refresh();
   }
 }
@@ -67,14 +59,10 @@ final containerListProvider =
 
 final containerStatsProvider = FutureProvider.family<ContainerStats, String>((
   ref,
-  name,
+  containerId,
 ) async {
-  final ssh = ref.read(sshServiceProvider);
-  if (ssh == null) return ContainerStats();
-  final svc = DockerService(ssh);
-  final result = await svc.stats(name);
-  if (!result.isSuccess) return ContainerStats();
-  return DockerParser.parseDockerStats(result.stdout);
+  final svc = ref.read(serverServiceProvider);
+  return svc.getContainerStats(containerId);
 });
 
 // ─── Container Status Summary ───

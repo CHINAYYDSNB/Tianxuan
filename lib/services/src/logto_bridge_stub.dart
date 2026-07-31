@@ -8,11 +8,11 @@ const _methodChannel = MethodChannel('com.tianxuan.app/deeplink');
 const _eventChannel = EventChannel('com.tianxuan.app/deeplink/events');
 
 class LogtoBridge {
-  /// Open Logto auth page in system browser
+  /// Open Logto auth page in system browser (external app, no in-app webview)
   static Future<void> redirect(String url) async {
     final uri = Uri.parse(url);
     try {
-      final ok = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok) {
         throw Exception('launchUrl returned false');
       }

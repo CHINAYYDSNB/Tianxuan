@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/script_store_provider.dart';
-import '../../api/script_store_api.dart';
-import '../../models/script_store_item.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:tianxuan/models/script_store.dart';
+import 'package:tianxuan/providers/ssh_connection_provider.dart';
+import 'package:tianxuan/services/ssh_command_service.dart';
+import 'package:tianxuan/services/script_store_service.dart';
 
 class ScriptDetailPage extends ConsumerStatefulWidget {
   final String id;
@@ -13,126 +19,27 @@ class ScriptDetailPage extends ConsumerStatefulWidget {
 }
 
 class _ScriptDetailPageState extends ConsumerState<ScriptDetailPage> {
-  ScriptDetail? _detail;
-  bool _loading = true;
-  String? _error;
-  String? _scriptContent;
-  bool _loadingScript = false;
-  String? _loadErr;
-  final _remotePath = '/opt/scripts/';
+  late final Future<ScriptDetail> _future;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
-  }
-
-  Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final d = await ScriptStoreApi.fetchDetail(widget.id);
-      if (mounted)
-        setState(() {
-          _detail = d;
-          _loading = false;
-        });
-    } catch (e) {
-      if (mounted)
-        setState(() {
-          _error = '$e';
-          _loading = false;
-        });
-    }
-  }
-
-  Future<void> _loadScript() async {
-    if (_loadingScript || _detail == null) return;
-    setState(() {
-      _loadingScript = true;
-      _loadErr = null;
-    });
-    try {
-      final c = await ScriptStoreApi.downloadScript(_detail!.downloadUrl);
-      if (mounted)
-        setState(() {
-          _scriptContent = c;
-          _loadingScript = false;
-        });
-    } catch (e) {
-      if (mounted)
-        setState(() {
-          _loadErr = '$e';
-          _loadingScript = false;
-        });
-    }
-  }
-
-  Future<void> _exec() async {
-    if (_detail == null) return;
-    if (_scriptContent == null) {
-      await _loadScript();
-      if (!mounted || _loadErr != null || _scriptContent == null) return;
-    }
-    if (!mounted) return;
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('确认执行'),
-        content: Text('下载脚本到 $_remotePath 并执行?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('确认执行'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-
-    ref.read(scriptDownloadStateProvider.notifier).downloading();
-    try {
-      final ext = _detail!.language == 'python' ? 'py' : 'sh';
-      final path = '$_remotePath/start.$ext';
-      await ScriptStoreApi.uploadToServer(path, _scriptContent!);
-      if (mounted) {
-        ref.read(scriptDownloadStateProvider.notifier).preview();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('已上传到 $path')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ref.read(scriptDownloadStateProvider.notifier).failed();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('失败: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
+    _future = ScriptStoreService().getDetail(widget.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final st = ref.watch(scriptDownloadStateProvider);
-    final busy =
-        _loadingScript ||
-        st == ScriptDownloadState.downloading ||
-        st == ScriptDownloadState.running;
-
     return Scaffold(
-      appBar: AppBar(title: Text(_detail?.name ?? '加载中...')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
+      appBar: AppBar(title: const Text('脚本详情')),
+      body: FutureBuilder<ScriptDetail>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            final theme = Theme.of(context);
+            return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -144,222 +51,355 @@ class _ScriptDetailPageState extends ConsumerState<ScriptDetailPage> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 12),
-                    Text(_error!, textAlign: TextAlign.center),
+                    Text(
+                      snap.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall,
+                    ),
                     const SizedBox(height: 16),
-                    FilledButton(onPressed: _fetch, child: const Text('重试')),
+                    FilledButton(
+                      onPressed: () => setState(() {
+                        _future = ScriptStoreService().getDetail(widget.id);
+                      }),
+                      child: const Text('重试'),
+                    ),
                   ],
                 ),
               ),
-            )
-          : _buildContent(theme, busy, st),
+            );
+          }
+          return _ScriptDetailBody(detail: snap.data!);
+        },
+      ),
+    );
+  }
+}
+
+class _ScriptDetailBody extends ConsumerStatefulWidget {
+  final ScriptDetail detail;
+  const _ScriptDetailBody({required this.detail});
+
+  @override
+  ConsumerState<_ScriptDetailBody> createState() => _ScriptDetailBodyState();
+}
+
+class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
+  String _sourceText = '';
+  bool _sourceLoading = false;
+  String? _sourceError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSource();
+  }
+
+  Future<void> _loadSource() async {
+    if (widget.detail.source.isNotEmpty) {
+      setState(() => _sourceText = widget.detail.source);
+      return;
+    }
+    final url = widget.detail.rawUrl;
+    if (url.isEmpty) return;
+    setState(() => _sourceLoading = true);
+    try {
+      final text = await ScriptStoreService().fetchText(url);
+      setState(() => _sourceText = text);
+    } catch (e) {
+      _sourceError = '$e';
+    } finally {
+      if (mounted) setState(() => _sourceLoading = false);
+    }
+  }
+
+  void _install() {
+    final ssh = ref.read(sshServiceProvider);
+    if (ssh == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('未连接 SSH，请先在连接页建立连接'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InstallTerminal(detail: widget.detail, ssh: ssh),
     );
   }
 
-  Widget _buildContent(ThemeData theme, bool busy, ScriptDownloadState st) {
-    final d = _detail!;
-    final hasContent = _scriptContent != null;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final d = widget.detail;
+    final connected = ref.watch(sshServiceProvider) != null;
+    return Column(
       children: [
-        Card(
-          child: Padding(
+        Expanded(
+          child: ListView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         d.name,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    _Badge(d.language),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(d.description, style: theme.textTheme.bodyMedium),
-                if (d.author.hasInfo) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 16,
-                        color: theme.colorScheme.outline,
+                      const SizedBox(height: 8),
+                      Text(d.desc, style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.category_outlined, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            d.category.isEmpty ? '未分类' : d.category,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.person_outline, size: 16),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              d.author.isEmpty ? '未知作者' : d.author,
+                              style: theme.textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(d.author.name, style: theme.textTheme.bodySmall),
                     ],
                   ),
-                ],
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.update,
-                      size: 16,
-                      color: theme.colorScheme.outline,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'v${d.version} · ${d.updatedAt}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('源码', style: theme.textTheme.titleSmall),
+                          const Spacer(),
+                          if (_sourceLoading)
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                        ],
+                      ),
+                      if (_sourceError != null)
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _sourceError!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      Container(
+                        width: double.infinity,
+                        height: 320,
+                        margin: const EdgeInsets.only(top: 8),
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.dark
+                              ? Colors.grey.shade900
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child:
+                            _sourceText.isEmpty &&
+                                !_sourceLoading &&
+                                _sourceError == null
+                            ? const Center(
+                                child: Text(
+                                  '暂无源码',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                child: SelectableText(
+                                  _sourceText,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
-        if (d.dependencies.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('依赖', style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: d.dependencies
-                        .map(
-                          (dep) => Chip(
-                            label: Text(
-                              dep,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: connected ? _install : null,
+                icon: const Icon(Icons.terminal),
+                label: const Text('安装'),
               ),
             ),
           ),
-        ],
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('脚本预览', style: theme.textTheme.titleSmall),
-                    const Spacer(),
-                    if (!hasContent && !_loadingScript)
-                      TextButton.icon(
-                        onPressed: _loadScript,
-                        icon: const Icon(Icons.download, size: 16),
-                        label: const Text('加载'),
-                      ),
-                    if (_loadingScript)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                  ],
-                ),
-                if (_loadErr != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _loadErr!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                if (hasContent)
-                  Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.grey.shade900
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(12),
-                      child: SelectableText(
-                        _scriptContent!,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.green.shade300
-                              : Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: FilledButton.icon(
-            onPressed: busy ? null : (hasContent ? _exec : _loadScript),
-            icon: Icon(hasContent ? Icons.play_arrow : Icons.download),
-            label: Text(
-              _loadingScript
-                  ? '加载中...'
-                  : hasContent
-                  ? '下载并执行'
-                  : '加载脚本',
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
       ],
     );
   }
 }
 
-class _Badge extends StatelessWidget {
-  final String lang;
-  const _Badge(this.lang);
+/// 安装终端：下载脚本到临时文件，经 SSH 执行并流式输出。
+class _InstallTerminal extends StatefulWidget {
+  final ScriptDetail detail;
+  final SshCommandService ssh;
+  const _InstallTerminal({required this.detail, required this.ssh});
+
+  @override
+  State<_InstallTerminal> createState() => _InstallTerminalState();
+}
+
+class _InstallTerminalState extends State<_InstallTerminal> {
+  final List<String> _lines = [];
+  bool _running = true;
+  bool _hadError = false;
+  StreamSubscription<String>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  void _append(String s) {
+    if (mounted) setState(() => _lines.add(s));
+  }
+
+  Future<void> _run() async {
+    try {
+      _append('> 下载脚本: ${widget.detail.downloadUrl}');
+      final script = await ScriptStoreService().fetchText(
+        widget.detail.downloadUrl,
+      );
+      final dir = await getTemporaryDirectory();
+      final file = File(p.join(dir.path, 'script_${widget.detail.id}.sh'));
+      await file.writeAsString(script);
+      _append('> 已保存到 ${file.path}');
+      _append('\$ bash ${file.path}');
+
+      _sub = widget.ssh
+          .stream('bash ${file.path}')
+          .listen(
+            (chunk) {
+              _append(chunk);
+              if (chunk.startsWith('Error:')) _hadError = true;
+            },
+            onDone: () {
+              _append(_hadError ? '✗ 安装失败' : '✓ 安装完成');
+              if (mounted) setState(() => _running = false);
+            },
+          );
+    } catch (e) {
+      _append('错误: $e');
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isPy = lang == 'python';
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      height: MediaQuery.of(context).size.height * 0.72,
       decoration: BoxDecoration(
-        color: (isPy ? Colors.blue : Colors.green).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      child: Text(
-        isPy ? 'Python' : 'Shell',
-        style: TextStyle(
-          fontSize: 12,
-          color: isPy ? Colors.blue : Colors.green,
-          fontWeight: FontWeight.w600,
-        ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text('安装终端', style: theme.textTheme.titleSmall),
+              const Spacer(),
+              if (_running)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  _lines.join('\n'),
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Colors.greenAccent,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (!_running)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(_hadError ? '关闭' : '完成'),
+              ),
+            ),
+        ],
       ),
     );
   }

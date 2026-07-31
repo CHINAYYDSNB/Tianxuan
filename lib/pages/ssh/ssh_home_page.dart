@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../services/storage_service.dart';
 import '../../services/ssh_service.dart';
 import 'ssh_terminal_page.dart';
+import 'panel_terminal_page.dart';
 
 /// Standalone page (with Scaffold + AppBar)
 class SshHomePage extends StatefulWidget {
@@ -15,7 +17,19 @@ class _SshHomePageState extends State<SshHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('SSH 终端')),
+      appBar: AppBar(
+        title: const Text('SSH 终端'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dns),
+            tooltip: '1Panel 主机终端（免密）',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PanelTerminalPage()),
+            ),
+          ),
+        ],
+      ),
       body: const SshHomeBody(),
     );
   }
@@ -85,6 +99,18 @@ class _SshHomeBodyState extends State<SshHomeBody> {
 
   void _connect(int index) {
     final conn = _connections[index];
+    // Web 端哨兵主机：若拿不到任何凭据（私钥/密码），退回免密 1Panel 主机终端
+    // （走 /panel-terminal）；否则用真实 ssh2 终端登录（私钥已就绪时走此路）。
+    if (conn.host == 'panel' &&
+        kIsWeb &&
+        conn.privateKey == null &&
+        conn.password == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PanelTerminalPage()),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

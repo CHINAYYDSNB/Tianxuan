@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'ssh_proxy_url.dart';
 
 class SshConfig {
   final String host;
@@ -49,7 +50,7 @@ class SshCommandService {
 
   Future<void> connect(SshConfig config) async {
     disconnect();
-    _proxyUrl = 'ws://localhost:25569/ssh-proxy';
+    _proxyUrl = buildSshProxyUrl();
 
     _channel = WebSocketChannel.connect(Uri.parse(_proxyUrl!));
     await _channel!.ready;

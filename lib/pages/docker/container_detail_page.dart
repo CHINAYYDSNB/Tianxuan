@@ -13,36 +13,51 @@ class ContainerDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final statsAsync = ref.watch(containerStatsProvider(container.name));
+    // 监听容器列表，使详情页状态和操作按钮随服务器端变化自动刷新。
+    final liveContainer =
+        ref
+            .watch(containerListProvider)
+            .whenOrNull(
+              data: (list) => list.firstWhere(
+                (c) => c.containerID == container.containerID,
+                orElse: () => container,
+              ),
+            ) ??
+        container;
+    final statsAsync = ref.watch(
+      containerStatsProvider(liveContainer.containerID),
+    );
 
     return Scaffold(
-      appBar: AppBar(title: Text(container.name)),
+      appBar: AppBar(title: Text(liveContainer.name)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _InfoRow(label: '状态', value: container.stateLabel),
-          _InfoRow(label: '镜像', value: container.imageName),
+          _InfoRow(label: '状态', value: liveContainer.stateLabel),
+          _InfoRow(label: '镜像', value: liveContainer.imageName),
           _InfoRow(
             label: '容器 ID',
-            value: container.containerID.length > 12
-                ? container.containerID.substring(0, 12)
-                : container.containerID,
+            value: liveContainer.containerID.length > 12
+                ? liveContainer.containerID.substring(0, 12)
+                : liveContainer.containerID,
           ),
-          _InfoRow(label: '创建时间', value: container.createTime),
-          if (container.runTime.isNotEmpty)
-            _InfoRow(label: '运行时间', value: container.runTime),
-          if (container.appName.isNotEmpty)
+          _InfoRow(label: '创建时间', value: liveContainer.createTime),
+          if (liveContainer.runTime.isNotEmpty)
+            _InfoRow(label: '运行时间', value: liveContainer.runTime),
+          if (liveContainer.appName.isNotEmpty)
             _InfoRow(
               label: '所属应用',
-              value: '${container.appName} (${container.appInstallName})',
+              value:
+                  '${liveContainer.appName} (${liveContainer.appInstallName})',
             ),
-          if (container.network.isNotEmpty)
-            _InfoRow(label: '网络', value: container.network.join(', ')),
-          if (container.ports != null && container.ports!.isNotEmpty)
-            _InfoRow(label: '端口映射', value: container.ports!.join('\n')),
-          if (container.isFromCompose) _InfoRow(label: '来源', value: 'Compose'),
-          if (container.description.isNotEmpty)
-            _InfoRow(label: '描述', value: container.description),
+          if (liveContainer.network.isNotEmpty)
+            _InfoRow(label: '网络', value: liveContainer.network.join(', ')),
+          if (liveContainer.ports != null && liveContainer.ports!.isNotEmpty)
+            _InfoRow(label: '端口映射', value: liveContainer.ports!.join('\n')),
+          if (liveContainer.isFromCompose)
+            _InfoRow(label: '来源', value: 'Compose'),
+          if (liveContainer.description.isNotEmpty)
+            _InfoRow(label: '描述', value: liveContainer.description),
 
           const SizedBox(height: 24),
           Text('资源占用', style: theme.textTheme.titleMedium),
@@ -63,13 +78,14 @@ class ContainerDetailPage extends ConsumerWidget {
           const SizedBox(height: 24),
           Text('操作', style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
-          _ActionButtons(container: container),
+          _ActionButtons(container: liveContainer),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ContainerLogPage(containerName: container.name),
+                builder: (_) =>
+                    ContainerLogPage(containerName: liveContainer.name),
               ),
             ),
             icon: const Icon(Icons.terminal, size: 18),

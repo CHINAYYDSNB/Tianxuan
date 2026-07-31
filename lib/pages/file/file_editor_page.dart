@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/file_editor_provider.dart';
+import '../../providers/file_provider.dart';
 import '../../services/file_service.dart';
 import '../../utils/code_language.dart';
 
@@ -59,6 +60,8 @@ class _FileEditorPageState extends ConsumerState<FileEditorPage> {
         context,
       ).showSnackBar(const SnackBar(content: Text('保存成功')));
     }
+    // 使文件列表失效：返回列表页时将以服务端最新数据（大小/修改时间）自动刷新。
+    ref.invalidate(fileListProvider);
   }
 
   Future<bool> _onWillPop() async {

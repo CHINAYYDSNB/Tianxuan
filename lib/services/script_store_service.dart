@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:tianxuan/models/script_store.dart';
 
@@ -17,8 +18,24 @@ class ScriptStoreException implements Exception {
 /// gitee.com 的 raw 以纯文本形式提供，无需鉴权。
 /// 若响应非正常 JSON（网页、404 文本等），统一抛出 [ScriptStoreException]。
 class ScriptStoreService {
-  static const String _baseUrl =
+  static const String _remoteBaseUrl =
       'https://gitee.com/happyfurry/scripts_store/raw/main/scripts';
+
+  /// Web 端走同源反向代理路径（由部署服务器的 nginx 把 `/scripts-store/` 代理到
+  /// gitee raw），以规避浏览器跨域（CORS）拦截；移动端直连 gitee raw。
+  static String get _baseUrl => kIsWeb ? '/scripts-store' : _remoteBaseUrl;
+
+  /// 移动端按原样返回；Web 端把 gitee raw 绝对地址改写为同源代理路径，
+  /// 否则浏览器会因缺少 `Access-Control-Allow-Origin` 而拦截下载。
+  static String _sameOriginIfWeb(String url) {
+    if (!kIsWeb) return url;
+    const giteePrefix =
+        'https://gitee.com/happyfurry/scripts_store/raw/main/scripts/';
+    if (url.startsWith(giteePrefix)) {
+      return '/scripts-store/${url.substring(giteePrefix.length)}';
+    }
+    return url;
+  }
 
   final http.Client _client;
 
@@ -70,7 +87,7 @@ class ScriptStoreService {
   /// 注意：raw.githubusercontent 在文件不存在时返回纯文本 `404: Not Found`，
   /// 因此必须以状态码拦截，避免把错误文本当脚本内容返回给安装流程。
   Future<String> fetchText(String url) async {
-    final resp = await _client.get(Uri.parse(url));
+    final resp = await _client.get(Uri.parse(_sameOriginIfWeb(url)));
     if (resp.statusCode != 200) {
       throw ScriptStoreException('下载失败 (HTTP ${resp.statusCode})');
     }

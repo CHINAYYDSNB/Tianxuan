@@ -44,6 +44,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _loading = false);
 
     if (ok) {
+      final sshImport = ref.read(settingsProvider).sshImport;
+      if (sshImport != null && sshImport.success) {
+        final msg = sshImport.alreadyExists
+            ? '已自动添加本机 SSH 连接（已存在）'
+            : (sshImport.hasKey
+                  ? '已自动添加本机 SSH 连接（含私钥）'
+                  : '已自动添加本机 SSH 连接（私钥不可用，可用「主机终端」免密入口）');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.green),
+        );
+      }
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       final err = ref.read(settingsProvider).error;

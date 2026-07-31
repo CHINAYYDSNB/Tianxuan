@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -85,26 +84,19 @@ class _ScriptDetailBody extends ConsumerStatefulWidget {
 }
 
 class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
-  late final CodeController _codeCtrl;
+  String _sourceText = '';
   bool _sourceLoading = false;
   String? _sourceError;
 
   @override
   void initState() {
     super.initState();
-    _codeCtrl = CodeController(readOnly: true);
     _loadSource();
-  }
-
-  @override
-  void dispose() {
-    _codeCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _loadSource() async {
     if (widget.detail.source.isNotEmpty) {
-      _codeCtrl.text = widget.detail.source;
+      setState(() => _sourceText = widget.detail.source);
       return;
     }
     final url = widget.detail.rawUrl;
@@ -112,7 +104,7 @@ class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
     setState(() => _sourceLoading = true);
     try {
       final text = await ScriptStoreService().fetchText(url);
-      _codeCtrl.text = text;
+      setState(() => _sourceText = text);
     } catch (e) {
       _sourceError = '$e';
     } finally {
@@ -235,16 +227,29 @@ class _ScriptDetailBodyState extends ConsumerState<_ScriptDetailBody> {
                               : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: CodeField(
-                          controller: _codeCtrl,
-                          minLines: 1,
-                          maxLines: null,
-                          textStyle: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
-                        ),
+                        child:
+                            _sourceText.isEmpty &&
+                                !_sourceLoading &&
+                                _sourceError == null
+                            ? const Center(
+                                child: Text(
+                                  '暂无源码',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                child: SelectableText(
+                                  _sourceText,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
                       ),
                     ],
                   ),

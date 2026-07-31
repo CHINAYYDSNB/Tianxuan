@@ -32,9 +32,14 @@ class ApiClient {
   }
 
   /// 组装完整请求 URL
-  /// Web 平台走本地 server.mjs 代理以避免 CORS
+  /// Web 平台走同源 server.mjs 代理以避免 CORS，基址从页面来源推导，
+  /// 这样经 localhost 隧道 / 远程 IP / 域名访问都能正确指向代理。
   String _fullUrl(String path) {
-    if (kIsWeb) return 'http://localhost:25568/api/v2$path';
+    if (kIsWeb) {
+      final base = Uri.base;
+      final scheme = base.scheme == 'https' ? 'https' : 'http';
+      return '$scheme://${base.authority}/api/v2$path';
+    }
     return '$_serverUrl/api/v2$path';
   }
 

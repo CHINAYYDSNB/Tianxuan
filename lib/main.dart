@@ -6,6 +6,7 @@ import 'providers/logto_auth_provider.dart';
 import 'services/storage_service.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
+import 'pages/script_store/script_detail_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +88,21 @@ class _InitPageState extends ConsumerState<InitPage> {
       // Web: handle Logto OIDC callback via provider
       if (kIsWeb) {
         await ref.read(logtoAuthProvider.notifier).handleWebCallback();
+      }
+
+      // TEMP VERIFY: web deep-link #detail=<id> 直达脚本详情页（验证用）
+      if (kIsWeb) {
+        final frag = Uri.base.fragment;
+        if (frag.startsWith('detail=')) {
+          final id = frag.substring('detail='.length);
+          if (id.isNotEmpty) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => ScriptDetailPage(id: id)),
+            );
+            return;
+          }
+        }
       }
 
       final settings = ref.read(settingsProvider.notifier);

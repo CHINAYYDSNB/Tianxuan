@@ -297,7 +297,7 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
             builder: (_) =>
                 FileEditorPage(filePath: file.path, fileName: file.name),
           ),
-        );
+        ).then((_) => ref.read(fileListProvider.notifier).refresh());
       case FileOpenMode.preview:
         final images = items.where(isImageFile).toList();
         final idx = images.indexOf(file);
@@ -579,7 +579,7 @@ class _FileListTile extends ConsumerWidget {
             builder: (_) =>
                 FileEditorPage(filePath: file.path, fileName: file.name),
           ),
-        );
+        ).then((_) => ref.read(fileListProvider.notifier).refresh());
         break;
       case 'rename':
         _showRenameDialog(context, ref);

@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/docker_service.dart';
-import '../services/docker_parser.dart';
+import '../services/server_service.dart';
 import '../models/compose.dart';
-import 'ssh_connection_provider.dart';
 
 class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
   Timer? _timer;
@@ -17,21 +15,8 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
   }
 
   Future<List<ComposeItem>> _fetch() async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return [];
-    final svc = DockerService(ssh);
-    // Try docker compose ls first
-    final result = await svc.listComposes();
-    if (result.isSuccess && result.stdout.trim().isNotEmpty) {
-      final parsed = DockerParser.parseComposeLs(result.stdout);
-      if (parsed.isNotEmpty) return parsed;
-    }
-    // Fallback: find compose files
-    final findResult = await svc.findComposeFiles();
-    if (findResult.isSuccess && findResult.stdout.trim().isNotEmpty) {
-      return DockerParser.parseFindCompose(findResult.stdout);
-    }
-    return [];
+    final svc = ref.read(serverServiceProvider);
+    return svc.listComposes();
   }
 
   Future<void> _autoRefresh() async {
@@ -56,28 +41,9 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
     }
   }
 
-  Future<void> operate(String name, String operation, {String? path}) async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return;
-    final svc = DockerService(ssh);
-    // If no path, try to find it
-    String workdir = path ?? '';
-    if (workdir.isEmpty) {
-      final findResult = await svc.findComposeFiles();
-      if (findResult.isSuccess) {
-        for (final line in findResult.stdout.split('\n')) {
-          if (line.contains(name)) {
-            workdir = line.trim();
-            // Remove filename to get directory
-            final idx = workdir.lastIndexOf('/');
-            if (idx > 0) workdir = workdir.substring(0, idx);
-            break;
-          }
-        }
-      }
-    }
-    if (workdir.isEmpty) return;
-    await svc.composeOp(workdir, operation);
+  Future<void> operate(String name, String path, String operation) async {
+    final svc = ref.read(serverServiceProvider);
+    await svc.operateCompose(name, path, operation);
     await refresh();
   }
 }

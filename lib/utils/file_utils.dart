@@ -19,6 +19,25 @@ FileOpenMode getFileOpenMode(String extension) {
     'md',
     'sh',
     'log',
+    // 运维常见文本格式
+    'ini',
+    'cfg',
+    'toml',
+    'xml',
+    'properties',
+    'env',
+    'vhost',
+    'htaccess',
+    'nginx',
+    'service',
+    'socket',
+    'mount',
+    'swap',
+    'target',
+    'cron',
+    'allow',
+    'deny',
+    'hosts',
   };
   const previewExtensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'};
   if (editExtensions.contains(dotless)) return FileOpenMode.edit;
@@ -62,6 +81,19 @@ const textExtensions = <String>{
   'gradle',
   'lock',
   'gitignore',
+  'properties',
+  'vhost',
+  'htaccess',
+  'nginx',
+  'service',
+  'socket',
+  'mount',
+  'swap',
+  'target',
+  'cron',
+  'allow',
+  'deny',
+  'hosts',
 };
 
 /// 图片类文件扩展名（可进入预览画廊）
@@ -81,7 +113,14 @@ bool isTextFile(FileItem file) {
   if (file.isDir) return false;
   if (file.size > 10 * 1024 * 1024) return false;
   final name = file.name.toLowerCase();
-  if (name == 'dockerfile' || name == 'makefile') return true;
+  if (name == 'dockerfile' ||
+      name == 'makefile' ||
+      name == 'hosts' ||
+      name == '.bashrc' ||
+      name == '.zshrc' ||
+      name == '.profile') {
+    return true;
+  }
   final raw = (file.extension ?? '').toLowerCase();
   final ext = raw.startsWith('.') ? raw.substring(1) : raw;
   return textExtensions.contains(ext);

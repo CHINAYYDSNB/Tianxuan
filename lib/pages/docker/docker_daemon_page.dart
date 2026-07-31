@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/ssh_connection_provider.dart';
-import '../../services/docker_service.dart';
-import '../../services/docker_parser.dart';
-import '../settings/ssh_config_page.dart';
+import '../../services/server_service.dart';
 
 class DockerDaemonPage extends ConsumerStatefulWidget {
   const DockerDaemonPage({super.key});
@@ -14,7 +11,6 @@ class DockerDaemonPage extends ConsumerStatefulWidget {
 
 class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
   Map<String, dynamic>? _info;
-  String _status = '';
   bool _loading = true;
   String? _error;
 
@@ -30,22 +26,10 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
       _error = null;
     });
     try {
-      final ssh = ref.read(sshServiceProvider);
-      if (ssh == null) {
-        setState(() {
-          _loading = false;
-          _error = 'SSH 未连接';
-        });
-        return;
-      }
-      final svc = DockerService(ssh);
-
-      // Load info and status in parallel
-      final results = await Future.wait([svc.dockerInfo(), svc.daemonStatus()]);
-
+      final svc = ref.read(serverServiceProvider);
+      final info = await svc.dockerInfo();
       setState(() {
-        _info = DockerParser.parseDockerInfo(results[0].stdout);
-        _status = results[1].stdout;
+        _info = info;
         _loading = false;
       });
     } catch (e) {
@@ -83,22 +67,23 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
   Future<void> _daemonOp(String op) async {
     final confirmed = await _confirmOp(op);
     if (!confirmed) return;
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return;
-    final svc = DockerService(ssh);
-    final result = await svc.daemonOp(op);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.isSuccess ? '操作成功' : '操作失败: ${result.stderr}'),
-          backgroundColor: result.isSuccess ? Colors.green : Colors.red,
-        ),
-      );
+    final svc = ref.read(serverServiceProvider);
+    try {
+      await svc.daemonOp(op);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('操作成功'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
     }
     _load();
   }
-
-  bool get _isActive => _status.contains('Active: active');
 
   @override
   Widget build(BuildContext context) {
@@ -123,23 +108,11 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                     const SizedBox(height: 16),
                     Text(_error!, style: theme.textTheme.bodyMedium),
                     const SizedBox(height: 16),
-                    if (_error == 'SSH 未连接')
-                      FilledButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SshConfigPage(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.settings, size: 18),
-                        label: const Text('设置 SSH 连接'),
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('重试'),
-                      ),
+                    FilledButton.icon(
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重试'),
+                    ),
                   ],
                 ),
               ),
@@ -149,42 +122,25 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Status card
                   Card(
-                    color: _isActive
-                        ? Colors.green.withValues(alpha: 0.08)
-                        : Colors.red.withValues(alpha: 0.08),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+                    color: Colors.green.withValues(alpha: 0.08),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
                       child: Row(
                         children: [
                           Icon(
-                            _isActive ? Icons.check_circle : Icons.error,
-                            color: _isActive ? Colors.green : Colors.red,
+                            Icons.check_circle,
+                            color: Colors.green,
                             size: 28,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _isActive ? 'Docker 运行中' : 'Docker 已停止',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _status.split('\n').first,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontFamily: 'monospace',
-                                    color: const Color(0xFF686F78),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                            child: Text(
+                              'Docker 由 1Panel 管理',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ],
@@ -192,14 +148,11 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Action buttons
                   Row(
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: _isActive
-                              ? null
-                              : () => _daemonOp('start'),
+                          onPressed: () => _daemonOp('start'),
                           icon: const Icon(Icons.play_arrow, size: 18),
                           label: const Text('启动'),
                           style: FilledButton.styleFrom(
@@ -210,7 +163,7 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: _isActive ? () => _daemonOp('stop') : null,
+                          onPressed: () => _daemonOp('stop'),
                           icon: const Icon(Icons.stop, size: 18),
                           label: const Text('停止'),
                           style: FilledButton.styleFrom(
@@ -221,9 +174,7 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: _isActive
-                              ? () => _daemonOp('restart')
-                              : null,
+                          onPressed: () => _daemonOp('restart'),
                           icon: const Icon(Icons.restart_alt, size: 18),
                           label: const Text('重启'),
                           style: FilledButton.styleFrom(
@@ -234,7 +185,6 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Docker Info
                   if (_info != null && _info!.isNotEmpty) ...[
                     Text(
                       'Docker 信息',
@@ -250,35 +200,41 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                           children: [
                             _infoRow(
                               '版本',
-                              _info!['ServerVersion']?.toString() ?? '-',
+                              _info!['version']?.toString() ?? '-',
                             ),
                             _infoRow(
-                              '存储驱动',
-                              _info!['Driver']?.toString() ?? '-',
-                            ),
-                            _infoRow(
-                              '容器数',
-                              _info!['Containers']?.toString() ?? '-',
-                            ),
-                            _infoRow(
-                              '镜像数',
-                              _info!['Images']?.toString() ?? '-',
+                              '运行状态',
+                              (_info!['isActive'] == true ? '运行中' : '已停止'),
                             ),
                             _infoRow(
                               'Cgroup 驱动',
-                              _info!['CgroupDriver']?.toString() ?? '-',
+                              _info!['cgroupDriver']?.toString() ?? '-',
                             ),
                             _infoRow(
-                              'Docker Root',
-                              _info!['DockerRootDir']?.toString() ?? '-',
+                              'Swarm',
+                              (_info!['isSwarm'] == true ? '是' : '否'),
                             ),
                             _infoRow(
-                              'OS',
-                              _info!['OperatingSystem']?.toString() ?? '-',
+                              '实时恢复',
+                              (_info!['liveRestore'] == true ? '开启' : '关闭'),
                             ),
                             _infoRow(
-                              'Architecture',
-                              _info!['Architecture']?.toString() ?? '-',
+                              '日志大小上限',
+                              _info!['logMaxSize']?.toString() ?? '-',
+                            ),
+                            _infoRow(
+                              '日志文件数',
+                              _info!['logMaxFile']?.toString() ?? '-',
+                            ),
+                            _infoRow(
+                              '镜像加速源',
+                              (_info!['registryMirrors'] is List &&
+                                      (_info!['registryMirrors'] as List)
+                                          .isNotEmpty)
+                                  ? (_info!['registryMirrors'] as List)
+                                        .map((e) => e.toString())
+                                        .join(', ')
+                                  : '无',
                             ),
                           ],
                         ),

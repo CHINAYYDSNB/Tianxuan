@@ -1,30 +1,20 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../services/ssh_service.dart';
+import '../../services/panel_ws_ssh_service.dart';
+import '../../services/storage_service.dart';
 import '../../data/ssh/terminal_output_buffer.dart';
 import 'package:xterm/xterm.dart';
 
-class SshTerminalPage extends StatefulWidget {
-  final String host;
-  final int port;
-  final String username;
-  final String? password;
-  final String? privateKey;
-
-  const SshTerminalPage({
-    super.key,
-    required this.host,
-    this.port = 22,
-    required this.username,
-    this.password,
-    this.privateKey,
-  });
+/// 1Panel 主机终端：打开 1Panel 服务器本机 PTY，无需 SSH 凭据（自动连接）。
+class PanelTerminalPage extends StatefulWidget {
+  const PanelTerminalPage({super.key});
 
   @override
-  State<SshTerminalPage> createState() => _SshTerminalPageState();
+  State<PanelTerminalPage> createState() => _PanelTerminalPageState();
 }
 
-class _SshTerminalPageState extends State<SshTerminalPage> {
+class _PanelTerminalPageState extends State<PanelTerminalPage> {
   static const _termTheme = TerminalTheme(
     cursor: Color(0xFFD4D4D4),
     selection: Color(0x40FFFFFF),
@@ -52,16 +42,15 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
   );
 
   late final Terminal _terminal;
-  final _sshService = SshService();
+  final _panelService = PanelWsSshService();
   late final TerminalOutputBuffer _buffer;
   bool _connecting = true;
   String? _error;
 
-  // Keep-alive
-  Timer? _keepAliveTimer;
-  int _missedPings = 0;
-  static const _keepAliveInterval = Duration(seconds: 60);
-  static const _maxMissedPings = 3;
+  // Mobile direct-connection params (filled from storage).
+  String? _apiHost;
+  int? _apiPort;
+  String? _apiKey;
 
   // Reconnect
   bool _isReconnecting = false;
@@ -73,84 +62,48 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     _terminal.onOutput = _onTerminalOutput;
     _terminal.onResize = _onTerminalResize;
 
-    // 32KB buffer → 16ms batch flush to xterm
     _buffer = TerminalOutputBuffer((bytes) {
       _terminal.write(String.fromCharCodes(bytes));
     });
 
-    _sshService.onBytes = _onSshBytes;
-    _sshService.onStateChange = _onSshState;
+    _panelService.onBytes = _onPanelBytes;
+    _panelService.onStateChange = _onPanelState;
     _connect();
   }
 
   void _onTerminalOutput(String data) {
-    _sshService.write(data);
+    _panelService.write(data);
   }
 
   void _onTerminalResize(int w, int h, int pw, int ph) {
-    _sshService.resize(w, h);
+    _panelService.resize(w, h);
   }
 
-  void _onSshBytes(List<int> bytes) {
+  void _onPanelBytes(List<int> bytes) {
     _buffer.add(bytes);
   }
 
-  void _onSshState(bool connected) {
+  void _onPanelState(bool connected) {
     if (!mounted) return;
     setState(() {
       _connecting = !connected;
-      if (!connected && !_isReconnecting) {
-        _connecting = true;
-      }
     });
-    if (connected) {
-      _startKeepAlive();
-    } else {
-      _stopKeepAlive();
+    if (!connected && !_isReconnecting) {
+      _startReconnect();
     }
   }
 
-  // ─── Keep-alive ───
-
-  void _startKeepAlive() {
-    _stopKeepAlive();
-    _missedPings = 0;
-    _keepAliveTimer = Timer.periodic(_keepAliveInterval, (_) => _doPing());
-  }
-
-  void _stopKeepAlive() {
-    _keepAliveTimer?.cancel();
-    _keepAliveTimer = null;
-  }
-
-  Future<void> _doPing() async {
-    final ok = await _sshService.ping();
-    if (!mounted) return;
-    if (ok) {
-      _missedPings = 0;
-    } else {
-      _missedPings++;
-      if (_missedPings >= _maxMissedPings) {
-        _onConnectionLost();
-      }
-    }
-  }
-
-  void _onConnectionLost() {
-    _stopKeepAlive();
-    if (!mounted || _isReconnecting) return;
-    _startReconnect();
-  }
-
-  // ─── Reconnect with exponential backoff ───
+  // ─── Reconnect ───
 
   Future<void> _startReconnect() async {
+    if (_isReconnecting) return;
     _isReconnecting = true;
+
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('SSH 连接断开'),
+        title: const Text('终端连接断开'),
         content: const Text('正在尝试重新连接...'),
         actions: [
           TextButton(
@@ -175,18 +128,11 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     while (attempt < maxAttempts && mounted && _isReconnecting) {
       attempt++;
       try {
-        _sshService.disconnect();
-        await _sshService.connect(
-          host: widget.host,
-          port: widget.port,
-          username: widget.username,
-          password: widget.password,
-          privateKey: widget.privateKey,
-        );
-        if (mounted && _sshService.isConnected) {
+        _panelService.disconnect();
+        await _connect();
+        if (mounted && _panelService.isConnected) {
           _isReconnecting = false;
           _buffer.flushNow();
-          _startKeepAlive();
           if (mounted) {
             setState(() {
               _connecting = false;
@@ -194,7 +140,7 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
             });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('SSH 已重新连接'),
+                content: Text('已重新连接'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -220,27 +166,44 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
 
   Future<void> _connect() async {
     try {
-      await _sshService.connect(
-        host: widget.host,
-        port: widget.port,
-        username: widget.username,
-        password: widget.password,
-        privateKey: widget.privateKey,
+      if (!kIsWeb) {
+        final url = await StorageService.instance.getServerUrl();
+        final key = await StorageService.instance.getApiKey();
+        if (url == null || url.isEmpty || key == null || key.isEmpty) {
+          if (mounted) {
+            setState(() {
+              _connecting = false;
+              _error = '未配置 1Panel 服务器，请先在设置中连接';
+            });
+          }
+          return;
+        }
+        final u = Uri.parse(url);
+        _apiHost = u.host;
+        _apiPort = u.port;
+        _apiKey = key;
+      }
+      await _panelService.connect(
+        cols: 80,
+        rows: 24,
+        apiHost: _apiHost,
+        apiPort: _apiPort,
+        apiKey: _apiKey,
       );
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _connecting = false;
           _error = e.toString();
         });
+      }
     }
   }
 
   @override
   void dispose() {
-    _stopKeepAlive();
     _buffer.dispose();
-    _sshService.disconnect();
+    _panelService.disconnect();
     super.dispose();
   }
 
@@ -248,13 +211,13 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.username}@${widget.host}:${widget.port}'),
+        title: const Text('1Panel 主机终端'),
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: '断开',
             onPressed: () {
-              _sshService.disconnect();
+              _panelService.disconnect();
               Navigator.pop(context);
             },
           ),
@@ -268,7 +231,7 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
                 children: [
                   CircularProgressIndicator(color: Colors.greenAccent),
                   SizedBox(height: 16),
-                  Text('正在连接 SSH...', style: TextStyle(color: Colors.grey)),
+                  Text('正在连接主机终端...', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             )
@@ -328,113 +291,6 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
               ),
               autofocus: true,
             ),
-    );
-  }
-}
-
-// ─── Quick SSH Dialog ───
-
-class QuickSshDialog extends StatefulWidget {
-  const QuickSshDialog({super.key});
-
-  @override
-  State<QuickSshDialog> createState() => _QuickSshDialogState();
-}
-
-class _QuickSshDialogState extends State<QuickSshDialog> {
-  final _hostCtrl = TextEditingController();
-  final _portCtrl = TextEditingController(text: '22');
-  final _userCtrl = TextEditingController(text: 'root');
-  final _passCtrl = TextEditingController();
-  bool _useKey = false;
-
-  @override
-  void dispose() {
-    _hostCtrl.dispose();
-    _portCtrl.dispose();
-    _userCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('SSH 连接'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _hostCtrl,
-              decoration: const InputDecoration(
-                labelText: '主机地址',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _portCtrl,
-              decoration: const InputDecoration(
-                labelText: '端口',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _userCtrl,
-              decoration: const InputDecoration(
-                labelText: '用户名',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _passCtrl,
-              decoration: InputDecoration(
-                labelText: _useKey ? '私钥内容' : '密码',
-                border: const OutlineInputBorder(),
-              ),
-              obscureText: !_useKey,
-              maxLines: _useKey ? 4 : 1,
-            ),
-            CheckboxListTile(
-              title: const Text('使用密钥'),
-              value: _useKey,
-              onChanged: (v) => setState(() => _useKey = v ?? false),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        FilledButton(onPressed: _connect, child: const Text('连接')),
-      ],
-    );
-  }
-
-  void _connect() {
-    final host = _hostCtrl.text.trim();
-    if (host.isEmpty) return;
-    final port = int.tryParse(_portCtrl.text.trim()) ?? 22;
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SshTerminalPage(
-          host: host,
-          port: port,
-          username: _userCtrl.text.trim(),
-          password: _useKey ? null : _passCtrl.text.trim(),
-          privateKey: _useKey ? _passCtrl.text.trim() : null,
-        ),
-      ),
     );
   }
 }

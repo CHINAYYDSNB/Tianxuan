@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'ssh_proxy_url.dart';
 
 /// SSH service for Web — connect via WebSocket proxy.
 class SshService {
@@ -15,11 +16,7 @@ class SshService {
   bool get isConnected => _connected;
   dynamic get client => null; // Web has no direct SSHClient
 
-  static String buildProxyUrl(String serverUrl) {
-    final uri = Uri.parse(serverUrl);
-    final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    return '$scheme://${uri.host}:25569/ssh-proxy';
-  }
+  static String buildProxyUrl(String serverUrl) => buildSshProxyUrl();
 
   Future<void> connect({
     required String host,
@@ -30,7 +27,7 @@ class SshService {
     String? proxyUrl,
   }) async {
     if (proxyUrl == null || proxyUrl.isEmpty) {
-      proxyUrl = 'ws://localhost:25569/ssh-proxy';
+      proxyUrl = buildSshProxyUrl();
     }
 
     try {

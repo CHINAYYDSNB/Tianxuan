@@ -24,6 +24,20 @@ void main() {
     expect(codeLanguageForExtension('md'), isNotNull);
   });
 
+  test('新增语言扩展名映射到对应高亮语言', () {
+    expect(codeLanguageForExtension('rb'), isNotNull);
+    expect(codeLanguageForExtension('php'), isNotNull);
+    expect(codeLanguageForExtension('rs'), isNotNull);
+    expect(codeLanguageForExtension('swift'), isNotNull);
+    expect(codeLanguageForExtension('toml'), isNotNull);
+    expect(codeLanguageForExtension('ini'), isNotNull);
+    expect(codeLanguageForExtension('cfg'), isNotNull);
+    expect(codeLanguageForExtension('conf'), isNotNull);
+    expect(codeLanguageForExtension('env'), isNotNull);
+    expect(codeLanguageForExtension('gradle'), isNotNull);
+    expect(codeLanguageForExtension('lock'), isNotNull);
+  });
+
   test('未知扩展名返回 null（纯文本）', () {
     expect(codeLanguageForExtension('png'), isNull);
     expect(codeLanguageForExtension('zip'), isNull);

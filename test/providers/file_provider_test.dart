@@ -302,5 +302,26 @@ void main() {
       verify(() => mock.save('/x/f.txt', 'new content')).called(1);
       expect(container.read(provider).modified, isFalse);
     });
+
+    test('保存失败时 errorMessage 暴露错误', () async {
+      when(
+        () => mock.readByLine(
+          any(),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => page(['hi'], true, 1));
+      when(() => mock.save(any(), any())).thenThrow(Exception('disk full'));
+
+      final provider = fileEditorProvider(('/x/f.txt', 'f.txt'));
+      final controller = container.read(provider.notifier);
+      for (var i = 0; i < 100 && container.read(provider).loading; i++) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      await controller.save('new content');
+      expect(controller.errorMessage, isNotNull);
+      expect(controller.errorMessage, contains('disk full'));
+    });
   });
 }

@@ -85,7 +85,7 @@ class SheetError extends StatelessWidget {
   }
 }
 
-/// 弹层内的设置项分组标题
+/// 弹层内的设置项分组标题（朴素风格）
 class SheetSectionTitle extends StatelessWidget {
   final String title;
   const SheetSectionTitle({super.key, required this.title});
@@ -96,10 +96,10 @@ class SheetSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Text(
         title,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.primary,
+          color: Color(0xFF686F78),
         ),
       ),
     );

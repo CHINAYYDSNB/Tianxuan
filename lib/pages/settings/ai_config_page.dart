@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/ai_provider_template.dart';
 import '../../providers/ai_provider.dart';
 
 class AiConfigPage extends ConsumerStatefulWidget {
@@ -13,6 +14,7 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
   late TextEditingController _endpointCtrl;
   late TextEditingController _keyCtrl;
   late TextEditingController _modelCtrl;
+  String _providerId = 'custom';
 
   @override
   void initState() {
@@ -31,6 +33,42 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
     super.dispose();
   }
 
+  Future<void> _selectProvider(AiProviderTemplate tpl) async {
+    // 自定义模板：提示数据泄露风险
+    if (tpl.id == kCustomTemplateId) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('自定义接口提醒'),
+          content: const Text(
+            '自定义接口可能将对话内容发送到不受信任的服务器，存在数据泄露风险。\n\n请仅在你信任的服务器上使用自定义接口。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('我知道了'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
+    setState(() {
+      _providerId = tpl.id;
+      _endpointCtrl.text = tpl.endpoint;
+      if (tpl.models.isNotEmpty) {
+        _modelCtrl.text = tpl.models.first;
+      }
+    });
+    ref.read(aiConfigProvider.notifier).updateEndpoint(tpl.endpoint);
+    ref.read(aiConfigProvider.notifier).updateModel(_modelCtrl.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(aiConfigProvider);
@@ -41,6 +79,23 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 供应商模板
+          Text('选择供应商', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: aiProviderTemplates.map((tpl) {
+              final selected = _providerId == tpl.id;
+              return ChoiceChip(
+                label: Text(tpl.name),
+                selected: selected,
+                onSelected: (_) => _selectProvider(tpl),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -106,27 +161,26 @@ class _AiConfigPageState extends ConsumerState<AiConfigPage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+
+          // 供应商说明
+          const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('推荐模型', style: theme.textTheme.titleMedium),
+                  Text('供应商说明', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Text(
-                    'gpt-4o-mini — 快速便宜，适合日常使用',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  Text(
-                    'gpt-4o — 更强能力，适合复杂分析',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  Text(
-                    'DeepSeek / Claude 等兼容接口也可用',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  for (final tpl in aiProviderTemplates)
+                    if (tpl.notes != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '${tpl.name}: ${tpl.notes}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
                 ],
               ),
             ),

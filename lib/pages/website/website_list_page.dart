@@ -1,71 +1,194 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/website.dart';
 import '../../providers/website_provider.dart';
 import 'website_detail_page.dart';
 
 /// Standalone page (with Scaffold + AppBar)
-class WebsiteListPage extends ConsumerWidget {
+class WebsiteListPage extends ConsumerStatefulWidget {
   const WebsiteListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WebsiteListPage> createState() => _WebsiteListPageState();
+}
+
+class _WebsiteListPageState extends ConsumerState<WebsiteListPage> {
+  final _searchCtrl = TextEditingController();
+  bool _showSearch = false;
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.removeListener(_onScroll);
+    _scrollCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
+      ref.read(websitesProvider.notifier).loadMore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('网站列表')),
-      body: const WebsiteListBody(),
+      appBar: AppBar(
+        title: _showSearch
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: '搜索网站...',
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                ),
+                onSubmitted: (v) =>
+                    ref.read(websitesProvider.notifier).setSearch(v),
+              )
+            : const Text('网站列表'),
+        actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.search_off : Icons.search),
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                ref.read(websitesProvider.notifier).setSearch(null);
+              }
+            },
+          ),
+        ],
+      ),
+      body: WebsiteListBody(scrollController: _scrollCtrl),
     );
   }
 }
 
 /// Embeddable body widget (no Scaffold/AppBar)
 class WebsiteListBody extends ConsumerWidget {
-  const WebsiteListBody({super.key});
+  final ScrollController? scrollController;
+
+  const WebsiteListBody({super.key, this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final openResty = ref.watch(openRestyStatusProvider);
     final websites = ref.watch(websitesProvider);
 
+    // OpenResty 未安装检测
+    if (openResty.valueOrNull == false) {
+      return _CenterState(
+        icon: Icons.extension_off,
+        title: '未安装 OpenResty',
+        subtitle: '网站管理依赖 OpenResty 运行环境，请先在服务器安装',
+      );
+    }
+
     return websites.when(
-      data: (list) => list.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.language, size: 64, color: Color(0xFFAAB4BF)),
-                  SizedBox(height: 12),
-                  Text(
-                    '暂无网站',
-                    style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
+      data: (list) {
+        if (list.isEmpty) {
+          return const _CenterState(
+            icon: Icons.language,
+            title: '暂无网站',
+            subtitle: '点击右上角搜索，或稍后刷新',
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () => ref.read(websitesProvider.notifier).refresh(),
+          child: ListView.builder(
+            controller: scrollController,
+            padding: const EdgeInsets.all(12),
+            itemCount: list.length + 1,
+            itemBuilder: (context, i) {
+              if (i == list.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: () => ref.read(websitesProvider.notifier).refresh(),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: list.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, i) => _WebsiteTile(website: list[i]),
-              ),
-            ),
+                );
+              }
+              return _WebsiteTile(website: list[i]);
+            },
+          ),
+        );
+      },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text('$e', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => ref.read(websitesProvider.notifier).refresh(),
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      error: (e, _) => _ErrorState(error: e),
+    );
+  }
+}
+
+class _CenterState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _CenterState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: const Color(0xFFAAB4BF)),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, color: Color(0xFF686F78)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 13, color: Color(0xFFAAB4BF)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends ConsumerWidget {
+  final Object error;
+  const _ErrorState({required this.error});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text('$error', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => ref.read(websitesProvider.notifier).refresh(),
+            child: const Text('重试'),
+          ),
+        ],
       ),
     );
   }
@@ -79,125 +202,12 @@ class _WebsiteTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _statusColor(website.status);
+    final hasSsl = website.protocol?.toLowerCase() == 'https';
 
-    return Dismissible(
-      key: ValueKey('web_${website.id}'),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      confirmDismiss: (_) => showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('确认删除'),
-          content: Text('确定删除 ${website.primaryDomain}？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      ),
-      onDismissed: (_) {
-        ref.read(websitesProvider.notifier).deleteWebsite(website.id);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('${website.primaryDomain} 已删除')));
-      },
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withAlpha(38),
-          child: Icon(Icons.language, color: color),
-        ),
-        title: Text(
-          website.primaryDomain,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(30),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    website.statusLabel,
-                    style: TextStyle(fontSize: 11, color: color),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  website.typeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF686F78),
-                  ),
-                ),
-              ],
-            ),
-            if (website.sitePath != null && website.sitePath!.isNotEmpty)
-              Text(
-                website.sitePath!,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF686F78)),
-              ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (action) {
-            ref
-                .read(websitesProvider.notifier)
-                .operateWebsite(website.id, action);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${website.primaryDomain}: ${action == "start"
-                      ? "启动"
-                      : action == "stop"
-                      ? "停止"
-                      : "重启"}中...',
-                ),
-              ),
-            );
-          },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: 'start',
-              child: ListTile(
-                leading: Icon(Icons.play_arrow, color: Colors.green),
-                title: Text('启动'),
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'stop',
-              child: ListTile(
-                leading: Icon(Icons.stop, color: Colors.red),
-                title: Text('停止'),
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'restart',
-              child: ListTile(
-                leading: Icon(Icons.refresh, color: Colors.blue),
-                title: Text('重启'),
-              ),
-            ),
-          ],
-        ),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -205,8 +215,131 @@ class _WebsiteTile extends ConsumerWidget {
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0062F5).withAlpha(15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      website.typeLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF0062F5),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(30),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      website.statusLabel,
+                      style: TextStyle(fontSize: 11, color: color),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    hasSsl ? Icons.lock : Icons.lock_open,
+                    size: 14,
+                    color: hasSsl ? Colors.green : const Color(0xFFAAB4BF),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _openSite(context, website),
+                      child: Text(
+                        website.primaryDomain,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.folder_outlined,
+                    size: 14,
+                    color: Color(0xFFAAB4BF),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      website.sitePath ?? website.siteDir ?? '目录未设置',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF686F78),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.notes, size: 14, color: Color(0xFFAAB4BF)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      website.remark.isEmpty ? '暂无备注' : website.remark,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF686F78),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Future<void> _openSite(BuildContext context, Website w) async {
+    final domain = w.primaryDomain.trim();
+    if (domain.isEmpty) return;
+    final scheme = w.protocol?.toLowerCase() == 'https' ? 'https' : 'http';
+    final uri = Uri.tryParse('$scheme://$domain');
+    if (uri == null) return;
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('无法打开浏览器')));
+    }
   }
 
   Color _statusColor(String status) => switch (status) {

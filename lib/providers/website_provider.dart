@@ -7,29 +7,66 @@ import '../models/website.dart';
 
 class WebsitesNotifier extends AsyncNotifier<List<Website>> {
   Timer? _timer;
+  int _page = 1;
+  static const _pageSize = 20;
+  bool _hasMore = true;
+  String _search = '';
 
   @override
   Future<List<Website>> build() async {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => _autoRefresh());
     ref.onDispose(() => _timer?.cancel());
-    return WebsiteApi.getList();
+    return _loadPage(1, reset: true);
   }
 
   Future<void> _autoRefresh() async {
     try {
-      final data = await WebsiteApi.getList();
-      state = AsyncValue.data(data);
+      final result = await WebsiteApi.search(page: 1, pageSize: _pageSize);
+      state = AsyncValue.data(result['items'] as List<Website>);
     } catch (e, st) {
-      if (state is! AsyncData) {
-        state = AsyncValue.error(e, st);
-      }
+      if (state is! AsyncData) state = AsyncValue.error(e, st);
     }
   }
 
+  Future<List<Website>> _loadPage(int page, {bool reset = false}) async {
+    final result = await WebsiteApi.search(
+      page: page,
+      pageSize: _pageSize,
+      search: _search.isEmpty ? null : _search,
+    );
+    final items = result['items'] as List<Website>;
+    final total = result['total'] as int? ?? items.length;
+    _hasMore = _page * _pageSize < total;
+    if (reset) {
+      return items;
+    }
+    final current = state.value ?? <Website>[];
+    return [...current, ...items];
+  }
+
   Future<void> refresh() async {
+    _page = 1;
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => WebsiteApi.getList());
+    state = await AsyncValue.guard(() => _loadPage(1, reset: true));
+  }
+
+  Future<void> loadMore() async {
+    if (!_hasMore || state.isLoading) return;
+    _page++;
+    final current = state.value ?? <Website>[];
+    state = await AsyncValue.guard(() => _loadPage(_page));
+    // 防止 guard 失败覆盖已有数据
+    if (state.hasError) {
+      state = AsyncValue.data(current);
+    }
+  }
+
+  Future<void> setSearch(String? s) async {
+    _search = s?.trim() ?? '';
+    _page = 1;
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _loadPage(1, reset: true));
   }
 
   Future<void> deleteWebsite(int id) async {
@@ -46,6 +83,12 @@ class WebsitesNotifier extends AsyncNotifier<List<Website>> {
 final websitesProvider = AsyncNotifierProvider<WebsitesNotifier, List<Website>>(
   WebsitesNotifier.new,
 );
+
+// ─── OpenResty 状态 ───
+
+final openRestyStatusProvider = FutureProvider<bool>((ref) {
+  return WebsiteApi.isOpenRestyInstalled();
+});
 
 // ─── Website Detail ───
 

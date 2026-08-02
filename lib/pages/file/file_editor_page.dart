@@ -68,6 +68,9 @@ class _FileEditorPageState extends ConsumerState<FileEditorPage> {
     );
     // 保存成功立即刷新文件列表，使返回列表时大小/修改时间已是最新，无需依赖 pop 回调。
     ref.read(fileListProvider.notifier).silentRefresh();
+    // 使编辑器 provider 缓存失效：下次打开同一文件时强制重新加载服务端最新内容，
+    // 避免 Riverpod 缓存返回旧内容（修改日期/内容不变的根因）。
+    ref.invalidate(fileEditorProvider((widget.filePath, widget.fileName)));
     if (mounted) {
       ScaffoldMessenger.of(
         context,

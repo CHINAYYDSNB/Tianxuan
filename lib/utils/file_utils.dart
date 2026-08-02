@@ -10,19 +10,8 @@ enum FileOpenMode { edit, preview, download }
 FileOpenMode getFileOpenMode(String extension) {
   final ext = extension.toLowerCase();
   final dotless = ext.startsWith('.') ? ext.substring(1) : ext;
-  const editExtensions = {
-    'txt',
-    'conf',
-    'yaml',
-    'yml',
-    'json',
-    'md',
-    'sh',
-    'log',
-  };
-  const previewExtensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'};
-  if (editExtensions.contains(dotless)) return FileOpenMode.edit;
-  if (previewExtensions.contains(dotless)) return FileOpenMode.preview;
+  if (imageExtensions.contains(dotless)) return FileOpenMode.preview;
+  if (textExtensions.contains(dotless)) return FileOpenMode.edit;
   return FileOpenMode.download;
 }
 

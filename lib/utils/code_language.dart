@@ -4,12 +4,20 @@ import 'package:highlight/languages/cpp.dart';
 import 'package:highlight/languages/css.dart';
 import 'package:highlight/languages/dart.dart';
 import 'package:highlight/languages/go.dart';
+import 'package:highlight/languages/ini.dart';
 import 'package:highlight/languages/java.dart';
 import 'package:highlight/languages/javascript.dart';
 import 'package:highlight/languages/json.dart';
+import 'package:highlight/languages/kotlin.dart';
 import 'package:highlight/languages/markdown.dart';
+import 'package:highlight/languages/php.dart';
+import 'package:highlight/languages/plaintext.dart';
 import 'package:highlight/languages/python.dart';
+import 'package:highlight/languages/ruby.dart';
+import 'package:highlight/languages/rust.dart';
 import 'package:highlight/languages/sql.dart';
+import 'package:highlight/languages/swift.dart';
+import 'package:highlight/languages/toml.dart';
 import 'package:highlight/languages/typescript.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/yaml.dart';
@@ -47,12 +55,31 @@ Mode? codeLanguageForExtension(String? ext) {
     case 'h':
       return cpp;
     case 'java':
-    case 'kt':
       return java;
+    case 'kt':
+      return kotlin;
     case 'css':
       return css;
     case 'md':
       return markdown;
+    case 'rb':
+      return ruby;
+    case 'php':
+      return php;
+    case 'rs':
+      return rust;
+    case 'swift':
+      return swift;
+    case 'toml':
+      return toml;
+    case 'ini':
+    case 'cfg':
+    case 'conf':
+    case 'env':
+      return ini;
+    case 'gradle':
+    case 'lock':
+      return plaintext;
     default:
       return null;
   }

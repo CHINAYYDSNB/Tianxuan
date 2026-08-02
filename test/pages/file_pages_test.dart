@@ -272,7 +272,7 @@ void main() {
       expect(container.read(currentPathProvider.notifier).state, '/x/sub');
     });
 
-    testWidgets('长按进入多选并批量删除', (tester) async {
+    testWidgets('AppBar 多选进入批量删除', (tester) async {
       when(() => mock.list(path: any(named: 'path'))).thenAnswer(
         (_) async => FileListResult(
           items: [fi('a.dart'), fi('b.png'), fi('sub', isDir: true)],
@@ -281,7 +281,9 @@ void main() {
       );
       when(() => mock.batchDelete(any())).thenAnswer((_) async {});
       await pumpList(tester);
-      await tester.longPress(find.text('a.dart'));
+      await tester.tap(find.byIcon(Icons.checklist));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('a.dart'));
       await tester.pumpAndSettle();
       expect(find.text('已选 1 项'), findsWidgets);
       await tester.tap(find.widgetWithText(InkWell, '删除'));
@@ -291,13 +293,13 @@ void main() {
       verify(() => mock.batchDelete(any())).called(1);
     });
 
-    testWidgets('重命名菜单调用 renameFile', (tester) async {
+    testWidgets('长按重命名菜单调用 renameFile', (tester) async {
       when(() => mock.list(path: any(named: 'path'))).thenAnswer(
         (_) async => FileListResult(items: [fi('a.dart')], total: 1),
       );
       when(() => mock.rename(any(), any())).thenAnswer((_) async {});
       await pumpList(tester);
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.longPress(find.text('a.dart'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('重命名'));
       await tester.pumpAndSettle();
@@ -308,7 +310,7 @@ void main() {
       verify(() => mock.rename('/x/a.dart', 'renamed.dart')).called(1);
     });
 
-    testWidgets('删除菜单调用 deleteFile', (tester) async {
+    testWidgets('长按删除菜单调用 deleteFile', (tester) async {
       when(() => mock.list(path: any(named: 'path'))).thenAnswer(
         (_) async => FileListResult(items: [fi('a.dart')], total: 1),
       );
@@ -316,7 +318,7 @@ void main() {
         () => mock.delete(any(), isDir: any(named: 'isDir')),
       ).thenAnswer((_) async {});
       await pumpList(tester);
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.longPress(find.text('a.dart'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
@@ -325,15 +327,29 @@ void main() {
       verify(() => mock.delete('/x/a.dart', isDir: false)).called(1);
     });
 
-    testWidgets('下载菜单项为 no-op', (tester) async {
+    testWidgets('长按下载菜单触发下载', (tester) async {
+      when(() => mock.list(path: any(named: 'path'))).thenAnswer(
+        (_) async => FileListResult(items: [fi('a.dart')], total: 1),
+      );
+      when(() => mock.download(any())).thenAnswer((_) async => [1, 2, 3]);
+      await pumpList(tester);
+      await tester.longPress(find.text('a.dart'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下载'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('长按显示详细信息', (tester) async {
       when(() => mock.list(path: any(named: 'path'))).thenAnswer(
         (_) async => FileListResult(items: [fi('a.dart')], total: 1),
       );
       await pumpList(tester);
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.longPress(find.text('a.dart'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('下载'));
+      await tester.tap(find.text('详细信息'));
       await tester.pumpAndSettle();
+      expect(find.text('路径'), findsWidgets);
+      expect(find.text('/x/a.dart'), findsWidgets);
     });
 
     testWidgets('面包屑点击切换路径', (tester) async {

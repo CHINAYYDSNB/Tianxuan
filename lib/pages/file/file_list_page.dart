@@ -23,6 +23,7 @@ class FileListPage extends ConsumerStatefulWidget {
 
 class _FileListPageState extends ConsumerState<FileListPage> {
   bool _showSearch = false;
+  bool _multiSelect = false;
   final _searchCtrl = TextEditingController();
 
   @override
@@ -54,6 +55,21 @@ class _FileListPageState extends ConsumerState<FileListPage> {
             icon: Icon(_showSearch ? Icons.search_off : Icons.search),
             onPressed: () => setState(() => _showSearch = !_showSearch),
           ),
+          if (_multiSelect)
+            IconButton(
+              icon: const Icon(Icons.checklist, color: Colors.blue),
+              tooltip: '退出多选',
+              onPressed: () {
+                setState(() => _multiSelect = false);
+                ref.read(fileSelectionProvider.notifier).clear();
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.checklist),
+              tooltip: '多选',
+              onPressed: () => setState(() => _multiSelect = true),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: PopupMenuButton<String>(
@@ -77,6 +93,8 @@ class _FileListPageState extends ConsumerState<FileListPage> {
         initialPath: widget.initialPath,
         showSearch: _showSearch,
         searchCtrl: _searchCtrl,
+        multiSelect: _multiSelect,
+        onMultiSelectChanged: (v) => setState(() => _multiSelect = v),
       ),
     );
   }
@@ -162,12 +180,16 @@ class FileListBody extends ConsumerStatefulWidget {
   final String? initialPath;
   final bool showSearch;
   final TextEditingController? searchCtrl;
+  final bool multiSelect;
+  final ValueChanged<bool>? onMultiSelectChanged;
 
   const FileListBody({
     super.key,
     this.initialPath,
     this.showSearch = false,
     this.searchCtrl,
+    this.multiSelect = false,
+    this.onMultiSelectChanged,
   });
 
   @override
@@ -175,8 +197,9 @@ class FileListBody extends ConsumerStatefulWidget {
 }
 
 class _FileListBodyState extends ConsumerState<FileListBody> {
-  bool _multiSelectMode = false;
   bool _initialPathSet = false;
+
+  bool get _multiSelectMode => widget.multiSelect;
 
   @override
   void didChangeDependencies() {
@@ -226,12 +249,12 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
                           const Divider(height: 1, indent: 72),
                       itemBuilder: (context, i) => _FileListTile(
                         file: result.items[i],
-                        items: result.items,
                         multiSelect: _multiSelectMode,
                         selected: selected.contains(result.items[i].path),
                         onTap: () =>
                             _onFileTap(result.items[i], path, result.items),
-                        onLongPress: () => _onFileLongPress(result.items[i]),
+                        onLongPress: () =>
+                            _onFileLongPress(result.items[i], result.items),
                         onToggleSelect: () => ref
                             .read(fileSelectionProvider.notifier)
                             .toggle(result.items[i].path),
@@ -315,11 +338,252 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
     }
   }
 
-  void _onFileLongPress(FileItem file) {
-    if (!_multiSelectMode) {
-      setState(() => _multiSelectMode = true);
-      ref.read(fileSelectionProvider.notifier).toggle(file.path);
+  void _onFileLongPress(FileItem file, List<FileItem> items) {
+    if (_multiSelectMode) return;
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(120, 120, 120, 120),
+      items: [
+        if (isImageFile(file))
+          const PopupMenuItem(
+            value: 'preview',
+            child: ListTile(
+              leading: Icon(Icons.image, size: 20),
+              title: Text('预览'),
+            ),
+          ),
+        if (isTextFile(file))
+          const PopupMenuItem(
+            value: 'edit',
+            child: ListTile(
+              leading: Icon(Icons.edit, size: 20),
+              title: Text('编辑'),
+            ),
+          ),
+        const PopupMenuItem(
+          value: 'download',
+          child: ListTile(
+            leading: Icon(Icons.download, size: 20),
+            title: Text('下载'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'rename',
+          child: ListTile(
+            leading: Icon(Icons.drive_file_rename_outline, size: 20),
+            title: Text('重命名'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'info',
+          child: ListTile(
+            leading: Icon(Icons.info_outline, size: 20),
+            title: Text('详细信息'),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: const ListTile(
+            leading: Icon(Icons.delete, size: 20, color: Colors.red),
+            title: Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ),
+      ],
+    ).then((action) {
+      if (action == null) return;
+      _handleFileAction(file, items, action);
+    });
+  }
+
+  void _handleFileAction(FileItem file, List<FileItem> items, String action) {
+    switch (action) {
+      case 'preview':
+        final images = items.where(isImageFile).toList();
+        final idx = images.indexOf(file);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FileImagePreviewPage(
+              images: images,
+              initialIndex: idx < 0 ? 0 : idx,
+            ),
+          ),
+        );
+        break;
+      case 'edit':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                FileEditorPage(filePath: file.path, fileName: file.name),
+          ),
+        ).then((_) => ref.read(fileListProvider.notifier).silentRefresh());
+        break;
+      case 'download':
+        _downloadFile(file);
+        break;
+      case 'rename':
+        _showRenameDialog(context, file);
+        break;
+      case 'info':
+        _showFileInfoDialog(context, file);
+        break;
+      case 'delete':
+        _confirmDelete(context, file);
+        break;
     }
+  }
+
+  void _showRenameDialog(BuildContext context, FileItem file) {
+    final ctrl = TextEditingController(text: file.name);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final newName = ctrl.text.trim();
+              if (newName.isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                await ref
+                    .read(fileListProvider.notifier)
+                    .renameFile(file.path, newName);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('已重命名为 $newName')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('重命名失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('确认'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, FileItem file) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: Text('确定删除 ${file.name}？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref
+                    .read(fileListProvider.notifier)
+                    .deleteFile(file.path, isDir: file.isDir);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('${file.name} 已删除')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('删除失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFileInfoDialog(BuildContext context, FileItem file) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(file.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _infoRow('大小', file.isDir ? '目录' : file.formattedSize),
+            _infoRow('路径', file.path),
+            _infoRow(
+              '权限',
+              file.formattedMode.isEmpty ? '-' : file.formattedMode,
+            ),
+            _infoRow('修改日期', _formatTime(file.modTime)),
+            if (file.user != null && file.user!.isNotEmpty)
+              _infoRow(
+                '所属用户',
+                '${file.user}${file.group != null && file.group!.isNotEmpty ? ':${file.group}' : ''}',
+              ),
+            if (file.isHidden) _infoRow('隐藏', '是'),
+            if (file.isSymlink) _infoRow('符号链接', '是'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(String? t) {
+    if (t == null || t.isEmpty) return '';
+    try {
+      return DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(t));
+    } catch (_) {
+      return t;
+    }
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF686F78)),
+            ),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
   }
 
   Future<void> _downloadFile(FileItem file) async {
@@ -367,7 +631,7 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
       try {
         await ref.read(fileListProvider.notifier).batchDelete(paths.toList());
         ref.read(fileSelectionProvider.notifier).clear();
-        setState(() => _multiSelectMode = false);
+        widget.onMultiSelectChanged?.call(false);
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -475,7 +739,6 @@ class _BreadcrumbBar extends ConsumerWidget {
 /// 单个文件/目录列表项
 class _FileListTile extends ConsumerWidget {
   final FileItem file;
-  final List<FileItem> items;
   final bool multiSelect;
   final bool selected;
   final VoidCallback onTap;
@@ -484,7 +747,6 @@ class _FileListTile extends ConsumerWidget {
 
   const _FileListTile({
     required this.file,
-    required this.items,
     required this.multiSelect,
     required this.selected,
     required this.onTap,
@@ -510,174 +772,9 @@ class _FileListTile extends ConsumerWidget {
       ),
       trailing: file.isDir
           ? const Icon(Icons.chevron_right, size: 18, color: Color(0xFFAAB4BF))
-          : PopupMenuButton<String>(
-              onSelected: (v) => _handleFileAction(context, ref, v),
-              itemBuilder: (_) => [
-                if (isImageFile(file))
-                  const PopupMenuItem(
-                    value: 'preview',
-                    child: ListTile(
-                      leading: Icon(Icons.image, size: 20),
-                      title: Text('预览'),
-                    ),
-                  ),
-                if (isTextFile(file))
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: ListTile(
-                      leading: Icon(Icons.edit, size: 20),
-                      title: Text('编辑'),
-                    ),
-                  ),
-                const PopupMenuItem(
-                  value: 'rename',
-                  child: ListTile(
-                    leading: Icon(Icons.drive_file_rename_outline, size: 20),
-                    title: Text('重命名'),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'download',
-                  child: ListTile(
-                    leading: Icon(Icons.download, size: 20),
-                    title: Text('下载'),
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(Icons.delete, size: 20, color: Colors.red),
-                    title: Text('删除', style: TextStyle(color: Colors.red)),
-                  ),
-                ),
-              ],
-            ),
+          : null,
       onTap: multiSelect ? onToggleSelect : onTap,
       onLongPress: onLongPress,
-    );
-  }
-
-  void _handleFileAction(BuildContext context, WidgetRef ref, String action) {
-    switch (action) {
-      case 'preview':
-        final images = items.where(isImageFile).toList();
-        final idx = images.indexOf(file);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FileImagePreviewPage(
-              images: images,
-              initialIndex: idx < 0 ? 0 : idx,
-            ),
-          ),
-        );
-        break;
-      case 'edit':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                FileEditorPage(filePath: file.path, fileName: file.name),
-          ),
-        ).then((_) => ref.read(fileListProvider.notifier).silentRefresh());
-        break;
-      case 'rename':
-        _showRenameDialog(context, ref);
-        break;
-      case 'download':
-        break;
-      case 'delete':
-        _confirmDelete(context, ref);
-        break;
-    }
-  }
-
-  void _showRenameDialog(BuildContext context, WidgetRef ref) {
-    final ctrl = TextEditingController(text: file.name);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('重命名'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final newName = ctrl.text.trim();
-              if (newName.isEmpty) return;
-              Navigator.pop(ctx);
-              try {
-                await ref
-                    .read(fileListProvider.notifier)
-                    .renameFile(file.path, newName);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('已重命名为 $newName')));
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('重命名失败: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('确认'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定删除 ${file.name}？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await ref
-                    .read(fileListProvider.notifier)
-                    .deleteFile(file.path, isDir: file.isDir);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('${file.name} 已删除')));
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('删除失败: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 

@@ -327,8 +327,9 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
       context,
     ).showSnackBar(SnackBar(content: Text('下载 ${file.name}...')));
     try {
-      final bytes =
-          await ref.read(fileListProvider.notifier).downloadFile(file.path);
+      final bytes = await ref
+          .read(fileListProvider.notifier)
+          .downloadFile(file.path);
       final result = await saveFile(file.name, bytes);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -383,43 +384,43 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
   }
 
   Widget _emptyState(BuildContext context) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.folder_open, size: 64, color: Color(0xFFAAB4BF)),
-            const SizedBox(height: 12),
-            const Text(
-              '此目录为空',
-              style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
-            ),
-          ],
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.folder_open, size: 64, color: Color(0xFFAAB4BF)),
+        const SizedBox(height: 12),
+        const Text(
+          '此目录为空',
+          style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _errorState(BuildContext context, Object e) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(
-                '$e',
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.read(fileListProvider.notifier).refresh(),
-                child: const Text('重试'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            '$e',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
           ),
-        ),
-      );
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => ref.read(fileListProvider.notifier).refresh(),
+            child: const Text('重试'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// 面包屑导航栏
@@ -448,7 +449,7 @@ class _BreadcrumbBar extends ConsumerWidget {
             onPressed: isLast
                 ? null
                 : () =>
-                    ref.read(currentPathProvider.notifier).state = crumb.path,
+                      ref.read(currentPathProvider.notifier).state = crumb.path,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: Size.zero,

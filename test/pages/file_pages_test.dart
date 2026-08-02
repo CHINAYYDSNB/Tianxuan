@@ -48,6 +48,20 @@ void main() {
       when(
         () => mock.readFile(any()),
       ).thenAnswer((_) async => 'server-content');
+      when(
+        () => mock.list(
+          path: any(named: 'path'),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          search: any(named: 'search'),
+          sortBy: any(named: 'sortBy'),
+          sortOrder: any(named: 'sortOrder'),
+          showHidden: any(named: 'showHidden'),
+          isDetail: any(named: 'isDetail'),
+        ),
+      ).thenAnswer(
+        (_) async => FileListResult(items: [fi('f.dart', size: 100)], total: 1),
+      );
     });
 
     testWidgets('加载内容并渲染 CodeField', (tester) async {

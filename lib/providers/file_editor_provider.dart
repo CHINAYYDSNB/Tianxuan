@@ -71,6 +71,9 @@ class FileEditorController extends StateNotifier<FileEditorState> {
   /// 对外暴露的修改标记（避免直接访问受保护的 state）
   bool get isModified => state.modified;
 
+  /// 对外暴露的错误信息（避免直接访问受保护的 state）
+  String? get errorMessage => state.error;
+
   /// 安全加载页数上限，避免超大文件无限拉取
   static const _maxPages = 200;
 

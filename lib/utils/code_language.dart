@@ -17,7 +17,6 @@ import 'package:highlight/languages/ruby.dart';
 import 'package:highlight/languages/rust.dart';
 import 'package:highlight/languages/sql.dart';
 import 'package:highlight/languages/swift.dart';
-import 'package:highlight/languages/toml.dart';
 import 'package:highlight/languages/typescript.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/yaml.dart';
@@ -71,7 +70,7 @@ Mode? codeLanguageForExtension(String? ext) {
     case 'swift':
       return swift;
     case 'toml':
-      return toml;
+      return ini;
     case 'ini':
     case 'cfg':
     case 'conf':

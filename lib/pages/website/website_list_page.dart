@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/website.dart';
 import '../../providers/website_provider.dart';
-import 'website_detail_page.dart';
+import 'website_action_sheet.dart';
 
 /// Standalone page (with Scaffold + AppBar)
 class WebsiteListPage extends ConsumerStatefulWidget {
@@ -208,13 +208,7 @@ class _WebsiteTile extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => WebsiteDetailPage(websiteId: website.id),
-            ),
-          );
-        },
+        onTap: () => showWebsiteActionSheet(context, ref, website),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Column(

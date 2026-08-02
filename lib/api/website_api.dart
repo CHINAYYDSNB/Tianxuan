@@ -34,9 +34,9 @@ class WebsiteApi {
     final res = await ApiClient.instance.post('/websites/search', data: params);
     final data = res.data['data'] as Map? ?? {};
     final items =
-        (data['items'] as List?)?.map(
-          (e) => Website.fromJson(e as Map<String, dynamic>),
-        ) ??
+        (data['items'] as List?)
+            ?.map((e) => Website.fromJson(e as Map<String, dynamic>))
+            .toList() ??
         <Website>[];
     return {'total': data['total'] ?? 0, 'items': items};
   }

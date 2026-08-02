@@ -323,5 +323,42 @@ void main() {
       expect(controller.errorMessage, isNotNull);
       expect(controller.errorMessage, contains('disk full'));
     });
+
+    test('invalidate 后重新读取获取服务端最新内容', () async {
+      // 第一次加载: 服务器内容 'old'
+      var serverContent = 'old';
+      when(
+        () => mock.readByLine(
+          any(),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => page([serverContent], true, 1));
+      when(() => mock.save(any(), any())).thenAnswer((inv) async {
+        serverContent = inv.positionalArguments[1] as String;
+      });
+
+      final provider = fileEditorProvider(('/x/f.txt', 'f.txt'));
+      container.read(provider.notifier);
+      for (var i = 0; i < 100 && container.read(provider).loading; i++) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      expect(container.read(provider).text, 'old');
+
+      // 保存新内容 → 服务器变为 'new'
+      await container.read(provider.notifier).save('new');
+      // 使缓存失效 → 重新打开时应重新读取
+      container.invalidate(provider);
+
+      // 重新监听 provider（模拟重新打开编辑器）触发 rebuild
+      final listener = container.listen(provider, (_, __) {});
+      for (var i = 0; i < 100 && container.read(provider).loading; i++) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      listener.close();
+
+      expect(container.read(provider).text, 'new');
+    });
   });
 }

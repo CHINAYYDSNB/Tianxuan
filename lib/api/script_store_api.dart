@@ -8,107 +8,136 @@ import 'client.dart';
 class ScriptStoreApi {
   static const _proxyBase = 'http://localhost:25568';
 
+  /// 脚本源：CNB 仓库当前未初始化（返回 HTML 错误页），仅使用 GitHub 源。
   static const _sources = [
-    _Source(
-      name: 'CNB',
-      rawBase: 'https://cnb.cool/Lingqi_Team/Tianxuan/-/raw/main/scripts',
-    ),
-    _Source(
+    ScriptSource(
       name: 'GitHub',
       rawBase:
           'https://raw.githubusercontent.com/CHINAYYDSNB/Tianxuan/main/scripts',
     ),
   ];
 
-  /// 缓存最快源（每次 fetchIndex 时刷新）
-  static _Source? _fastest;
-
-  /// 竞速：同时请求所有源，返回第一个成功的响应
+  /// 竞速：同时请求所有源，返回第一个成功的响应。
+  /// 任何非 200 或非 JSON 响应均视为失败，避免 HTML 错误页触发 FormatException。
+  /// [sources] 可注入以便测试；默认使用 [_sources]。
   static Future<String> _race(
-    String Function(_Source src) buildUrl, {
-    Duration timeout = const Duration(seconds: 5),
+    String Function(ScriptSource src) buildUrl, {
+    Duration timeout = const Duration(seconds: 8),
+    List<ScriptSource>? sources,
+    http.Client? client,
   }) async {
-    final completer = Completer<({_Source src, String body})>();
+    final srcList = sources ?? _sources;
+    final httpClient = client ?? http.Client();
+    if (srcList.isEmpty) {
+      throw Exception('脚本商店未配置任何可用源');
+    }
+    final completer = Completer<({ScriptSource src, String body})>();
     var failCount = 0;
 
-    for (final src in _sources) {
+    void _maybeFail() {
+      if (failCount >= srcList.length && !completer.isCompleted) {
+        completer.completeError(Exception('脚本源不可用，请检查网络连接'));
+      }
+    }
+
+    for (final src in srcList) {
       final url = buildUrl(src);
       // ignore: unawaited_futures
-      http
+      httpClient
           .get(Uri.parse(url))
           .timeout(timeout)
           .then((r) {
-            if (r.statusCode == 200 && !completer.isCompleted) {
-              completer.complete((src: src, body: r.body));
+            if (completer.isCompleted) return;
+            if (r.statusCode != 200) {
+              failCount++;
+              _maybeFail();
+              return;
             }
+            // 防御：HTML 错误页即使 200 也会以 <!DOCTYPE 开头
+            final body = r.body;
+            if (isHtmlBody(body)) {
+              failCount++;
+              _maybeFail();
+              return;
+            }
+            completer.complete((src: src, body: body));
           })
           .catchError((_) {
             failCount++;
-            if (failCount >= _sources.length && !completer.isCompleted) {
-              completer.completeError(Exception('所有脚本源均不可用，请检查网络连接'));
-            }
+            _maybeFail();
           });
     }
 
     final result = await completer.future;
-    _fastest = result.src;
     return result.body;
   }
 
-  /// 取索引 — 竞速所有源，缓存最快
-  static Future<ScriptIndex> fetchIndex() async {
+  /// 取索引 — 竞速所有源
+  static Future<ScriptIndex> fetchIndex({
+    List<ScriptSource>? sources,
+    http.Client? client,
+  }) async {
     // 先试本地代理
     try {
       final r = await http
           .get(Uri.parse('$_proxyBase/api/script/index'))
           .timeout(const Duration(seconds: 5));
-      if (r.statusCode == 200) return ScriptIndex.fromJson(jsonDecode(r.body));
+      if (r.statusCode == 200) {
+        final body = r.body;
+        if (!_looksLikeHtml(body)) {
+          return ScriptIndex.fromJson(jsonDecode(body));
+        }
+      }
     } catch (_) {}
 
     // 竞速直连源
-    try {
-      final body = await _race((src) => '${src.rawBase}/index.json');
-      return ScriptIndex.fromJson(jsonDecode(body));
-    } catch (e) {
-      // 竞速失败，尝试已有最快源
-      if (_fastest != null) {
-        final r = await http
-            .get(Uri.parse('${_fastest!.rawBase}/index.json'))
-            .timeout(const Duration(seconds: 10));
-        if (r.statusCode == 200)
-          return ScriptIndex.fromJson(jsonDecode(r.body));
-      }
-      rethrow;
+    final body = await _race(
+      (src) => '${src.rawBase}/index.json',
+      sources: sources,
+      client: client,
+    );
+    if (_looksLikeHtml(body)) {
+      throw Exception('脚本源返回了非预期内容');
     }
+    return ScriptIndex.fromJson(jsonDecode(body));
   }
 
+  /// 判断响应体是否为 HTML 错误页（避免 jsonDecode 崩溃）。
+  static bool isHtmlBody(String body) {
+    final t = body.trimLeft();
+    return t.startsWith('<!DOCTYPE') ||
+        t.startsWith('<html') ||
+        t.startsWith('<');
+  }
+
+  static bool _looksLikeHtml(String body) => isHtmlBody(body);
+
   /// 取脚本详情
-  static Future<ScriptDetail> fetchDetail(String id) async {
+  static Future<ScriptDetail> fetchDetail(
+    String id, {
+    List<ScriptSource>? sources,
+    http.Client? client,
+  }) async {
     // 先试本地代理
     try {
       final r = await http
           .get(Uri.parse('$_proxyBase/api/script/detail/$id'))
           .timeout(const Duration(seconds: 5));
-      if (r.statusCode == 200) return ScriptDetail.fromJson(jsonDecode(r.body));
+      if (r.statusCode == 200 && !_looksLikeHtml(r.body)) {
+        return ScriptDetail.fromJson(jsonDecode(r.body));
+      }
     } catch (_) {}
 
-    // 用最快源（如果有），否则竞速
-    final base = _fastest;
-    if (base != null) {
-      try {
-        final r = await http
-            .get(Uri.parse('${base.rawBase}/details/$id.json'))
-            .timeout(const Duration(seconds: 10));
-        if (r.statusCode == 200)
-          return ScriptDetail.fromJson(jsonDecode(r.body));
-      } catch (_) {}
-    }
-
-    // 回退竞速
+    // 竞速直连源
     final body = await _race(
       (src) => '${src.rawBase}/details/$id.json',
       timeout: const Duration(seconds: 10),
+      sources: sources,
+      client: client,
     );
+    if (_looksLikeHtml(body)) {
+      throw Exception('脚本源返回了非预期内容');
+    }
     return ScriptDetail.fromJson(jsonDecode(body));
   }
 
@@ -158,8 +187,8 @@ class ScriptStoreApi {
   }
 }
 
-class _Source {
+class ScriptSource {
   final String name;
   final String rawBase;
-  const _Source({required this.name, required this.rawBase});
+  const ScriptSource({required this.name, required this.rawBase});
 }

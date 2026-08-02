@@ -271,6 +271,15 @@ class WebsiteActionSheet extends ConsumerWidget {
               _divider(),
               _actionRow(
                 context,
+                icon: Icons.verified_user,
+                color: Colors.green,
+                title: '证书管理',
+                subtitle: '上传/申请/续签/下载证书',
+                onTap: () => openSslManageSheet(context),
+              ),
+              _divider(),
+              _actionRow(
+                context,
                 icon: Icons.dns,
                 color: Colors.cyan,
                 title: '真实 IP',

@@ -3,6 +3,7 @@ import '../../models/website.dart';
 import 'website_auth_sheet.dart';
 import 'website_cors_sheet.dart';
 import 'website_domain_sheet.dart';
+import 'website_https_sheet.dart';
 import 'website_index_sheet.dart';
 import 'website_leech_sheet.dart';
 import 'website_limit_sheet.dart';
@@ -13,6 +14,7 @@ import 'website_real_ip_sheet.dart';
 import 'website_redirect_sheet.dart';
 import 'website_resource_sheet.dart';
 import 'website_rewrite_sheet.dart';
+import 'website_ssl_sheet.dart';
 
 /// 网站各配置弹层入口。
 
@@ -55,11 +57,13 @@ void openPhpSheet(BuildContext context, int websiteId) =>
 void openResourceSheet(BuildContext context, int websiteId) =>
     showResourceSheet(context, websiteId);
 
-// 未实现，后续阶段填充
-void openHttpsSheet(BuildContext context, int websiteId) {
-  _showNotImplemented(context, 'HTTPS');
-}
+void openHttpsSheet(BuildContext context, int websiteId) =>
+    showHttpsSheet(context, websiteId);
 
+/// 独立的 SSL 证书管理
+void openSslManageSheet(BuildContext context) => showSslManageSheet(context);
+
+// 未实现，后续阶段填充
 void openLogSheet(
   BuildContext context,
   int websiteId, {

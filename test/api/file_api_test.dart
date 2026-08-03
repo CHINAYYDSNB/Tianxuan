@@ -261,6 +261,40 @@ void main() {
         throwsA(isA<FileReadException>()),
       );
     });
+
+    test('其余委托方法命中对应端点', () async {
+      stub['/api/v2/files/content'] = {
+        'code': 200,
+        'data': {'name': 'g.txt', 'path': '/g.txt', 'content': 'l1\nl2'},
+      };
+      stub['/api/v2/files/save'] = {'code': 200};
+      stub['/api/v2/files'] = {'code': 200};
+      stub['/api/v2/files/rename'] = {'code': 200};
+      stub['/api/v2/files/del'] = {'code': 200};
+      stub['/api/v2/files/batch/del'] = {'code': 200};
+      stub['/api/v2/files/mode'] = {'code': 200};
+      stub['/api/v2/files/owner'] = {'code': 200};
+      stub['/api/v2/files/move'] = {'code': 200};
+      stub['/api/v2/files/check'] = {'code': 200, 'data': true};
+      final svc = ApiFileService();
+
+      await svc.getContent('/g.txt');
+      final line = await svc.readByLine('/g.txt', page: 1, pageSize: 100);
+      expect(line.lines, ['l1', 'l2']);
+      await svc.save('/g.txt', 'x');
+      await svc.create('/n', isDir: true);
+      await svc.rename('/a', '/b');
+      await svc.delete('/d');
+      await svc.batchDelete(['/a']);
+      await svc.changeMode('/m', 420);
+      await svc.move(['/a'], '/dst');
+      expect(await svc.checkExists('/e'), isTrue);
+
+      expect(seen, contains('/api/v2/files/save'));
+      expect(seen, contains('/api/v2/files/rename'));
+      expect(seen, contains('/api/v2/files/batch/del'));
+      expect(seen, contains('/api/v2/files/check'));
+    });
   });
 
   group('fileTreeProvider', () {

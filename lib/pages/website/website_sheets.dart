@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../models/website.dart';
 import 'website_auth_sheet.dart';
+import 'website_config_sheet.dart';
 import 'website_cors_sheet.dart';
 import 'website_domain_sheet.dart';
 import 'website_https_sheet.dart';
 import 'website_index_sheet.dart';
 import 'website_leech_sheet.dart';
 import 'website_limit_sheet.dart';
+import 'website_log_sheet.dart';
 import 'website_other_sheet.dart';
 import 'website_php_sheet.dart';
 import 'website_proxy_sheet.dart';
@@ -63,23 +65,19 @@ void openHttpsSheet(BuildContext context, int websiteId) =>
 /// 独立的 SSL 证书管理
 void openSslManageSheet(BuildContext context) => showSslManageSheet(context);
 
-// 未实现，后续阶段填充
 void openLogSheet(
   BuildContext context,
   int websiteId, {
   String? accessLogPath,
   String? errorLogPath,
   String? sitePath,
-}) {
-  _showNotImplemented(context, '日志查看');
-}
+}) => showLogSheet(
+  context,
+  websiteId,
+  accessLogPath: accessLogPath,
+  errorLogPath: errorLogPath,
+  sitePath: sitePath,
+);
 
-void openConfigSheet(BuildContext context, int websiteId) {
-  _showNotImplemented(context, '配置文件');
-}
-
-void _showNotImplemented(BuildContext context, String name) {
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text('$name 功能开发中')));
-}
+void openConfigSheet(BuildContext context, int websiteId) =>
+    showConfigSheet(context, websiteId);

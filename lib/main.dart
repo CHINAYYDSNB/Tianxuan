@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/settings_provider.dart';
 import 'providers/logto_auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'services/storage_service.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
+import 'widgets/app_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,47 +15,17 @@ void main() async {
   runApp(const ProviderScope(child: OnePanelApp()));
 }
 
-class OnePanelApp extends StatelessWidget {
+class OnePanelApp extends ConsumerWidget {
   const OnePanelApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
     return MaterialApp(
       title: 'Tianxuan',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.light(
-          surface: const Color(0xFFEBEDF5), // 页面背景
-          onSurface: const Color(0xFF0C1014), // 文字颜色
-          onSurfaceVariant: const Color(0xFF686F78), // 按钮文字颜色
-          outline: const Color(0xFFAAB4BF), // 按钮边框颜色
-          primary: const Color(0xFF0062F5), // 主题色
-        ),
-        scaffoldBackgroundColor: const Color(0xFFEBEDF5), // 页面背景
-        appBarTheme: const AppBarTheme(
-          titleTextStyle: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF0C1014),
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          color: Color(0xFFFFFFFF),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(17)),
-          ),
-        ),
-        splashFactory: NoSplash.splashFactory, // 禁用水波纹
-        highlightColor: Colors.transparent, // 禁用高亮
-        splashColor: Colors.transparent, // 禁用水波纹
-        hoverColor: Colors.transparent, // 禁用悬停效果
-        focusColor: Colors.transparent, // 禁用焦点效果
-      ),
-      home: const InitPage(),
+      theme: buildAppTheme(theme),
+      home: AppBackground(child: const InitPage()),
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),

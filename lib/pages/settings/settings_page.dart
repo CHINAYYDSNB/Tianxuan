@@ -10,6 +10,7 @@ import 'cloud_backup_page.dart';
 import 'ai_config_page.dart';
 import 'ssh_config_page.dart';
 import 'about_page.dart';
+import 'personalize_page.dart';
 import 'profile_page.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -147,6 +148,15 @@ class SettingsPage extends ConsumerWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AiConfigPage()),
+                  ),
+                ),
+                _SettingRow(
+                  icon: Icons.palette_outlined,
+                  title: '个性化',
+                  subtitle: '主题配色、背景',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PersonalizePage()),
                   ),
                 ),
               ],

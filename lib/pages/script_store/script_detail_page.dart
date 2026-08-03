@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/script_store_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
+import '../../services/ssh_script_executor.dart';
 import '../../api/script_store_api.dart';
 import '../../models/script_store_item.dart';
 
@@ -107,6 +109,29 @@ class _ScriptDetailPageState extends ConsumerState<ScriptDetailPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('已上传到 $path')));
+      }
+      // 已连接 SSH 时直接执行脚本（替代依赖本地代理的 executeViaProxy）
+      final ssh = ref.read(sshServiceProvider);
+      if (ssh != null && ssh.isConnected) {
+        final executor = SshScriptExecutor(ssh);
+        final output = await executor.execute(path);
+        if (mounted) {
+          ref.read(scriptDownloadStateProvider.notifier).done();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                output.length > 200 ? '脚本执行完成（输出过长，仅显示前 200 字符）' : output,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ref.read(scriptDownloadStateProvider.notifier).preview();
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('已上传。连接 SSH 后可直接执行脚本')));
+        }
       }
     } catch (e) {
       if (mounted) {

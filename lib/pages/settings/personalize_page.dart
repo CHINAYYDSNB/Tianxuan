@@ -90,11 +90,6 @@ class PersonalizePage extends ConsumerWidget {
                 icon: Icon(Icons.format_color_fill, size: 16),
               ),
               ButtonSegment(
-                value: AppBackgroundType.asset,
-                label: Text('内置图'),
-                icon: Icon(Icons.image, size: 16),
-              ),
-              ButtonSegment(
                 value: AppBackgroundType.custom,
                 label: Text('相册'),
                 icon: Icon(Icons.photo_library, size: 16),
@@ -105,14 +100,12 @@ class PersonalizePage extends ConsumerWidget {
               final type = v.first;
               if (type == AppBackgroundType.solid) {
                 notifier.setBackgroundType(AppBackgroundType.solid);
+              } else if (type == AppBackgroundType.custom) {
+                notifier.setBackgroundType(AppBackgroundType.custom);
               }
             },
           ),
           const SizedBox(height: 12),
-
-          // 内置背景图
-          if (theme.backgroundType == AppBackgroundType.asset)
-            _builtinBackgrounds(context, theme, notifier),
 
           // 相册选图
           if (theme.backgroundType == AppBackgroundType.custom)
@@ -153,48 +146,6 @@ class PersonalizePage extends ConsumerWidget {
           color: Color(0xFF686F78),
         ),
       ),
-    );
-  }
-
-  Widget _builtinBackgrounds(
-    BuildContext context,
-    AppTheme theme,
-    ThemeNotifier notifier,
-  ) {
-    const builtin = [
-      ('assets/Image_1784378535295_847.png', '内置一'),
-      ('assets/default_avatar.png', '内置二'),
-    ];
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: builtin.map((item) {
-        final selected = theme.backgroundAsset == item.$1;
-        return InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => notifier.setBackgroundAsset(item.$1),
-          child: Container(
-            width: 100,
-            height: 70,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(item.$1),
-                fit: BoxFit.cover,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: selected
-                    ? theme.scheme.primary
-                    : const Color(0xFFE0E3EC),
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: selected
-                ? const Center(child: Icon(Icons.check, color: Colors.white))
-                : null,
-          ),
-        );
-      }).toList(),
     );
   }
 

@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/logto_auth_provider.dart';
 import '../../services/update_service.dart';
-import '../logto_login_page.dart';
 import 'connection_test_page.dart';
 import 'cloud_backup_page.dart';
 import 'ai_config_page.dart';
@@ -86,7 +84,7 @@ class SettingsPage extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              auth.isLoggedIn ? auth.name : 'Logto 登录',
+                              auth.isLoggedIn ? auth.name : '账号登录',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -179,29 +177,8 @@ class SettingsPage extends ConsumerWidget {
 }
 
 void _startLogin(BuildContext context, WidgetRef ref) {
-  if (kIsWeb) {
-    ref.read(logtoAuthProvider.notifier).login();
-  } else {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LogtoLoginPage(child: const _LoginSuccessPlaceholder()),
-      ),
-    );
-  }
-}
-
-/// After native login success, this placeholder triggers a pop
-class _LoginSuccessPlaceholder extends StatelessWidget {
-  const _LoginSuccessPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pop();
-    });
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
-  }
+  // 直接发起 Casdoor OIDC 登录（不再经过中间登录页）
+  ref.read(logtoAuthProvider.notifier).login();
 }
 
 class _SettingsCard extends StatelessWidget {

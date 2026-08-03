@@ -3,6 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/server_list_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../services/storage_service.dart';
+
+/// 添加服务器成功后自动配置 SSH 连接
+Future<void> _autoSetupSsh(
+  BuildContext context,
+  String serverUrl,
+  String serverName,
+) async {
+  if (kIsWeb) return;
+  try {
+    final host = Uri.parse(serverUrl).host;
+    if (host.isEmpty) return;
+    // 保存一条 SSH 连接（主机 + root，凭据待用户补全）
+    final connections = await StorageService.instance.getSshConnections();
+    final list = List<Map<String, dynamic>>.from(connections ?? []);
+    final exists = list.any((c) => c['host'] == host);
+    if (!exists) {
+      list.add({
+        'host': host,
+        'port': 22,
+        'username': 'root',
+        'name': serverName,
+      });
+      await StorageService.instance.saveSshConnections(list);
+    }
+  } catch (_) {}
+}
 
 /// 从底部弹出"添加服务器"表单
 void showServerAddSheet(BuildContext context, WidgetRef ref) {
@@ -129,6 +156,8 @@ void showServerAddSheet(BuildContext context, WidgetRef ref) {
                       await ref.read(savedServersProvider.notifier).add(svr);
                       Navigator.pop(ctx);
                       ref.read(serverStatusProvider.notifier).refresh();
+                      // 自动配置 SSH 连接（从 1Panel 地址提取主机）
+                      await _autoSetupSsh(ctx, url, name);
                     },
                     child: const Text('测试并添加'),
                   ),

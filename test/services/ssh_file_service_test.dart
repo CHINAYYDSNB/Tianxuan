@@ -35,7 +35,10 @@ void main() {
       final result = await svc.list(path: '/var/www');
       expect(result.items.length, 4); // index.html, logs, link, .env（排除 . 和 ..）
       final names = result.items.map((f) => f.name).toList();
-      expect(names, containsAll(['index.html', 'logs', 'link -> /tmp', '.env']));
+      expect(
+        names,
+        containsAll(['index.html', 'logs', 'link -> /tmp', '.env']),
+      );
       final index = result.items.firstWhere((f) => f.name == 'index.html');
       expect(index.isDir, isFalse);
       expect(index.size, 1234);

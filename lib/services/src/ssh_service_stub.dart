@@ -33,12 +33,28 @@ class SshService {
         timeout: const Duration(seconds: 10),
       );
 
-      final client = SSHClient(
-        socket,
-        username: username,
-        onPasswordRequest: () => password,
-        onUserInfoRequest: (req) => [password ?? ''],
-      );
+      final SSHClient client;
+      if (privateKey != null && privateKey.isNotEmpty) {
+        final keyPairs = SSHKeyPair.fromPem(privateKey);
+        if (keyPairs.isEmpty) {
+          socket.close();
+          throw Exception('私钥内容为空，无法认证');
+        }
+        client = SSHClient(
+          socket,
+          username: username,
+          identities: keyPairs,
+          onPasswordRequest: () => password,
+          onUserInfoRequest: (req) => [password ?? ''],
+        );
+      } else {
+        client = SSHClient(
+          socket,
+          username: username,
+          onPasswordRequest: () => password,
+          onUserInfoRequest: (req) => [password ?? ''],
+        );
+      }
       _client = client;
 
       final shell = await client.shell(

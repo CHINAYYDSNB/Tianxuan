@@ -83,12 +83,17 @@ class SshCertImporter {
         success: true,
         alreadyExists: true,
         hasKey: privateKey != null,
+        reason: privateKey == null ? '已有连接但未获取到私钥，请手动配置' : null,
       );
     }
 
     existing.add(conn);
     await StorageService.instance.saveSshConnections(existing);
-    return SshCertImportResult(success: true, hasKey: privateKey != null);
+    return SshCertImportResult(
+      success: true,
+      hasKey: privateKey != null,
+      reason: privateKey == null ? '已添加连接，但自动获取私钥失败，请手动编辑配置私钥' : null,
+    );
   }
 
   /// 获取本机 root 私钥。
@@ -101,30 +106,28 @@ class SshCertImporter {
     ApiClient api,
     String username,
   ) async {
-    // 1) 官方接口
-    try {
-      final certResp = await api.post(
-        '/hosts/ssh/cert',
-        data: <String, dynamic>{
-          'id': 1,
-          'encryptionMode': 'ed25519',
-          'passPhrase': '',
-        },
-      );
-      final body = certResp.data;
-      if (body is Map) {
-        final data = body['data'];
-        if (data is Map) {
-          final k =
-              data['privateKey'] ??
-              data['private_key'] ??
-              data['key'] ??
-              data['privateKeyPem'];
-          if (k is String && k.trim().isNotEmpty) return k.trim();
+    // 1) 官方接口：不同 1Panel 版本参数不同，尝试多种 payload
+    for (final payload in [
+      <String, dynamic>{'encryptionMode': 'ed25519', 'passPhrase': ''},
+      <String, dynamic>{'id': 1, 'encryptionMode': 'ed25519', 'passPhrase': ''},
+    ]) {
+      try {
+        final certResp = await api.post('/hosts/ssh/cert', data: payload);
+        final body = certResp.data;
+        if (body is Map) {
+          final data = body['data'];
+          if (data is Map) {
+            final k =
+                data['privateKey'] ??
+                data['private_key'] ??
+                data['key'] ??
+                data['privateKeyPem'];
+            if (k is String && k.trim().isNotEmpty) return k.trim();
+          }
         }
+      } catch (e) {
+        debugPrint('[ssh-cert] ssh/cert 失败，尝试下一 payload: $e');
       }
-    } catch (e) {
-      debugPrint('[ssh-cert] ssh/cert 失败，回退读取私钥文件: $e');
     }
 
     // 2) 回退：读取已授权的 root 私钥文件
@@ -133,6 +136,8 @@ class SshCertImporter {
       'id_ed25519_1panel',
       'id_rsa_1panel',
       'id_ecdsa_1panel',
+      'id_ed25519',
+      'id_rsa',
     ];
     for (final name in candidates) {
       try {

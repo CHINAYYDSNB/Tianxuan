@@ -71,8 +71,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       // 发请求测试连接
       await DashboardApi.getStatus();
 
-      // 自动导入本机 SSH 连接（私钥获取失败也可忽略）
-      final sshImport = await SshCertImporter.importFromCurrentServer();
+      // 自动导入本机 SSH 连接（私钥获取失败也可忽略，不阻断连接）
+      SshCertImportResult? sshImport;
+      try {
+        sshImport = await SshCertImporter.importFromCurrentServer();
+      } catch (e) {
+        sshImport = SshCertImportResult(
+          success: false,
+          reason: 'SSH 自动导入失败: $e',
+        );
+      }
 
       state = SettingsState(
         isConnected: true,

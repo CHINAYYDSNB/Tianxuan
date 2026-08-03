@@ -238,7 +238,20 @@ class _SshHomeBodyState extends State<SshHomeBody> {
                           color: Colors.green,
                         ),
                         title: Text(c.name.isNotEmpty ? c.name : c.host),
-                        subtitle: Text('${c.username}@${c.host}:${c.port}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${c.username}@${c.host}:${c.port}'),
+                            if (!c.hasCredential)
+                              const Text(
+                                '未配置密码/私钥，认证会失败，请点击菜单编辑',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -508,6 +521,11 @@ class _SavedSsh {
     this.password,
     this.privateKey,
   });
+
+  /// 是否具备可用的认证凭据（密码或私钥）
+  bool get hasCredential =>
+      (password != null && password!.isNotEmpty) ||
+      (privateKey != null && privateKey!.isNotEmpty);
 
   Map<String, dynamic> toJson() => {
     'name': name,

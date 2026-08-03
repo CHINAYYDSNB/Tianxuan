@@ -52,29 +52,39 @@ class SshCommandService {
     );
 
     // Build SSH client
-    // Try private key auth if provided, fallback to password
+    // 有私钥时优先私钥认证；私钥解析失败则明确抛错，避免静默 fallback
+    // 到无凭据认证（那会导致 "All authentication methods failed"）。
     if (config.privateKey != null && config.privateKey!.isNotEmpty) {
-      try {
-        final keyContent = await _readKeyContent(config.privateKey!);
-        if (keyContent != null) {
-          final keyPairs = SSHKeyPair.fromPem(keyContent);
-          _client = SSHClient(
-            socket,
-            username: config.username,
-            identities: keyPairs,
-            onPasswordRequest: () => config.password ?? '',
-          );
-        }
-      } catch (_) {
-        // Key auth setup failed, fall through to password-only
+      final keyContent = await _readKeyContent(config.privateKey!);
+      if (keyContent == null) {
+        socket.close();
+        throw Exception('私钥内容为空，无法认证');
       }
+      SSHKeyPair keyPairs;
+      try {
+        keyPairs = SSHKeyPair.fromPem(keyContent).first;
+      } catch (e) {
+        socket.close();
+        throw Exception('私钥解析失败: $e');
+      }
+      _client = SSHClient(
+        socket,
+        username: config.username,
+        identities: [keyPairs],
+        onPasswordRequest: () => config.password ?? '',
+      );
+    } else {
+      // 无私钥 → 密码认证（或服务器允许免密）
+      _client = SSHClient(
+        socket,
+        username: config.username,
+        onPasswordRequest: () => config.password ?? '',
+        onUserInfoRequest: (req) => [config.password ?? ''],
+      );
     }
 
-    _client ??= SSHClient(
-      socket,
-      username: config.username,
-      onPasswordRequest: () => config.password ?? '',
-    );
+    // 等待认证完成：认证失败（SSHAuthFailError 等）会在此抛出，由上层捕获
+    await _client!.authenticated;
 
     _connected = true;
   }

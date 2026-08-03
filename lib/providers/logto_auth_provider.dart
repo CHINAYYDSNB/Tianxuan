@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/logto_service.dart';
+import '../services/casdoor_service.dart';
 import '../services/logto_bridge.dart';
 import '../services/storage_service.dart';
 
@@ -52,9 +52,9 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
   Future<void> _init() async {
     // 恢复已有 token 登录态
     try {
-      final loggedIn = await LogtoService.isLoggedIn;
+      final loggedIn = await CasdoorService.isLoggedIn;
       if (loggedIn) {
-        final info = await LogtoService.getUserInfo();
+        final info = await CasdoorService.getUserInfo();
         state = LogtoAuthState(
           isLoggedIn: true,
           checking: false,
@@ -111,7 +111,7 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
       return;
     }
 
-    final ok = await LogtoService.exchangeCode(
+    final ok = await CasdoorService.exchangeCode(
       code: code,
       verifier: saved['verifier'] ?? '',
       redirectUri: LogtoBridge.callbackUri,
@@ -130,10 +130,10 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
   }
 
   Future<void> refreshUserInfo() async {
-    final loggedIn = await LogtoService.isLoggedIn;
+    final loggedIn = await CasdoorService.isLoggedIn;
     if (!loggedIn) return;
 
-    final info = await LogtoService.getUserInfo();
+    final info = await CasdoorService.getUserInfo();
     state = LogtoAuthState(
       isLoggedIn: true,
       checking: false,
@@ -147,9 +147,9 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
   /// 发起 Logto 登录
   Future<void> login() async {
     try {
-      final pkce = LogtoService.buildPkce();
+      final pkce = CasdoorService.buildPkce();
       await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
-      final url = LogtoService.buildAuthUrl(
+      final url = CasdoorService.buildAuthUrl(
         verifier: pkce.verifier,
         challenge: pkce.challenge,
         state: pkce.state,
@@ -161,7 +161,7 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
 
   /// 登出
   Future<void> logout() async {
-    await LogtoService.logout();
+    await CasdoorService.logout();
     state = const LogtoAuthState(checking: false);
   }
 

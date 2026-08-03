@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/logto_service.dart';
+import '../../services/casdoor_service.dart';
 import '../../providers/logto_auth_provider.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -39,7 +39,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (newName.isEmpty && newAvatar.isEmpty) return;
 
     setState(() => _saving = true);
-    final ok = await LogtoService.updateProfile(
+    final ok = await CasdoorService.updateProfile(
       userId: auth.userId,
       name: newName.isNotEmpty ? newName : null,
       avatar: newAvatar.isNotEmpty ? newAvatar : null,

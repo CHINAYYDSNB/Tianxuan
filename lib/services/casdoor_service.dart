@@ -1,25 +1,25 @@
-// TODO: Logto OIDC 已知问题 (2026-07-20)
-// 1. PKCE flow 可能因 redirect URI 不匹配导致 code_verifier 校验失败
-// 2. Web 平台 token 静默刷新未处理跨域 cookie
-// 3. Session 过期后 UI 无感知，操作失败才报错
-// 当前状态: Login entry points removed from first-launch, cloud backup, about page.
-//   底层文件保留但不可达。logtoAuthProvider 是唯一状态源 (2026-07-19 refactored).
-// See: [[tianxuan-logto-issues]]
+// Casdoor OIDC 认证服务
+// 认证端点: https://logto.lingqi.vip/（Casdoor 1.503）
+// 授权: /login/oauth/authorize
+// Token: /api/login/oauth/access_token
+// 用户信息: /api/userinfo
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
 
-class LogtoService {
-  static String get _clientId =>
-      kIsWeb ? 'pti5kd1hbra1svpzaq9em' : 'wgfs6xi6v7815b0mdfxwn';
-  static const _authEndpoint = 'https://logto.lingqi.vip/oidc/auth';
-  static const _tokenEndpoint = 'https://logto.lingqi.vip/oidc/token';
+class CasdoorService {
+  static const _base = 'https://logto.lingqi.vip';
+  static const _authEndpoint = '$_base/login/oauth/authorize';
+  static const _tokenEndpoint = '$_base/api/login/oauth/access_token';
+  static const _userinfoEndpoint = '$_base/api/userinfo';
+
+  static const _clientId = '2eb37714fa37f170af58';
+  static const _clientSecret = '06e4cde32f530421187f51404fb914aacf2b2d37';
   static const _scopes = 'openid profile email';
 
-  /// 生成 PKCE 参数
+  /// 生成 PKCE 参数（Casdoor 支持 S256）
   static ({String verifier, String challenge, String state}) buildPkce() {
     final verifier = _randomBase64(64);
     final challenge = _sha256Base64Url(verifier);
@@ -27,7 +27,7 @@ class LogtoService {
     return (verifier: verifier, challenge: challenge, state: state);
   }
 
-  /// 构建 Logto 授权 URL
+  /// 构建 Casdoor 授权 URL
   static String buildAuthUrl({
     required String verifier,
     required String challenge,
@@ -46,7 +46,7 @@ class LogtoService {
     return Uri.parse(_authEndpoint).replace(queryParameters: params).toString();
   }
 
-  /// 交换 authorization code → tokens
+  /// 交换 authorization code → tokens（Casdoor 用 query 参数）
   static Future<bool> exchangeCode({
     required String code,
     required String verifier,
@@ -58,15 +58,16 @@ class LogtoService {
 
     try {
       final resp = await http.post(
-        Uri.parse(_tokenEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'grant_type': 'authorization_code',
-          'code': code,
-          'redirect_uri': redirectUri,
-          'client_id': _clientId,
-          'code_verifier': verifier,
-        },
+        Uri.parse(_tokenEndpoint).replace(
+          queryParameters: {
+            'grant_type': 'authorization_code',
+            'client_id': _clientId,
+            'client_secret': _clientSecret,
+            'code': code,
+            'redirect_uri': redirectUri,
+            'code_verifier': verifier,
+          },
+        ),
       );
 
       if (resp.statusCode == 200) {
@@ -84,13 +85,46 @@ class LogtoService {
     return false;
   }
 
-  static const _managementApi = 'https://logto.lingqi.vip/api';
-
-  /// 从 ID Token 解码用户信息
+  /// 获取用户信息（userinfo endpoint）
   static Future<({String sub, String name, String email, String picture})?>
   getUserInfo() async {
+    final token = await StorageService.instance.getLogtoAccessToken();
+    if (token == null || token.isEmpty) return null;
+
+    // 优先从 ID token 解码（无需网络）
     final idToken = await StorageService.instance.getLogtoIdToken();
-    if (idToken == null || idToken.isEmpty) return null;
+    if (idToken != null && idToken.isNotEmpty) {
+      final fromId = _decodeIdToken(idToken);
+      if (fromId != null) return fromId;
+    }
+
+    // 回退 userinfo endpoint
+    try {
+      final resp = await http.get(
+        Uri.parse(_userinfoEndpoint),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        return (
+          sub: (data['sub'] ?? data['id'] ?? '').toString(),
+          name:
+              (data['name'] ??
+                      data['displayName'] ??
+                      data['preferred_username'] ??
+                      '')
+                  .toString(),
+          email: (data['email'] ?? '').toString(),
+          picture: (data['picture'] ?? '').toString(),
+        );
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  static ({String sub, String name, String email, String picture})?
+  _decodeIdToken(String idToken) {
     try {
       final parts = idToken.split('.');
       if (parts.length != 3) return null;
@@ -102,8 +136,8 @@ class LogtoService {
         sub: (json['sub'] ?? '').toString(),
         name:
             (json['name'] ??
-                    json['username'] ??
                     json['preferred_username'] ??
+                    json['username'] ??
                     '')
                 .toString(),
         email: (json['email'] ?? '').toString(),
@@ -114,7 +148,20 @@ class LogtoService {
     }
   }
 
-  /// 更新 Logto 用户资料（name / avatar）
+  /// 检查是否已登录
+  static Future<bool> get isLoggedIn async {
+    final token = await StorageService.instance.getLogtoAccessToken();
+    final valid = await StorageService.instance.getLogtoTokenValid();
+    return (token?.isNotEmpty == true) && valid;
+  }
+
+  /// 登出 — 清除本地 token（简单实现，不跳转登出页）
+  static Future<void> logout() async {
+    await StorageService.instance.deleteLogtoTokens();
+    await StorageService.instance.clearLogtoPending();
+  }
+
+  /// 更新用户资料（Casdoor 管理 API，可能无权限）
   static Future<bool> updateProfile({
     required String userId,
     String? name,
@@ -127,32 +174,18 @@ class LogtoService {
       if (name != null) body['name'] = name;
       if (avatar != null) body['avatar'] = avatar;
       if (body.isEmpty) return false;
-
-      final resp = await http.patch(
-        Uri.parse('$_managementApi/users/$userId'),
+      final resp = await http.post(
+        Uri.parse('$_base/api/update-user'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(body),
+        body: jsonEncode({'id': userId, ...body}),
       );
-      return resp.statusCode == 200 || resp.statusCode == 204;
+      return resp.statusCode == 200;
     } catch (_) {
       return false;
     }
-  }
-
-  /// 检查是否已登录
-  static Future<bool> get isLoggedIn async {
-    final token = await StorageService.instance.getLogtoAccessToken();
-    final valid = await StorageService.instance.getLogtoTokenValid();
-    return (token?.isNotEmpty == true) && valid;
-  }
-
-  /// 登出 — 清除本地 token
-  static Future<void> logout() async {
-    await StorageService.instance.deleteLogtoTokens();
-    await StorageService.instance.clearLogtoPending();
   }
 
   static String _randomBase64(int length) {

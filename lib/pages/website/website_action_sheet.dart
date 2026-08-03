@@ -6,7 +6,8 @@ import '../../providers/website_provider.dart';
 import '../file/file_list_page.dart';
 import 'website_sheets.dart';
 
-/// 点击网站后弹出的操作面板（朴素风格）
+/// 点击网站后弹出的操作面板
+/// UI 风格：品牌渐变头部 + 基础操作网格宫格 + 配置项分组折叠（与 Mono-Dash 的列表平铺明显区分）
 void showWebsiteActionSheet(
   BuildContext context,
   WidgetRef ref,
@@ -69,262 +70,344 @@ class WebsiteActionSheet extends ConsumerWidget {
     ScrollController scrollCtrl,
   ) {
     final isRunning = w.isRunning;
+    final scheme = Theme.of(context).colorScheme;
 
     return ListView(
       controller: scrollCtrl,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFAAB4BF),
-              borderRadius: BorderRadius.circular(2),
+        // ── 品牌渐变头部 ──
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [scheme.primary, scheme.primary.withAlpha(180)],
             ),
           ),
-        ),
-        // 标题信息
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(120),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(30),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(
-                      w.primaryDomain,
+                      w.typeLabel,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text(
-                    w.statusLabel,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isRunning ? Colors.green : Colors.red,
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isRunning
+                          ? Colors.green.withAlpha(120)
+                          : Colors.red.withAlpha(120),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      w.statusLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Text(
-                '${w.typeLabel} · ${w.alias}',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF686F78)),
+                w.primaryDomain,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               if (w.sitePath != null && w.sitePath!.isNotEmpty)
-                Text(
-                  w.sitePath!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFAAB4BF),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    w.sitePath!,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(180),
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
             ],
           ),
         ),
-        const Divider(height: 1),
 
-        // 基础操作
-        _sectionTitle(context, '基础操作'),
-        _row(
-          context,
-          Icons.play_arrow,
-          isRunning ? '停止网站' : '启动网站',
-          () => _operate(context, ref, w, isRunning ? 'stop' : 'start'),
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.refresh,
-          '重启网站',
-          () => _operate(context, ref, w, 'restart'),
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.folder_open,
-          '网站目录',
-          () => _openDir(context, w),
-          subtitle: w.sitePath,
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.delete_outline,
-          '删除网站',
-          () => _delete(context, ref, w),
-        ),
-
-        // 设置
-        _sectionTitle(context, '设置'),
-        _row(
-          context,
-          Icons.language,
-          '域名管理',
-          () => openDomainSheet(context, w.id, w.primaryDomain),
-          subtitle: '添加/编辑/删除绑定域名',
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.description,
-          '默认文档',
-          () => openIndexSheet(context, w.id),
-          subtitle: '配置默认首页文件',
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.speed,
-          '流量限制',
-          () => openLimitSheet(context, w.id),
-          subtitle: '并发与速率限制',
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.edit_note,
-          '基础信息',
-          () => openOtherSheet(context, w),
-          subtitle: '修改备注、端口等',
-        ),
-
-        // 访问控制
-        _sectionTitle(context, '访问控制'),
-        _row(
-          context,
-          Icons.swap_horiz,
-          '反向代理',
-          () => openProxySheet(context, w.id),
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.password,
-          '密码访问',
-          () => openAuthSheet(context, w.id),
-        ),
-        _divider(),
-        _row(
-          context,
-          Icons.public,
-          '跨域 CORS',
-          () => openCorsSheet(context, w.id),
-        ),
-        _divider(),
-        _row(context, Icons.lock, 'HTTPS', () => openHttpsSheet(context, w.id)),
-        _divider(),
-        _row(
-          context,
-          Icons.verified_user,
-          '证书管理',
-          () => openSslManageSheet(context),
-        ),
-        _divider(),
-        _row(context, Icons.dns, '真实 IP', () => openRealIpSheet(context, w.id)),
-
-        // 规则与运行
-        _sectionTitle(context, '规则与运行'),
-        _row(
-          context,
-          Icons.auto_fix_high,
-          '伪静态',
-          () => openRewriteSheet(context, w.id),
-        ),
-        _divider(),
-        _row(context, Icons.shield, '防盗链', () => openLeechSheet(context, w.id)),
-        _divider(),
-        _row(
-          context,
-          Icons.arrow_forward,
-          '重定向',
-          () => openRedirectSheet(context, w.id),
-        ),
-        _divider(),
-        _row(context, Icons.code, 'PHP 版本', () => openPhpSheet(context, w.id)),
-        _divider(),
-        _row(
-          context,
-          Icons.storage,
-          '关联资源',
-          () => openResourceSheet(context, w.id),
-        ),
-
-        // 诊断
-        _sectionTitle(context, '诊断'),
-        _row(
-          context,
-          Icons.receipt_long,
-          '日志查看',
-          () => openLogSheet(
-            context,
-            w.id,
-            accessLogPath: w.accessLogPath,
-            errorLogPath: w.errorLogPath,
-            sitePath: w.sitePath,
+        // ── 基础操作（4 列网格宫格） ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 4,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.9,
+            children: [
+              _gridAction(
+                context,
+                icon: isRunning ? Icons.stop_circle : Icons.play_circle,
+                label: isRunning ? '停止' : '启动',
+                color: isRunning ? Colors.red : Colors.green,
+                onTap: () =>
+                    _operate(context, ref, w, isRunning ? 'stop' : 'start'),
+              ),
+              _gridAction(
+                context,
+                icon: Icons.refresh,
+                label: '重启',
+                color: scheme.primary,
+                onTap: () => _operate(context, ref, w, 'restart'),
+              ),
+              _gridAction(
+                context,
+                icon: Icons.folder_open,
+                label: '网站目录',
+                color: Colors.orange,
+                onTap: () => _openDir(context, w),
+              ),
+              _gridAction(
+                context,
+                icon: Icons.delete_outline,
+                label: '删除',
+                color: Colors.red,
+                onTap: () => _delete(context, ref, w),
+              ),
+            ],
           ),
         ),
-        _divider(),
-        _row(
-          context,
-          Icons.settings,
-          '配置文件',
-          () => openConfigSheet(context, w.id),
-        ),
 
-        const SizedBox(height: 24),
+        // ── 配置分组（ExpansionTile 折叠） ──
+        _buildGroup(context, '设置', [
+          _configRow(
+            context,
+            Icons.language,
+            '域名管理',
+            () => openDomainSheet(context, w.id, w.primaryDomain),
+          ),
+          _configRow(
+            context,
+            Icons.description,
+            '默认文档',
+            () => openIndexSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.speed,
+            '流量限制',
+            () => openLimitSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.edit_note,
+            '基础信息',
+            () => openOtherSheet(context, w),
+          ),
+        ]),
+
+        _buildGroup(context, '访问控制', [
+          _configRow(
+            context,
+            Icons.swap_horiz,
+            '反向代理',
+            () => openProxySheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.password,
+            '密码访问',
+            () => openAuthSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.public,
+            '跨域 CORS',
+            () => openCorsSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.lock,
+            'HTTPS',
+            () => openHttpsSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.verified_user,
+            '证书管理',
+            () => openSslManageSheet(context),
+          ),
+          _configRow(
+            context,
+            Icons.dns,
+            '真实 IP',
+            () => openRealIpSheet(context, w.id),
+          ),
+        ]),
+
+        _buildGroup(context, '规则与运行', [
+          _configRow(
+            context,
+            Icons.auto_fix_high,
+            '伪静态',
+            () => openRewriteSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.shield,
+            '防盗链',
+            () => openLeechSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.arrow_forward,
+            '重定向',
+            () => openRedirectSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.code,
+            'PHP 版本',
+            () => openPhpSheet(context, w.id),
+          ),
+          _configRow(
+            context,
+            Icons.storage,
+            '关联资源',
+            () => openResourceSheet(context, w.id),
+          ),
+        ]),
+
+        _buildGroup(context, '诊断', [
+          _configRow(
+            context,
+            Icons.receipt_long,
+            '日志查看',
+            () => openLogSheet(
+              context,
+              w.id,
+              accessLogPath: w.accessLogPath,
+              errorLogPath: w.errorLogPath,
+              sitePath: w.sitePath,
+            ),
+          ),
+          _configRow(
+            context,
+            Icons.settings,
+            '配置文件',
+            () => openConfigSheet(context, w.id),
+          ),
+        ]),
+
+        const SizedBox(height: 32),
       ],
     );
   }
 
-  Widget _sectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF686F78),
-        ),
+  // ── 基础操作网格项 ──
+  Widget _gridAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withAlpha(15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _row(
+  // ── 分组折叠 ──
+  Widget _buildGroup(BuildContext context, String title, List<Widget> rows) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: ExpansionTile(
+        shape: const Border(),
+        collapsedShape: const Border(),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        children: rows,
+      ),
+    );
+  }
+
+  // ── 配置项行 ──
+  Widget _configRow(
     BuildContext context,
     IconData icon,
     String title,
-    VoidCallback onTap, {
-    String? subtitle,
-  }) {
+    VoidCallback onTap,
+  ) {
     return ListTile(
       dense: true,
       leading: Icon(icon, size: 20, color: const Color(0xFF686F78)),
       title: Text(title, style: const TextStyle(fontSize: 14)),
-      subtitle: subtitle == null || subtitle.isEmpty
-          ? null
-          : Text(
-              subtitle,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFAAB4BF)),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
       trailing: const Icon(Icons.chevron_right, size: 16),
       onTap: onTap,
     );
   }
-
-  Widget _divider() => const Divider(height: 1, indent: 56);
 
   Future<void> _operate(
     BuildContext context,

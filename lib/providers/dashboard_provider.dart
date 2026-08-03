@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/dashboard_api.dart';
 import '../models/server_status.dart';
+import '../services/ssh_monitor.dart';
 import 'server_list_provider.dart';
+import 'ssh_connection_provider.dart';
 
 /// 标记刷新是否出错 (UI 层据此弹 snackbar)
 final refreshErrorProvider = StateProvider<String?>((_) => null);
@@ -52,15 +54,26 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
     _timer = Timer.periodic(const Duration(seconds: 15), (_) => _autoRefresh());
     ref.onDispose(() => _timer?.cancel());
     _lastFetchTime = DateTime.now();
-    return DashboardApi.getStatus();
+    return _fetch();
   }
 
   DateTime get lastFetchTime => _lastFetchTime;
 
+  /// 获取状态：优先 SSH 死命令（需求 0：监控纯 SSH）。
+  /// SSH 未连接时抛错，由 UI 提示配置 SSH。
+  Future<ServerStatus> _fetch() async {
+    final ssh = ref.read(sshServiceProvider);
+    if (ssh == null || !ssh.isConnected) {
+      throw StateError('监控需要 SSH 连接，请在设置中配置 SSH');
+    }
+    final monitor = SshMonitor(ssh);
+    return monitor.fetchStatus();
+  }
+
   /// 静默刷新 — 失败保留旧数据, 不闪 loading
   Future<void> _autoRefresh() async {
     try {
-      final data = await DashboardApi.getStatus();
+      final data = await _fetch();
       _lastFetchTime = DateTime.now();
       state = AsyncValue.data(data);
       ref.read(refreshErrorProvider.notifier).state = null;
@@ -78,7 +91,7 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
   /// 静默手动刷新 — 不闪 loading, 保留旧数据直到成功
   Future<void> refresh() async {
     try {
-      final data = await DashboardApi.getStatus();
+      final data = await _fetch();
       _lastFetchTime = DateTime.now();
       state = AsyncValue.data(data);
       ref.read(refreshErrorProvider.notifier).state = null;

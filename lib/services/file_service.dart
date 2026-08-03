@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/file_api.dart';
 import '../models/file_item.dart';
+import '../providers/ssh_connection_provider.dart';
+import 'ssh_file_service.dart';
 
 /// 文件操作门面。
 ///
@@ -144,5 +146,12 @@ class ApiFileService implements FileService {
   Future<bool> checkExists(String path) => FileApi.checkExists(path);
 }
 
-/// 单例 provider，便于测试时 override 为 mock
-final fileServiceProvider = Provider<FileService>((_) => ApiFileService());
+/// 文件服务提供者：API 优先，SSH 兜底。
+/// SSH 已连接时优先走 SSH 命令（更可靠），否则走 1Panel API。
+final fileServiceProvider = Provider<FileService>((ref) {
+  final ssh = ref.watch(sshServiceProvider);
+  if (ssh != null && ssh.isConnected) {
+    return SshFileService(ssh);
+  }
+  return ApiFileService();
+});

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:tianxuan/api/client.dart';
 import 'package:tianxuan/providers/file_editor_provider.dart';
+import 'package:tianxuan/providers/ssh_connection_provider.dart';
 
 /// Stateful mock server simulating 1Panel file read/write.
 Future<HttpServer> _startServer(
@@ -89,7 +90,12 @@ void main() {
   });
 
   test('save then reload returns fresh content', () async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        // 强制走 API（无 SSH），避免 SSH provider 干扰
+        sshServiceProvider.overrideWithValue(null),
+      ],
+    );
     addTearDown(container.dispose);
 
     final provider = fileEditorProvider(('/var/www/test.txt', 'test.txt'));

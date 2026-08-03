@@ -5,6 +5,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/server_list_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/website_provider.dart';
+import '../settings/ssh_config_page.dart';
 import '../website/website_list_page.dart';
 import '../../widgets/ring_chart.dart';
 
@@ -752,14 +753,23 @@ class DashboardPage extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+              Text('监控加载失败', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
-              Text('$e', style: Theme.of(context).textTheme.bodySmall),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  '$e',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
               const SizedBox(height: 16),
               FilledButton(
-                onPressed: () =>
-                    ref.read(serverStatusProvider.notifier).refresh(),
-                child: const Text('重试'),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SshConfigPage()),
+                ),
+                child: const Text('去配置 SSH'),
               ),
             ],
           ),

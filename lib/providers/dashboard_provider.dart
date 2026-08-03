@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/client.dart';
 import '../api/dashboard_api.dart';
 import '../models/server_status.dart';
+import 'server_list_provider.dart';
 
 /// 标记刷新是否出错 (UI 层据此弹 snackbar)
 final refreshErrorProvider = StateProvider<String?>((_) => null);
@@ -106,3 +108,29 @@ final serverStatusProvider =
     AsyncNotifierProvider<ServerStatusNotifier, ServerStatus>(
       ServerStatusNotifier.new,
     );
+
+// ─── 服务器卡片状态（首页多服务器概览，10s 轮询） ───
+
+/// 按 server id 拉取状态（用于首页卡片迷你监控）。
+/// 每次拉取前临时切换到该服务器配置，拉完恢复。
+final serverCardStatusProvider = FutureProvider.family<ServerStatus?, String>((
+  ref,
+  serverId,
+) async {
+  final servers = ref.watch(savedServersProvider);
+  SavedServer? server;
+  for (final s in servers) {
+    if (s.id == serverId) {
+      server = s;
+      break;
+    }
+  }
+  if (server == null) return null;
+  try {
+    await ApiClient.instance.saveConfig(server.url, server.apiKey);
+    final status = await DashboardApi.getStatus();
+    return status;
+  } catch (_) {
+    return null;
+  }
+});

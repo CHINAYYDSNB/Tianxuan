@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/server_list_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../services/storage_service.dart';
+import '../services/ssh_cert_service.dart';
 
 /// 添加服务器成功后自动配置 SSH 连接
 Future<void> _autoSetupSsh(
@@ -11,6 +12,12 @@ Future<void> _autoSetupSsh(
   String serverUrl,
   String serverName,
 ) async {
+  // 优先：1Panel API 自动获取本机 SSH 私钥并添加连接（含去重）
+  try {
+    final result = await SshCertImporter.importFromCurrentServer();
+    if (result.success) return;
+  } catch (_) {}
+  // 兜底：仅添加一条主机连接（凭据待用户补全）
   if (kIsWeb) return;
   try {
     final host = Uri.parse(serverUrl).host;

@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import '../../services/ssh_service.dart';
+import '../../services/ssh_command_service.dart';
 import 'ssh_terminal_page.dart';
+
+/// 1Panel 安装脚本（用户指定）
+const _panelInstallCommand =
+    'bash -c "\$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_start.sh)"';
+
+/// 检测服务器是否已安装 1Panel 或宝塔
+const _panelDetectCommand =
+    'if command -v 1p >/dev/null 2>&1 || [ -d /opt/1panel ] || '
+    'command -v bt >/dev/null 2>&1 || [ -d /www/server/panel ]; then '
+    'echo __PANEL_FOUND__; else echo __PANEL_MISSING__; fi';
 
 /// Standalone page (with Scaffold + AppBar)
 class SshHomePage extends StatefulWidget {
@@ -83,6 +94,89 @@ class _SshHomeBodyState extends State<SshHomeBody> {
     _save();
   }
 
+  /// 安装 1Panel：先检测是否已装，未装则打开交互式终端执行安装脚本
+  Future<void> _install1Panel(int index) async {
+    final c = _connections[index];
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 16),
+            Expanded(child: Text('正在检测服务器环境...')),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final svc = SshCommandService();
+      var installed = false;
+      try {
+        await svc.connect(
+          SshConfig(
+            host: c.host,
+            port: c.port,
+            username: c.username,
+            password: c.password,
+            privateKey: c.privateKey,
+          ),
+        );
+        final res = await svc.execute(_panelDetectCommand);
+        installed = res.stdout.contains('__PANEL_FOUND__');
+      } catch (e) {
+        if (mounted) Navigator.pop(context);
+        _showSnack('检测失败: $e', isError: true);
+        return;
+      } finally {
+        svc.disconnect();
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // 关闭检测进度框
+
+      if (installed) {
+        _showSnack('服务器已安装 1Panel 或宝塔，无需重复安装');
+        return;
+      }
+
+      // 未安装 → 打开交互式终端并自动执行安装脚本
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SshTerminalPage(
+            host: c.host,
+            port: c.port,
+            username: c.username,
+            password: c.password,
+            privateKey: c.privateKey,
+            initialCommand: _panelInstallCommand,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
+
   void _connect(int index) {
     final conn = _connections[index];
     Navigator.push(
@@ -145,21 +239,36 @@ class _SshHomeBodyState extends State<SshHomeBody> {
                         ),
                         title: Text(c.name.isNotEmpty ? c.name : c.host),
                         subtitle: Text('${c.username}@${c.host}:${c.port}'),
-                        trailing: PopupMenuButton(
-                          itemBuilder: (_) => [
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Text('编辑'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              ),
+                              onPressed: () => _install1Panel(i),
+                              child: const Text('安装1Panel'),
                             ),
-                            const PopupMenuItem(
-                              value: 'del',
-                              child: Text('删除'),
+                            PopupMenuButton(
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('编辑'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'del',
+                                  child: Text('删除'),
+                                ),
+                              ],
+                              onSelected: (v) {
+                                if (v == 'edit') _edit(i);
+                                if (v == 'del') _delete(i);
+                              },
                             ),
                           ],
-                          onSelected: (v) {
-                            if (v == 'edit') _edit(i);
-                            if (v == 'del') _delete(i);
-                          },
                         ),
                         onTap: () => _connect(i),
                       ),

@@ -2,18 +2,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/dashboard_api.dart';
+import '../services/ssh_cert_service.dart';
 
 class SettingsState {
   final bool isConnected;
   final String? serverUrl;
   final String? error;
   final bool loading;
+  final SshCertImportResult? sshImport;
 
   SettingsState({
     this.isConnected = false,
     this.serverUrl,
     this.error,
     this.loading = false,
+    this.sshImport,
   });
 
   SettingsState copyWith({
@@ -21,12 +24,15 @@ class SettingsState {
     String? serverUrl,
     String? error,
     bool? loading,
+    SshCertImportResult? sshImport,
+    bool clearSshImport = false,
   }) {
     return SettingsState(
       isConnected: isConnected ?? this.isConnected,
       serverUrl: serverUrl ?? this.serverUrl,
       error: error,
       loading: loading ?? this.loading,
+      sshImport: clearSshImport ? null : (sshImport ?? this.sshImport),
     );
   }
 }
@@ -65,7 +71,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       // 发请求测试连接
       await DashboardApi.getStatus();
 
-      state = SettingsState(isConnected: true, serverUrl: serverUrl);
+      // 自动导入本机 SSH 连接（私钥获取失败也可忽略）
+      final sshImport = await SshCertImporter.importFromCurrentServer();
+
+      state = SettingsState(
+        isConnected: true,
+        serverUrl: serverUrl,
+        sshImport: sshImport,
+      );
       return true;
     } catch (e) {
       state = SettingsState(error: e.toString().replaceAll('Exception: ', ''));

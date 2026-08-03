@@ -11,6 +11,9 @@ class SshTerminalPage extends StatefulWidget {
   final String? password;
   final String? privateKey;
 
+  /// 连接成功后自动在终端执行的命令（如 1Panel 安装脚本）
+  final String? initialCommand;
+
   const SshTerminalPage({
     super.key,
     required this.host,
@@ -18,6 +21,7 @@ class SshTerminalPage extends StatefulWidget {
     required this.username,
     this.password,
     this.privateKey,
+    this.initialCommand,
   });
 
   @override
@@ -56,6 +60,7 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
   late final TerminalOutputBuffer _buffer;
   bool _connecting = true;
   String? _error;
+  bool _initialCommandSent = false;
 
   // Keep-alive
   Timer? _keepAliveTimer;
@@ -105,9 +110,23 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
     });
     if (connected) {
       _startKeepAlive();
+      _maybeRunInitialCommand();
     } else {
       _stopKeepAlive();
     }
+  }
+
+  /// 连接成功后自动执行 initialCommand（如 1Panel 安装脚本）
+  void _maybeRunInitialCommand() {
+    final cmd = widget.initialCommand;
+    if (cmd == null || cmd.isEmpty || _initialCommandSent) return;
+    _initialCommandSent = true;
+    // 等 shell 就绪后执行
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && _sshService.isConnected) {
+        _sshService.write('$cmd\n');
+      }
+    });
   }
 
   // ─── Keep-alive ───

@@ -10,6 +10,7 @@ import 'ssh_config_page.dart';
 import 'about_page.dart';
 import 'personalize_page.dart';
 import 'profile_page.dart';
+import '../auth/login_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -177,8 +178,11 @@ class SettingsPage extends ConsumerWidget {
 }
 
 void _startLogin(BuildContext context, WidgetRef ref) {
-  // 直接发起 Casdoor OIDC 登录（不再经过中间登录页）
-  ref.read(logtoAuthProvider.notifier).login();
+  // 弹出登录页：密码模式 / 浏览器授权两种入口（skill casdoor-login-flutter）
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const AuthLoginPage()),
+  );
 }
 
 class _SettingsCard extends StatelessWidget {

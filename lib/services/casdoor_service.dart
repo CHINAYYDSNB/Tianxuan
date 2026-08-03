@@ -49,6 +49,69 @@ class CasdoorService {
     return Uri.parse(_authEndpoint).replace(queryParameters: params).toString();
   }
 
+  /// 密码模式登录（skill 方式 B，App 内直接输账号密码）
+  static Future<bool> loginWithPassword({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final uri = Uri.parse(_tokenEndpoint).replace(
+        queryParameters: {
+          'grant_type': 'password',
+          'client_id': _clientId,
+          'client_secret': _clientSecret,
+          'username': username,
+          'password': password,
+          'scope': _scopes,
+        },
+      );
+      final resp = await http.post(uri);
+      if (resp.statusCode != 200) return false;
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: data['access_token']?.toString() ?? '',
+        refreshToken: data['refresh_token']?.toString() ?? '',
+        idToken: data['id_token']?.toString() ?? '',
+        expiresIn: data['expires_in'] as int? ?? 3600,
+      );
+      return data['access_token']?.toString().isNotEmpty == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 用 refresh_token 刷新 access_token（skill 5.4）
+  static Future<bool> refreshAccessToken() async {
+    final refreshToken = await StorageService.instance.getLogtoRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+    try {
+      final uri = Uri.parse(_tokenEndpoint).replace(
+        queryParameters: {
+          'grant_type': 'refresh_token',
+          'client_id': _clientId,
+          'refresh_token': refreshToken,
+          'scope': _scopes,
+        },
+      );
+      final resp = await http.post(uri);
+      if (resp.statusCode != 200) {
+        // refresh 失效 → 清除 token，需重新登录
+        await StorageService.instance.deleteLogtoTokens();
+        return false;
+      }
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: data['access_token']?.toString() ?? '',
+        refreshToken: data['refresh_token']?.toString() ?? refreshToken,
+        idToken: data['id_token']?.toString() ?? '',
+        expiresIn: data['expires_in'] as int? ?? 3600,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// 交换 authorization code → tokens（Casdoor 用 query 参数）
   static Future<bool> exchangeCode({
     required String code,

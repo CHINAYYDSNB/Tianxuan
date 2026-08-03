@@ -102,5 +102,9 @@ void main() {
     test('isLoggedIn 无 token 为 false', () async {
       expect(await CasdoorService.isLoggedIn, isFalse);
     });
+
+    test('refreshAccessToken 无 refresh_token 返回 false', () async {
+      expect(await CasdoorService.refreshAccessToken(), isFalse);
+    });
   });
 }

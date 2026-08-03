@@ -159,6 +159,27 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     } catch (_) {}
   }
 
+  /// 密码模式登录（skill 方式 B）：直接在 App 内输账号密码
+  Future<bool> loginWithPassword(String username, String password) async {
+    final ok = await CasdoorService.loginWithPassword(
+      username: username,
+      password: password,
+    );
+    if (ok) {
+      await refreshUserInfo();
+    }
+    return ok;
+  }
+
+  /// 刷新 access_token（skill 5.4）
+  Future<bool> refreshToken() async {
+    final ok = await CasdoorService.refreshAccessToken();
+    if (ok) {
+      await refreshUserInfo();
+    }
+    return ok;
+  }
+
   /// 登出
   Future<void> logout() async {
     await CasdoorService.logout();

@@ -18,6 +18,8 @@ class CasdoorService {
   static const _clientId = '2eb37714fa37f170af58';
   static const _clientSecret = '06e4cde32f530421187f51404fb914aacf2b2d37';
   static const _scopes = 'openid profile email';
+  // Casdoor 应用标识：{组织}/{应用}。组织与应用均为 Tianxuan。
+  static const _applicationId = 'Tianxuan/Tianxuan';
 
   /// 生成 PKCE 参数（Casdoor 支持 S256）
   static ({String verifier, String challenge, String state}) buildPkce() {
@@ -42,6 +44,7 @@ class CasdoorService {
       'state': state,
       'code_challenge_method': 'S256',
       'code_challenge': challenge,
+      'applicationId': _applicationId,
     };
     return Uri.parse(_authEndpoint).replace(queryParameters: params).toString();
   }

@@ -6,7 +6,6 @@ import 'providers/logto_auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/storage_service.dart';
 import 'pages/home_page.dart';
-import 'pages/login_page.dart';
 import 'widgets/app_background.dart';
 
 void main() async {
@@ -26,10 +25,7 @@ class OnePanelApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(theme),
       home: AppBackground(child: const InitPage()),
-      routes: {
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const HomePage(),
-      },
+      routes: {'/home': (context) => const HomePage()},
     );
   }
 }

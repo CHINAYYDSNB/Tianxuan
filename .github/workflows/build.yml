@@ -73,7 +73,10 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release
+        # versionName = 0.3.0.<run_number>（如 0.3.0.78），versionCode = run_number（递增）
+        run: flutter build apk --release \
+          --build-name "0.3.0.${{ github.run_number }}" \
+          --build-number "${{ github.run_number }}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

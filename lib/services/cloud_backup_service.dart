@@ -1,19 +1,27 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/file_api.dart';
+import '../models/backup_item.dart';
 import '../providers/server_list_provider.dart';
 import '../services/storage_service.dart';
 
 class CloudBackupService {
   static const _backupPath = '/opt/1panel/.tianxuan-backup.json';
 
-  /// 备份：当前连接 + 已保存服务器 + API Key(加密) + 设置 → 写到 1Panel
-  static Future<void> backup({required List<SavedServer> servers}) async {
+  /// 备份：按所选项目收集数据 → 加密敏感项 → 写到 1Panel
+  static Future<void> backup({
+    required List<SavedServer> servers,
+    required List<BackupItem> items,
+  }) async {
     // 0. 包含当前服务器（如果已连接）
     final allServers = List<SavedServer>.from(servers);
     final currentUrl = await StorageService.instance.getServerUrl();
     final currentKey = await StorageService.instance.getApiKey();
-    if (currentUrl != null && currentUrl.isNotEmpty && currentKey != null) {
+    if (currentUrl != null &&
+        currentUrl.isNotEmpty &&
+        currentKey != null &&
+        items.contains(BackupItem.servers)) {
       final alreadyInList = allServers.any((s) => s.url == currentUrl);
       if (!alreadyInList) {
         allServers.insert(
@@ -27,26 +35,52 @@ class CloudBackupService {
         );
       }
     }
-    // 1. 加密 API Keys
+
+    // 1. 加密敏感数据
     final key = await _deriveKey();
-    final keysMap = <String, String>{};
-    for (final s in allServers) {
-      keysMap[s.id] = s.apiKey;
+    final sensitive = <String, String>{};
+    if (items.contains(BackupItem.servers)) {
+      for (final s in allServers) {
+        sensitive['server_key_${s.id}'] = s.apiKey;
+      }
+    }
+    if (items.contains(BackupItem.aiConfig)) {
+      final ai = await _collectAiConfig();
+      sensitive['ai_config'] = jsonEncode(ai);
+    }
+    if (items.contains(BackupItem.sshConnections)) {
+      final ssh = await StorageService.instance.getSshConnections();
+      if (ssh != null) {
+        sensitive['ssh_connections'] = jsonEncode(ssh);
+      }
+    }
+    if (items.contains(BackupItem.logtoTokens)) {
+      final tokens = await _collectLogtoTokens();
+      if (tokens.isNotEmpty) {
+        sensitive['logto_tokens'] = jsonEncode(tokens);
+      }
     }
     final encryptedKeys = key != null
-        ? _encrypt(jsonEncode(keysMap), key)
-        : jsonEncode(keysMap); // no Logto → plaintext
+        ? _encrypt(jsonEncode(sensitive), key)
+        : jsonEncode(sensitive);
 
     // 2. 构建备份数据
-    final data = {
-      'version': 1,
+    final data = <String, dynamic>{
+      'version': 2,
       'encryptedKeys': encryptedKeys,
       'keyEncrypted': key != null,
       'exportedAt': DateTime.now().toIso8601String(),
-      'servers': allServers.map((s) => s.toJson()).toList(),
+      'items': items.map((i) => i.name).toList(),
     };
+    if (items.contains(BackupItem.servers)) {
+      data['servers'] = allServers.map((s) => s.toJson()).toList();
+    }
+    if (items.contains(BackupItem.theme)) {
+      final theme = await _collectTheme();
+      data['theme'] = theme;
+    }
 
-    // 3. 写文件 — 先确保文件存在
+    // 3. 写文件
     final json = jsonEncode(data);
     final dir = _backupPath.substring(0, _backupPath.lastIndexOf('/'));
     try {
@@ -54,13 +88,11 @@ class CloudBackupService {
     } catch (_) {}
     try {
       await FileApi.create(_backupPath, isDir: false);
-    } catch (e) {
-      // 文件已存在 → 忽略
-    }
+    } catch (e) {}
     await FileApi.save(_backupPath, json);
   }
 
-  /// 恢复：读文件 → 解析 → 解密 → 返回
+  /// 恢复备份（返回备份数据供调用方选择性恢复）
   static Future<BackupData?> restore() async {
     try {
       final raw = await FileApi.getContent(_backupPath);
@@ -68,30 +100,25 @@ class CloudBackupService {
       if (json == null || json.isEmpty) return null;
 
       final data = jsonDecode(json) as Map<String, dynamic>;
-      if (data['version'] != 1) return null;
+      if (data['version'] != 2) return null;
 
-      // 解析服务器列表
-      final serversRaw = data['servers'] as List? ?? [];
-      final servers = <SavedServer>[];
-
-      // 解密 API Keys
+      // 解密敏感数据
       final key = await _deriveKey();
-      final keysMap = <String, String>{};
+      final sensitive = <String, String>{};
       final encryptedKeysStr = data['encryptedKeys'] as String?;
       final keyEncrypted = data['keyEncrypted'] as bool? ?? false;
-
       if (encryptedKeysStr != null) {
         if (keyEncrypted && key != null) {
           final decrypted = _decrypt(encryptedKeysStr, key);
           if (decrypted != null) {
-            keysMap.addAll(
+            sensitive.addAll(
               (jsonDecode(decrypted) as Map<String, dynamic>).map(
                 (k, v) => MapEntry(k, v.toString()),
               ),
             );
           }
         } else if (!keyEncrypted) {
-          keysMap.addAll(
+          sensitive.addAll(
             (jsonDecode(encryptedKeysStr) as Map<String, dynamic>).map(
               (k, v) => MapEntry(k, v.toString()),
             ),
@@ -99,6 +126,9 @@ class CloudBackupService {
         }
       }
 
+      // 解析服务器列表
+      final serversRaw = data['servers'] as List? ?? [];
+      final servers = <SavedServer>[];
       for (final e in serversRaw) {
         final m = e as Map<String, dynamic>;
         final id = m['id']?.toString() ?? '';
@@ -107,14 +137,24 @@ class CloudBackupService {
             id: id,
             name: m['name']?.toString() ?? '',
             url: m['url']?.toString() ?? '',
-            apiKey: keysMap[id] ?? '',
+            apiKey: sensitive['server_key_$id'] ?? '',
           ),
         );
       }
 
+      // 解析备份项目
+      final itemsRaw = data['items'] as List? ?? <String>[];
+      final items = itemsRaw
+          .map((n) => BackupItem.values.asNameMap()[n])
+          .whereType<BackupItem>()
+          .toList();
+
       return BackupData(
         servers: servers,
         exportedAt: data['exportedAt']?.toString() ?? '',
+        items: items,
+        theme: data['theme'] as Map<String, dynamic>?,
+        sensitive: sensitive,
       );
     } catch (e) {
       throw Exception('恢复失败: $e');
@@ -143,15 +183,47 @@ class CloudBackupService {
     }
   }
 
-  /// 从 Logto ID token 派生加密 key
-  /// 没登录 → 返回 null（不加密）
+  // ─── 收集辅助 ───
+
+  static Future<Map<String, dynamic>> _collectAiConfig() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final raw = p.getString('ai_config');
+      if (raw != null) {
+        return (jsonDecode(raw) as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  static Future<Map<String, dynamic>> _collectLogtoTokens() async {
+    final at = await StorageService.instance.getLogtoAccessToken();
+    final rt = await StorageService.instance.getLogtoRefreshToken();
+    final id = await StorageService.instance.getLogtoIdToken();
+    return {
+      if (at != null) 'access_token': at,
+      if (rt != null) 'refresh_token': rt,
+      if (id != null) 'id_token': id,
+    };
+  }
+
+  static Future<Map<String, dynamic>> _collectTheme() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final raw = p.getString('app_theme_v1');
+      if (raw != null) return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {}
+    return {};
+  }
+
+  // ─── 加密 ───
+
   static Future<List<int>?> _deriveKey() async {
     final idToken = await StorageService.instance.getLogtoIdToken();
     if (idToken == null || idToken.isEmpty) return null;
     return sha256.convert(utf8.encode(idToken)).bytes.toList();
   }
 
-  /// XOR 加密（可逆）
   static String _encrypt(String plain, List<int> key) {
     final bytes = utf8.encode(plain);
     final result = List<int>.generate(
@@ -161,7 +233,6 @@ class CloudBackupService {
     return base64Url.encode(result);
   }
 
-  /// XOR 解密
   static String? _decrypt(String cipher, List<int> key) {
     try {
       final bytes = base64Url.decode(cipher);
@@ -176,9 +247,20 @@ class CloudBackupService {
   }
 }
 
+/// 通过 SharedPreferences 读取（供主题收集）
+
 class BackupData {
   final List<SavedServer> servers;
   final String exportedAt;
+  final List<BackupItem> items;
+  final Map<String, dynamic>? theme;
+  final Map<String, String> sensitive;
 
-  BackupData({required this.servers, this.exportedAt = ''});
+  BackupData({
+    required this.servers,
+    this.exportedAt = '',
+    this.items = const [],
+    this.theme,
+    this.sensitive = const {},
+  });
 }

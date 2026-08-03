@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/backup_item.dart';
 import '../../services/cloud_backup_service.dart';
-import '../../services/storage_service.dart';
 import '../../providers/server_list_provider.dart';
 
 class CloudBackupPage extends ConsumerStatefulWidget {
@@ -16,6 +16,7 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
   String? _statusMsg;
   bool _isError = false;
   String? _lastBackupTime;
+  Set<BackupItem> _selected = {BackupItem.servers};
 
   @override
   void initState() {
@@ -36,14 +37,13 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
     });
     try {
       final servers = ref.read(savedServersProvider);
-      await CloudBackupService.backup(servers: servers);
+      await CloudBackupService.backup(
+        servers: servers,
+        items: _selected.toList(),
+      );
       await _loadBackupTime();
-      // 重新加载备份时间（显示更新）
-      final currentUrl = await StorageService.instance.getServerUrl();
-      final hasCurrent = currentUrl != null && currentUrl.isNotEmpty;
       setState(() {
-        final count = servers.length + (hasCurrent ? 1 : 0);
-        _statusMsg = '备份成功 ✓  共 $count 个服务器配置已上传';
+        _statusMsg = '备份成功 ✓  已备份 ${_selected.length} 项配置';
         _isError = false;
       });
     } catch (e) {
@@ -61,7 +61,7 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('恢复备份'),
-        content: const Text('这将覆盖当前所有服务器配置和阈值设置，确定继续？'),
+        content: const Text('这将覆盖所选项目的本地配置，确定继续？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -92,16 +92,19 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
       }
 
       // 恢复服务器列表
-      final notifier = ref.read(savedServersProvider.notifier);
-      for (final s in data.servers) {
-        try {
-          await notifier.add(s);
-        } catch (_) {}
+      if (data.servers.isNotEmpty) {
+        final notifier = ref.read(savedServersProvider.notifier);
+        for (final s in data.servers) {
+          try {
+            await notifier.add(s);
+          } catch (_) {}
+        }
       }
 
       await _loadBackupTime();
       setState(() {
-        _statusMsg = '恢复成功 ✓  已恢复 ${data.servers.length} 个服务器配置';
+        _statusMsg =
+            '恢复成功 ✓  已恢复 ${data.servers.length} 个服务器${data.items.isNotEmpty ? " + ${data.items.length} 项配置" : ""}';
         _isError = false;
       });
     } catch (e) {
@@ -123,6 +126,48 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 备份项目选择
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('备份项目', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    '勾选要备份到服务器的配置项',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF686F78),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final item in BackupItem.values)
+                    CheckboxListTile(
+                      title: Text(item.label),
+                      subtitle: Text(
+                        item.description,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      value: _selected.contains(item),
+                      onChanged: (v) {
+                        setState(() {
+                          if (v == true) {
+                            _selected.add(item);
+                          } else {
+                            _selected.remove(item);
+                          }
+                        });
+                      },
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // 状态卡片
           Card(
             child: Padding(
@@ -226,7 +271,7 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
                 children: [
                   Text('说明', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  _Bullet('备份内容：所有已保存的服务器 + API Key'),
+                  _Bullet('按勾选项目备份，敏感数据（API Key / AI Key / SSH）加密存储'),
                   _Bullet('存储位置：当前连接的 1Panel 服务器'),
                   _Bullet('上传覆盖旧备份，每次都是完整备份'),
                 ],

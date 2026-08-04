@@ -175,52 +175,6 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     } catch (_) {}
   }
 
-  /// 第三方快捷登录（provider 浏览器授权）
-  Future<void> loginWithProvider(String providerName) async {
-    try {
-      final pkce = CasdoorService.buildPkce();
-      await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
-      final url = CasdoorService.buildProviderAuthUrl(
-        providerName: providerName,
-        redirectUri: LogtoBridge.callbackUri,
-        state: pkce.state,
-      );
-      await LogtoBridge.redirect(url);
-    } catch (_) {}
-  }
-
-  /// 网页注册（跳 Casdoor 注册页，自带验证码）
-  Future<void> signupViaBrowser() async {
-    try {
-      final pkce = CasdoorService.buildPkce();
-      await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
-      final url = CasdoorService.buildSignupUrl(
-        verifier: pkce.verifier,
-        challenge: pkce.challenge,
-        state: pkce.state,
-        redirectUri: LogtoBridge.callbackUri,
-      );
-      await LogtoBridge.redirect(url);
-    } catch (_) {}
-  }
-
-  /// 密码模式登录（邮箱 + 密码 + 极验验证）
-  Future<bool> loginWithPassword(
-    String email,
-    String password, {
-    String? captchaToken,
-  }) async {
-    final ok = await CasdoorService.loginWithPassword(
-      email: email,
-      password: password,
-      captchaToken: captchaToken,
-    );
-    if (ok) {
-      await refreshUserInfo();
-    }
-    return ok;
-  }
-
   /// 构建用于 webview 内嵌登录页的 PKCE 授权 URL（登录页 / 注册页 / 第三方）
   Future<String> buildWebviewLoginUrl({
     bool signup = false,
@@ -260,27 +214,6 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     await _processCallback(code, state);
     // 交换成功后 isLoggedIn 应为 true
     return CasdoorService.isLoggedIn;
-  }
-
-  /// 原生注册（邮箱 + 用户名 + 密码 + 极验验证）
-  Future<({bool ok, String? message})> signup({
-    required String email,
-    required String username,
-    required String password,
-    String? name,
-    String? captchaToken,
-  }) async {
-    final result = await CasdoorService.signup(
-      email: email,
-      username: username,
-      password: password,
-      name: name,
-      captchaToken: captchaToken,
-    );
-    if (result.ok) {
-      await refreshUserInfo();
-    }
-    return result;
   }
 
   /// 刷新 access_token（skill 5.4）

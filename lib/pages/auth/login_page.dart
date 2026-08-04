@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/logto_auth_provider.dart';
 import '../../services/casdoor_service.dart';
-import '../../services/geetest_service.dart';
 import 'casdoor_webview_page.dart';
-import 'register_page.dart';
 
-/// Casdoor 登录页：邮箱 + 密码 + GEETEST 验证 + 快捷登录 + 注册入口
+/// 简约纯白登录入口页
+///
+/// 登录 / 注册 / 快捷登录均通过应用内 webview 打开 Casdoor 官方页面完成
+/// （自带邮箱登录、GEETEST 人机验证、快捷登录）。
 class AuthLoginPage extends ConsumerStatefulWidget {
   const AuthLoginPage({super.key});
 
@@ -15,12 +15,8 @@ class AuthLoginPage extends ConsumerStatefulWidget {
 }
 
 class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  bool _loading = false;
-  bool _captchaVerified = false;
-  String? _captchaId;
   List<CasdoorProvider> _providers = [];
+  bool _loadingProviders = true;
 
   @override
   void initState() {
@@ -32,91 +28,24 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
     final providers = await CasdoorService.getLoginProviders();
     if (!mounted) return;
     setState(() {
-      _providers = providers;
-      String? captchaId;
-      for (final p in providers) {
-        if (p.isCaptchaProvider) {
-          captchaId = p.clientId;
-          break;
-        }
-      }
-      // 兜底：Casdoor 未配置 GEETEST provider 时用默认 captchaId
-      _captchaId = (captchaId != null && captchaId.isNotEmpty)
-          ? captchaId
-          : GeeTestService.defaultCaptchaId;
+      _providers = providers.where((p) => p.isOAuthProvider).toList();
+      _loadingProviders = false;
     });
   }
 
-  @override
-  void dispose() {
-    _email.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  /// 极验验证：验证通过后标记 _captchaVerified
-  Future<void> _runCaptcha() async {
-    final captchaId = _captchaId;
-    if (captchaId == null || captchaId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('未配置验证码，跳过验证')));
-      setState(() => _captchaVerified = true);
-      return;
-    }
-    if (!GeeTestService.isSupported) {
-      // Web 无原生极验，标记通过（服务端仍会校验）
-      setState(() => _captchaVerified = true);
-      return;
-    }
-    final result = await GeeTestService.verify(captchaId);
-    if (!mounted) return;
-    if (result != null) {
-      _captchaVerified = true;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('验证通过')));
-    } else {
-      _captchaVerified = false;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('验证未完成，请重试')));
-    }
-  }
-
-  Future<void> _login() async {
-    final email = _email.text.trim();
-    final password = _password.text;
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请输入邮箱和密码')));
-      return;
-    }
-
-    String? captchaToken;
-    if (_captchaId != null && _captchaId!.isNotEmpty && _captchaVerified) {
-      final result = await GeeTestService.verify(_captchaId!);
-      captchaToken = result?.captchaToken;
-    }
-
-    setState(() => _loading = true);
-    final ok = await ref
-        .read(logtoAuthProvider.notifier)
-        .loginWithPassword(email, password, captchaToken: captchaToken);
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (ok) {
+  /// 打开 webview 登录页，成功后关闭本页
+  Future<void> _openLogin() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CasdoorWebviewPage()),
+    );
+    if (ok == true && mounted) {
       Navigator.of(context).pop(true);
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('登录失败，请检查邮箱密码或验证码')));
     }
   }
 
+  /// 快捷登录：webview 打开指定第三方授权页
   Future<void> _loginWithProvider(String providerName) async {
-    // 在应用内 webview 完成第三方授权
     final ok = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -128,211 +57,181 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
     }
   }
 
-  /// 在应用内 webview 打开 Casdoor 登录页（体验最佳）
-  Future<void> _openWebviewLogin() async {
-    final ok = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const CasdoorWebviewPage()),
-    );
-    if (ok == true && mounted) {
-      Navigator.of(context).pop(true);
-    }
-  }
-
-  Future<void> _loginWithBrowser() async {
-    setState(() => _loading = true);
-    await ref.read(logtoAuthProvider.notifier).login();
-  }
-
-  void _goRegister() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RegisterPage()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final oauthProviders = _providers.where((p) => p.isOAuthProvider).toList();
+    final oauthProviders = _providers;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('账号登录')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const SizedBox(height: 16),
-          Icon(
-            Icons.account_circle,
-            size: 64,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '登录 Tianxuan 账号',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton.icon(
-              onPressed: _loading ? null : _openWebviewLogin,
-              icon: const Icon(Icons.public),
-              label: const Text('在应用内登录'),
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.tertiary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '推荐：使用 Casdoor 官方登录页（含人机验证与快捷登录）',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF686F78),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('登录', style: TextStyle(color: Colors.black87)),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  '或使用密码登录',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFFAAB4BF),
+              const Spacer(flex: 2),
+              // Logo + 标题
+              Center(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0C1014),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.terminal,
+                    color: Colors.white,
+                    size: 36,
                   ),
                 ),
               ),
-              const Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _email,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: '邮箱',
-              hintText: 'you@example.com',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.mail_outline),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _password,
-            obscureText: true,
-            onSubmitted: (_) => _login(),
-            decoration: const InputDecoration(
-              labelText: '密码',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.lock_outline),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (_captchaId != null && _captchaId!.isNotEmpty) ...[
-            OutlinedButton.icon(
-              onPressed: _loading ? null : _runCaptcha,
-              icon: Icon(
-                _captchaVerified
-                    ? Icons.verified
-                    : Icons.verified_user_outlined,
-                size: 18,
+              const SizedBox(height: 16),
+              const Text(
+                'Tianxuan',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0C1014),
+                ),
               ),
-              label: Text(_captchaVerified ? '人机验证已通过' : '点击进行人机验证'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _captchaVerified
-                    ? Colors.green
-                    : theme.colorScheme.primary,
+              const SizedBox(height: 6),
+              Text(
+                '1Panel 服务器管理',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton.icon(
-              onPressed: _loading ? null : _login,
-              icon: _loading
-                  ? const SizedBox(
+              const Spacer(flex: 2),
+
+              // 邮箱登录主入口
+              SizedBox(
+                height: 50,
+                child: FilledButton(
+                  onPressed: _openLogin,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0C1014),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '邮箱登录',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 快捷登录
+              if (_loadingProviders)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.login),
-              label: Text(_loading ? '登录中...' : '登录'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: _loading ? null : _goRegister,
-              child: const Text('没有账号？立即注册'),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          if (oauthProviders.isNotEmpty) ...[
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    '快捷登录',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFAAB4BF),
                     ),
                   ),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: oauthProviders
-                  .map(
-                    (p) => _ProviderButton(
-                      provider: p,
-                      onTap: _loading ? null : () => _loginWithProvider(p.name),
+                )
+              else if (oauthProviders.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: Colors.grey)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '快捷登录',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
                     ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
+                    const Expanded(child: Divider(color: Colors.grey)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: oauthProviders
+                      .map(
+                        (p) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: _ProviderIconButton(
+                            provider: p,
+                            onTap: () => _loginWithProvider(p.name),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+              ],
 
-          TextButton.icon(
-            onPressed: _loading ? null : _loginWithBrowser,
-            icon: const Icon(Icons.language),
-            label: const Text('使用浏览器登录'),
+              // 注册
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '还没有账号？',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final ok = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const CasdoorWebviewPage(signup: true),
+                        ),
+                      );
+                      if (ok == true && mounted) {
+                        Navigator.of(context).pop(true);
+                      }
+                    },
+                    child: const Text(
+                      '注册',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF0C1014),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                '登录后可加密备份数据，并同步服务器鉴权',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            '登录后可加密备份数据，并同步服务器鉴权',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF686F78),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// 第三方快捷登录按钮
-class _ProviderButton extends StatelessWidget {
+/// 快捷登录图标按钮
+class _ProviderIconButton extends StatelessWidget {
   final CasdoorProvider provider;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
-  const _ProviderButton({required this.provider, this.onTap});
+  const _ProviderIconButton({required this.provider, required this.onTap});
 
   IconData get _icon {
     switch (provider.type.toLowerCase()) {
@@ -351,6 +250,8 @@ class _ProviderButton extends StatelessWidget {
         return Icons.work_outline;
       case 'facebook':
         return Icons.facebook;
+      case 'weibo':
+        return Icons.public;
       default:
         return Icons.link;
     }
@@ -363,16 +264,17 @@ class _ProviderButton extends StatelessWidget {
         : provider.type;
     return Tooltip(
       message: '使用 $name 登录',
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Icon(_icon, size: 28),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            shape: BoxShape.circle,
           ),
+          child: Icon(_icon, size: 24, color: const Color(0xFF0C1014)),
         ),
       ),
     );

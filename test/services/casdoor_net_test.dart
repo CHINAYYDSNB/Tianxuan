@@ -95,67 +95,6 @@ void main() {
     });
   });
 
-  group('CasdoorService.loginWithPassword', () {
-    test('带 captchaToken 提交 /api/login（data/data2 格式）', () async {
-      Map<String, dynamic>? sentBody;
-      stub['/api/login'] = {
-        '__body': (String body) {
-          sentBody = jsonDecode(body) as Map<String, dynamic>;
-          // Casdoor 真实返回：{status, data: accessToken, data2: refreshToken}
-          return {'status': 'ok', 'data': 'at123', 'data2': 'rt123'};
-        },
-      };
-      final ok = await CasdoorService.loginWithPassword(
-        email: 'a@b.com',
-        password: 'secret',
-        captchaToken: 'lot_number=L&captcha_output=C',
-      );
-      expect(ok, isTrue);
-      expect(seen, contains('POST /api/login'));
-      expect(sentBody!['type'], 'login');
-      expect(sentBody!['application'], 'Tianxuan');
-      expect(sentBody!['username'], 'a@b.com');
-      expect(sentBody!['captchaType'], 'GEETEST');
-      expect(sentBody!['captchaToken'], 'lot_number=L&captcha_output=C');
-      // token 已保存
-      expect(await StorageService.instance.getLogtoAccessToken(), 'at123');
-      expect(await StorageService.instance.getLogtoRefreshToken(), 'rt123');
-    });
-
-    test('登录失败返回 false', () async {
-      stub['/api/login'] = {'code': 401, 'msg': 'bad'};
-      final ok = await CasdoorService.loginWithPassword(
-        email: 'a@b.com',
-        password: 'x',
-      );
-      expect(ok, isFalse);
-    });
-  });
-
-  group('CasdoorService.signup', () {
-    test('成功返回 ok=true', () async {
-      stub['/api/signup'] = {'code': 200, 'msg': 'ok'};
-      final r = await CasdoorService.signup(
-        email: 'a@b.com',
-        username: 'alice',
-        password: 'secret123',
-      );
-      expect(r.ok, isTrue);
-      expect(seen, contains('POST /api/signup'));
-    });
-
-    test('失败返回 message', () async {
-      stub['/api/signup'] = {'code': 400, 'msg': '邮箱已存在'};
-      final r = await CasdoorService.signup(
-        email: 'a@b.com',
-        username: 'alice',
-        password: 'secret123',
-      );
-      expect(r.ok, isFalse);
-      expect(r.message, '邮箱已存在');
-    });
-  });
-
   group('CasdoorService.getAccount', () {
     test('无 token 返回 null', () async {
       expect(await CasdoorService.getAccount(), isNull);

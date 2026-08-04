@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:tianxuan/services/casdoor_service.dart';
-import 'package:tianxuan/services/geetest_service.dart';
 
 void main() {
   group('CasdoorProvider.fromJson', () {
@@ -22,7 +21,6 @@ void main() {
       expect(p.displayName, 'GitHub');
       expect(p.clientId, 'github_client');
       expect(p.isOAuthProvider, isTrue);
-      expect(p.isCaptchaProvider, isFalse);
       expect(p.iconKey, 'github');
     });
 
@@ -86,40 +84,6 @@ void main() {
     });
   });
 
-  group('GeeTestResult', () {
-    test('fromMap 提取验证字段', () {
-      final r = GeeTestResult.fromMap({
-        'lot_number': 'lot123',
-        'captcha_output': 'out123',
-        'pass_token': 'pass123',
-        'gen_time': '1690000000',
-      });
-      expect(r, isNotNull);
-      expect(r!.lotNumber, 'lot123');
-      expect(r.captchaOutput, 'out123');
-      expect(r.passToken, 'pass123');
-      expect(r.genTime, '1690000000');
-    });
-
-    test('captchaToken 拼接为 Casdoor 期望格式', () {
-      final r = GeeTestResult(
-        lotNumber: 'L',
-        captchaOutput: 'C',
-        passToken: 'P',
-        genTime: 'G',
-      );
-      expect(
-        r.captchaToken,
-        'lot_number=L&captcha_output=C&pass_token=P&gen_time=G',
-      );
-    });
-
-    test('缺少 lot_number 返回 null', () {
-      final r = GeeTestResult.fromMap({'captcha_output': 'x'});
-      expect(r, isNull);
-    });
-  });
-
   group('CasdoorService buildProviderAuthUrl', () {
     test('包含 provider 参数', () {
       final url = CasdoorService.buildProviderAuthUrl(
@@ -144,13 +108,6 @@ void main() {
       final uri = Uri.parse(url);
       expect(uri.path, '/api/signup');
       expect(uri.queryParameters['applicationId'], 'Tianxuan/Tianxuan');
-    });
-  });
-
-  group('GeeTestService.isSupported', () {
-    test('测试环境（VM）视为非 Web', () {
-      // 单测运行在 VM，非 Web 平台
-      expect(GeeTestService.isSupported, isTrue);
     });
   });
 }

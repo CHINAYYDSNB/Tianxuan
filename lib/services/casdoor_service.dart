@@ -121,7 +121,6 @@ class CasdoorService {
   static const _tokenEndpointPath = '/api/login/oauth/access_token';
   static const _userinfoEndpointPath = '/api/userinfo';
   static const _appLoginEndpointPath = '/api/get-app-login';
-  static const _loginEndpointPath = '/api/login';
   static const _signupEndpointPath = '/api/signup';
   static const _accountEndpointPath = '/api/get-account';
 
@@ -130,8 +129,6 @@ class CasdoorService {
   static const _scopes = 'openid profile email';
   // Casdoor 应用标识：{组织}/{应用}。组织与应用均为 Tianxuan。
   static const _applicationId = 'Tianxuan/Tianxuan';
-  static const _applicationName = 'Tianxuan';
-  static const _organization = 'Tianxuan';
 
   /// 生成 PKCE 参数（Casdoor 支持 S256）
   static ({String verifier, String challenge, String state}) buildPkce() {
@@ -235,56 +232,6 @@ class CasdoorService {
     }
   }
 
-  /// 邮箱 + 密码 + 极验验证码登录（Casdoor POST /api/login）
-  /// 登录成功保存 tokens。
-  static Future<bool> loginWithPassword({
-    required String email,
-    required String password,
-    String? captchaToken,
-  }) async {
-    try {
-      final body = <String, dynamic>{
-        'type': 'login',
-        'application': _applicationName,
-        'organization': _organization,
-        'username': email,
-        'password': password,
-        'autoSignin': false,
-      };
-      if (captchaToken != null && captchaToken.isNotEmpty) {
-        body['captchaType'] = 'GEETEST';
-        body['captchaToken'] = captchaToken;
-      }
-      final resp = await http.post(
-        Uri.parse('$baseUrl$_loginEndpointPath'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-      if (resp.statusCode != 200) return false;
-      final data = json.decode(resp.body) as Map<String, dynamic>;
-      // Casdoor 返回：{status, msg, data: accessToken, data2: refreshToken}
-      // （也兼容 {accessToken, refreshToken} 变体）
-      final accessToken = (data['data']?.toString().isNotEmpty == true)
-          ? data['data'].toString()
-          : (data['accessToken']?.toString() ?? '');
-      final refreshToken = (data['data2']?.toString().isNotEmpty == true)
-          ? data['data2'].toString()
-          : (data['refreshToken']?.toString() ?? '');
-      if (accessToken.isNotEmpty) {
-        await StorageService.instance.saveLogtoTokens(
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          idToken: data['idToken']?.toString() ?? '',
-          expiresIn: 3600,
-        );
-        return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
-  }
-
   /// 用 refresh_token 刷新 access_token（skill 5.4）
   static Future<bool> refreshAccessToken() async {
     final refreshToken = await StorageService.instance.getLogtoRefreshToken();
@@ -354,45 +301,6 @@ class CasdoorService {
     } catch (_) {}
 
     return false;
-  }
-
-  /// 原生注册（Casdoor POST /api/signup）
-  static Future<({bool ok, String? message})> signup({
-    required String email,
-    required String username,
-    required String password,
-    String? name,
-    String? phone,
-    String? captchaToken,
-  }) async {
-    try {
-      final body = <String, dynamic>{
-        'type': 'signup',
-        'application': _applicationName,
-        'organization': _organization,
-        'username': username,
-        'email': email,
-        'password': password,
-      };
-      if (name != null && name.isNotEmpty) body['name'] = name;
-      if (phone != null && phone.isNotEmpty) body['phone'] = phone;
-      if (captchaToken != null && captchaToken.isNotEmpty) {
-        body['captchaType'] = 'GEETEST';
-        body['captchaToken'] = captchaToken;
-      }
-      final resp = await http.post(
-        Uri.parse('$baseUrl$_signupEndpointPath'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-      final data = json.decode(resp.body) as Map<String, dynamic>;
-      if (resp.statusCode == 200 && (data['code'] ?? 200) == 200) {
-        return (ok: true, message: data['msg']?.toString());
-      }
-      return (ok: false, message: data['msg']?.toString());
-    } catch (_) {
-      return (ok: false, message: null);
-    }
   }
 
   /// 获取当前用户完整资料（GET /api/get-account）

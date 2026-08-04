@@ -12,7 +12,10 @@ class CasdoorWebviewPage extends ConsumerStatefulWidget {
   /// 若指定，则加载对应第三方快捷登录授权页
   final String? providerName;
 
-  const CasdoorWebviewPage({super.key, this.providerName});
+  /// true 时加载注册页
+  final bool signup;
+
+  const CasdoorWebviewPage({super.key, this.providerName, this.signup = false});
 
   @override
   ConsumerState<CasdoorWebviewPage> createState() => _CasdoorWebviewPageState();
@@ -74,7 +77,10 @@ class _CasdoorWebviewPageState extends ConsumerState<CasdoorWebviewPage> {
     try {
       final url = await ref
           .read(logtoAuthProvider.notifier)
-          .buildWebviewLoginUrl(provider: widget.providerName);
+          .buildWebviewLoginUrl(
+            signup: widget.signup,
+            provider: widget.providerName,
+          );
       await _controller.loadRequest(Uri.parse(url));
     } catch (e) {
       if (!mounted) return;
@@ -88,7 +94,18 @@ class _CasdoorWebviewPageState extends ConsumerState<CasdoorWebviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('账号登录')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          widget.signup
+              ? '注册账号'
+              : (widget.providerName != null ? '快捷登录' : '账号登录'),
+          style: const TextStyle(color: Colors.black87, fontSize: 17),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black54),
+      ),
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),

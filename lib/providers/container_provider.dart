@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/docker_api.dart';
 import '../services/docker_service.dart';
 import '../services/docker_parser.dart';
 import '../models/container.dart';
 import 'ssh_connection_provider.dart';
 
-// ─── Container List ───
-
+/// 容器列表：API First, SSH Fallback。
 class ContainerListNotifier extends AsyncNotifier<List<Container>> {
   Timer? _timer;
 
@@ -19,12 +19,22 @@ class ContainerListNotifier extends AsyncNotifier<List<Container>> {
   }
 
   Future<List<Container>> _fetch() async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return [];
-    final svc = DockerService(ssh);
-    final result = await svc.listContainers();
-    if (!result.isSuccess) return [];
-    return DockerParser.parsePs(result.stdout);
+    // API 优先
+    try {
+      return await DockerApi.listContainers();
+    } catch (e) {
+      // API 不可用 → SSH fallback
+      final ssh = ref.read(sshServiceProvider);
+      if (ssh == null) return [];
+      try {
+        final svc = DockerService(ssh);
+        final result = await svc.listContainers();
+        if (!result.isSuccess) return [];
+        return DockerParser.parsePs(result.stdout);
+      } catch (_) {
+        return [];
+      }
+    }
   }
 
   Future<void> _autoRefresh() async {
@@ -50,6 +60,13 @@ class ContainerListNotifier extends AsyncNotifier<List<Container>> {
   }
 
   Future<void> operate(String name, String action) async {
+    // API 优先
+    try {
+      await DockerApi.operateContainer(name, action);
+      await refresh();
+      return;
+    } catch (_) {}
+    // SSH fallback
     final ssh = ref.read(sshServiceProvider);
     if (ssh == null) return;
     final svc = DockerService(ssh);
@@ -69,6 +86,16 @@ final containerStatsProvider = FutureProvider.family<ContainerStats, String>((
   ref,
   name,
 ) async {
+  // API 优先：用容器名查询 stats
+  try {
+    final containers = await ref.read(containerListProvider.future);
+    for (final c in containers) {
+      if (c.name == name) {
+        return await DockerApi.containerStats(c.containerID);
+      }
+    }
+  } catch (e) {}
+  // SSH fallback
   final ssh = ref.read(sshServiceProvider);
   if (ssh == null) return ContainerStats();
   final svc = DockerService(ssh);

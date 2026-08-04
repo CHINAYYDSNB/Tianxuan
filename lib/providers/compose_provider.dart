@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/docker_api.dart';
 import '../services/docker_service.dart';
 import '../services/docker_parser.dart';
 import '../models/compose.dart';
 import 'ssh_connection_provider.dart';
 
+/// Compose 列表：API First（精确 ComposeInfo），SSH Fallback。
 class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
   Timer? _timer;
 
@@ -17,21 +19,29 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
   }
 
   Future<List<ComposeItem>> _fetch() async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) return [];
-    final svc = DockerService(ssh);
-    // Try docker compose ls first
-    final result = await svc.listComposes();
-    if (result.isSuccess && result.stdout.trim().isNotEmpty) {
-      final parsed = DockerParser.parseComposeLs(result.stdout);
-      if (parsed.isNotEmpty) return parsed;
+    // API 优先：1Panel 精确返回 ComposeInfo（含 workdir/path/containers）
+    try {
+      return await DockerApi.listComposes();
+    } catch (e) {
+      // SSH fallback
+      final ssh = ref.read(sshServiceProvider);
+      if (ssh == null) return [];
+      try {
+        final svc = DockerService(ssh);
+        final result = await svc.listComposes();
+        if (result.isSuccess && result.stdout.trim().isNotEmpty) {
+          final parsed = DockerParser.parseComposeLs(result.stdout);
+          if (parsed.isNotEmpty) return parsed;
+        }
+        final findResult = await svc.findComposeFiles();
+        if (findResult.isSuccess && findResult.stdout.trim().isNotEmpty) {
+          return DockerParser.parseFindCompose(findResult.stdout);
+        }
+        return [];
+      } catch (_) {
+        return [];
+      }
     }
-    // Fallback: find compose files
-    final findResult = await svc.findComposeFiles();
-    if (findResult.isSuccess && findResult.stdout.trim().isNotEmpty) {
-      return DockerParser.parseFindCompose(findResult.stdout);
-    }
-    return [];
   }
 
   Future<void> _autoRefresh() async {
@@ -57,10 +67,16 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
   }
 
   Future<void> operate(String name, String operation, {String? path}) async {
+    // API 优先：path 由 API 服务端根据 name 定位
+    try {
+      await DockerApi.operateCompose(name, path: path, operation: operation);
+      await refresh();
+      return;
+    } catch (_) {}
+    // SSH fallback
     final ssh = ref.read(sshServiceProvider);
     if (ssh == null) return;
     final svc = DockerService(ssh);
-    // If no path, try to find it
     String workdir = path ?? '';
     if (workdir.isEmpty) {
       final findResult = await svc.findComposeFiles();
@@ -68,7 +84,6 @@ class ComposeListNotifier extends AsyncNotifier<List<ComposeItem>> {
         for (final line in findResult.stdout.split('\n')) {
           if (line.contains(name)) {
             workdir = line.trim();
-            // Remove filename to get directory
             final idx = workdir.lastIndexOf('/');
             if (idx > 0) workdir = workdir.substring(0, idx);
             break;

@@ -358,5 +358,37 @@ void main() {
       stub['/api/v2/websites/redirect/file'] = {'code': 200, 'data': null};
       await WebsiteApi.saveRedirectFile(1, 'r', 'content');
     });
+
+    test('updateHttps 发送请求', () async {
+      stub['/api/v2/websites/3/https'] = {'code': 200, 'data': null};
+      await WebsiteApi.updateHttps(3, {'enable': true});
+    });
+
+    test('createSsl 发送请求', () async {
+      stub['/api/v2/websites/ssl'] = {'code': 200, 'data': null};
+      await WebsiteApi.createSsl({'name': 'cert'});
+    });
+
+    test('updateSsl 发送请求', () async {
+      stub['/api/v2/websites/ssl/update'] = {'code': 200, 'data': null};
+      await WebsiteApi.updateSsl({'id': 1});
+    });
+
+    test('getPhpRuntimes 无 items 返回空', () async {
+      stub['/api/v2/runtimes/search'] = {'code': 200, 'data': {}};
+      final list = await WebsiteApi.getPhpRuntimes();
+      expect(list, isEmpty);
+    });
+
+    test('resolveSsl 解析 DNS 记录', () async {
+      stub['/api/v2/websites/ssl/resolve'] = {
+        'code': 200,
+        'data': [
+          {'name': '_acme-challenge', 'value': 'xxx'},
+        ],
+      };
+      final list = await WebsiteApi.resolveSsl(1, 2);
+      expect(list.length, 1);
+    });
   });
 }

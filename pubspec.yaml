@@ -33,6 +33,7 @@ dependencies:
   photo_view: ^0.14.0
   highlight: ^0.7.0
   gt4_flutter_plugin: ^0.1.5
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

@@ -221,6 +221,47 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     return ok;
   }
 
+  /// 构建用于 webview 内嵌登录页的 PKCE 授权 URL（登录页 / 注册页 / 第三方）
+  Future<String> buildWebviewLoginUrl({
+    bool signup = false,
+    String? provider,
+  }) async {
+    final pkce = CasdoorService.buildPkce();
+    await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
+    if (provider != null && provider.isNotEmpty) {
+      return CasdoorService.buildProviderAuthUrl(
+        providerName: provider,
+        redirectUri: LogtoBridge.callbackUri,
+        state: pkce.state,
+      );
+    }
+    if (signup) {
+      return CasdoorService.buildSignupUrl(
+        verifier: pkce.verifier,
+        challenge: pkce.challenge,
+        state: pkce.state,
+        redirectUri: LogtoBridge.callbackUri,
+      );
+    }
+    return CasdoorService.buildAuthUrl(
+      verifier: pkce.verifier,
+      challenge: pkce.challenge,
+      state: pkce.state,
+      redirectUri: LogtoBridge.callbackUri,
+    );
+  }
+
+  /// webview 回调：从 deep link 提取 code 完成授权
+  /// 返回 true 表示登录成功
+  Future<bool> handleWebviewCallback(Uri uri) async {
+    final code = uri.queryParameters['code'];
+    final state = uri.queryParameters['state'];
+    if (code == null || state == null) return false;
+    await _processCallback(code, state);
+    // 交换成功后 isLoggedIn 应为 true
+    return CasdoorService.isLoggedIn;
+  }
+
   /// 原生注册（邮箱 + 用户名 + 密码 + 极验验证）
   Future<({bool ok, String? message})> signup({
     required String email,

@@ -130,6 +130,7 @@ class CasdoorService {
   static const _scopes = 'openid profile email';
   // Casdoor 应用标识：{组织}/{应用}。组织与应用均为 Tianxuan。
   static const _applicationId = 'Tianxuan/Tianxuan';
+  static const _applicationName = 'Tianxuan';
   static const _organization = 'Tianxuan';
 
   /// 生成 PKCE 参数（Casdoor 支持 S256）
@@ -244,7 +245,7 @@ class CasdoorService {
     try {
       final body = <String, dynamic>{
         'type': 'login',
-        'application': _applicationId,
+        'application': _applicationName,
         'organization': _organization,
         'username': email,
         'password': password,
@@ -261,12 +262,18 @@ class CasdoorService {
       );
       if (resp.statusCode != 200) return false;
       final data = json.decode(resp.body) as Map<String, dynamic>;
-      // 保存 tokens（如果返回了 accessToken）
-      final accessToken = data['accessToken']?.toString() ?? '';
+      // Casdoor 返回：{status, msg, data: accessToken, data2: refreshToken}
+      // （也兼容 {accessToken, refreshToken} 变体）
+      final accessToken = (data['data']?.toString().isNotEmpty == true)
+          ? data['data'].toString()
+          : (data['accessToken']?.toString() ?? '');
+      final refreshToken = (data['data2']?.toString().isNotEmpty == true)
+          ? data['data2'].toString()
+          : (data['refreshToken']?.toString() ?? '');
       if (accessToken.isNotEmpty) {
         await StorageService.instance.saveLogtoTokens(
           accessToken: accessToken,
-          refreshToken: data['refreshToken']?.toString() ?? '',
+          refreshToken: refreshToken,
           idToken: data['idToken']?.toString() ?? '',
           expiresIn: 3600,
         );
@@ -361,7 +368,7 @@ class CasdoorService {
     try {
       final body = <String, dynamic>{
         'type': 'signup',
-        'application': _applicationId,
+        'application': _applicationName,
         'organization': _organization,
         'username': username,
         'email': email,

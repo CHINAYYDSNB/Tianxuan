@@ -96,17 +96,13 @@ void main() {
   });
 
   group('CasdoorService.loginWithPassword', () {
-    test('带 captchaToken 提交 /api/login', () async {
+    test('带 captchaToken 提交 /api/login（data/data2 格式）', () async {
       Map<String, dynamic>? sentBody;
       stub['/api/login'] = {
-        'code': 200,
-        'data': null,
-        'accessToken': 'at123',
-        'refreshToken': 'rt123',
-        'idToken': 'it123',
         '__body': (String body) {
           sentBody = jsonDecode(body) as Map<String, dynamic>;
-          return {'code': 200, 'accessToken': 'at123'};
+          // Casdoor 真实返回：{status, data: accessToken, data2: refreshToken}
+          return {'status': 'ok', 'data': 'at123', 'data2': 'rt123'};
         },
       };
       final ok = await CasdoorService.loginWithPassword(
@@ -117,9 +113,13 @@ void main() {
       expect(ok, isTrue);
       expect(seen, contains('POST /api/login'));
       expect(sentBody!['type'], 'login');
+      expect(sentBody!['application'], 'Tianxuan');
       expect(sentBody!['username'], 'a@b.com');
       expect(sentBody!['captchaType'], 'GEETEST');
       expect(sentBody!['captchaToken'], 'lot_number=L&captcha_output=C');
+      // token 已保存
+      expect(await StorageService.instance.getLogtoAccessToken(), 'at123');
+      expect(await StorageService.instance.getLogtoRefreshToken(), 'rt123');
     });
 
     test('登录失败返回 false', () async {

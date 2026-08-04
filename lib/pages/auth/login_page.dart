@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/logto_auth_provider.dart';
 import '../../services/casdoor_service.dart';
 import '../../services/geetest_service.dart';
+import 'casdoor_webview_page.dart';
 import 'register_page.dart';
 
 /// Casdoor 登录页：邮箱 + 密码 + GEETEST 验证 + 快捷登录 + 注册入口
@@ -115,9 +116,27 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
   }
 
   Future<void> _loginWithProvider(String providerName) async {
-    setState(() => _loading = true);
-    await ref.read(logtoAuthProvider.notifier).loginWithProvider(providerName);
-    // 浏览器跳转后本页保持，回调返回后刷新
+    // 在应用内 webview 完成第三方授权
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CasdoorWebviewPage(providerName: providerName),
+      ),
+    );
+    if (ok == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  /// 在应用内 webview 打开 Casdoor 登录页（体验最佳）
+  Future<void> _openWebviewLogin() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CasdoorWebviewPage()),
+    );
+    if (ok == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _loginWithBrowser() async {
@@ -155,6 +174,43 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _openWebviewLogin,
+              icon: const Icon(Icons.public),
+              label: const Text('在应用内登录'),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.tertiary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '推荐：使用 Casdoor 官方登录页（含人机验证与快捷登录）',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF686F78),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  '或使用密码登录',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFAAB4BF),
+                  ),
+                ),
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 20),
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,

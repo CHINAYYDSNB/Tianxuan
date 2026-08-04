@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/logto_auth_provider.dart';
 import '../../services/casdoor_service.dart';
 import '../../services/geetest_service.dart';
+import 'casdoor_webview_page.dart';
 
 /// Casdoor 原生注册页：邮箱 + 用户名 + 密码 + GEETEST 验证
 class RegisterPage extends ConsumerStatefulWidget {
@@ -148,8 +149,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
-  void _goBrowserSignup() {
-    ref.read(logtoAuthProvider.notifier).signupViaBrowser();
+  Future<void> _goWebviewSignup() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CasdoorWebviewPage()),
+    );
+    if (ok == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   @override
@@ -258,9 +265,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
           const SizedBox(height: 8),
           TextButton.icon(
-            onPressed: _loading ? null : _goBrowserSignup,
-            icon: const Icon(Icons.language),
-            label: const Text('使用浏览器注册'),
+            onPressed: _loading ? null : _goWebviewSignup,
+            icon: const Icon(Icons.public),
+            label: const Text('在应用内注册'),
           ),
           const SizedBox(height: 16),
           Text(

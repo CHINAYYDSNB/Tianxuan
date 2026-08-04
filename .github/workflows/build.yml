@@ -51,7 +51,9 @@ jobs:
           min_coverage: 70
           # 排除难以在单测中覆盖的纯基础设施/平台 stub（HTTP 封装、持久化、下载 stub）
           # 以及 UI 壳层页面（依赖网络/SSH 实时数据，核心逻辑在 API/provider/service/model 已覆盖）
-          exclude: '**/lib/api/client.dart **/lib/services/storage_service.dart **/lib/utils/src/downloader_stub.dart **/lib/pages/** **/lib/widgets/**'      - name: Decode keystore and create key.properties
+          exclude: '**/lib/api/client.dart **/lib/services/storage_service.dart **/lib/utils/src/downloader_stub.dart **/lib/pages/** **/lib/widgets/**'
+
+      - name: Decode keystore and create key.properties
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

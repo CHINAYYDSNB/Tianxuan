@@ -196,7 +196,7 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
                               const CasdoorWebviewPage(signup: true),
                         ),
                       );
-                      if (ok == true && mounted) {
+                      if (ok == true && context.mounted) {
                         Navigator.of(context).pop(true);
                       }
                     },

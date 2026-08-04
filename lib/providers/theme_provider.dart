@@ -82,35 +82,56 @@ ColorScheme buildColorScheme(AppTheme theme, Brightness brightness) {
 
 /// 生成 ThemeData（应用到全局）
 ThemeData buildAppTheme(AppTheme theme) {
-  final scheme = theme.scheme;
+  const surface = Color(0xFFF6F7F9); // 浅灰背景
+  const onSurface = Color(0xFF0C1014);
+  const cardColor = Color(0xFFFFFFFF);
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
-      surface: scheme.surface,
-      onSurface: scheme.onSurface,
-      onSurfaceVariant: const Color(0xFF686F78),
-      outline: const Color(0xFFAAB4BF),
-      primary: scheme.primary,
+      surface: surface,
+      onSurface: onSurface,
+      onSurfaceVariant: const Color(0xFF6B7280),
+      outline: const Color(0xFFD8DCE2),
+      outlineVariant: const Color(0xFFE8EAEE),
+      primary: const Color(0xFF0C1014),
+      secondary: const Color(0xFF0C1014),
     ),
-    scaffoldBackgroundColor: scheme.surface,
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.transparent,
+    scaffoldBackgroundColor: surface,
+    canvasColor: cardColor,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: surface,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
       titleTextStyle: TextStyle(
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.w600,
-        color: scheme.onSurface,
+        color: onSurface,
       ),
-      iconTheme: IconThemeData(color: scheme.onSurface),
+      iconTheme: IconThemeData(color: onSurface),
     ),
     cardTheme: const CardThemeData(
-      color: Color(0xFFFFFFFF),
+      color: cardColor,
       elevation: 0,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(17)),
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+        side: BorderSide(color: Color(0xFFE8EAEE)),
       ),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFFE8EAEE),
+      thickness: 1,
+      space: 1,
+    ),
+    listTileTheme: const ListTileThemeData(iconColor: onSurface),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: cardColor,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: const Color(0xFFE8EAEE),
+      elevation: 0,
     ),
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,

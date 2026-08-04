@@ -4,7 +4,7 @@ import '../../providers/server_list_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/server_add_sheet.dart';
-import '../dashboard/dashboard_page.dart';
+import '../workspace/server_workspace_page.dart';
 
 /// 首页：多服务器卡片概览
 class ServerCardsPage extends ConsumerWidget {
@@ -83,7 +83,7 @@ class ServerCardsPage extends ConsumerWidget {
     if (!context.mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const DashboardPage()),
+      MaterialPageRoute(builder: (_) => const ServerWorkspacePage()),
     );
   }
 }
@@ -142,7 +142,6 @@ class _ServerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(serverCardStatusProvider(server.id));
     final status = statusAsync.valueOrNull;
-    final theme = Theme.of(context);
 
     return Card(
       child: InkWell(
@@ -159,12 +158,12 @@ class _ServerCard extends ConsumerWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withAlpha(20),
+                      color: const Color(0xFFF2F3F5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.dns,
-                      color: theme.colorScheme.primary,
+                      color: Color(0xFF0C1014),
                       size: 22,
                     ),
                   ),
@@ -187,7 +186,7 @@ class _ServerCard extends ConsumerWidget {
                           server.displayUrl,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF686F78),
+                            color: Color(0xFF9AA1A9),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -202,16 +201,19 @@ class _ServerCard extends ConsumerWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withAlpha(20),
+                        color: const Color(0xFFF2F3F5),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
                         '当前',
-                        style: TextStyle(fontSize: 11, color: Colors.green),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF0C1014),
+                        ),
                       ),
                     )
                   else
-                    const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+                    const Icon(Icons.chevron_right, color: Color(0xFFC0C5CC)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -227,14 +229,14 @@ class _ServerCard extends ConsumerWidget {
                             Icon(
                               Icons.error_outline,
                               size: 16,
-                              color: Color(0xFFAAB4BF),
+                              color: Color(0xFFC0C5CC),
                             ),
                             SizedBox(width: 8),
                             Text(
                               '状态获取失败',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFFAAB4BF),
+                                color: Color(0xFF9AA1A9),
                               ),
                             ),
                           ],
@@ -277,7 +279,7 @@ class _ServerCard extends ConsumerWidget {
                   '${status.hostname} · ${status.platform}',
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFFAAB4BF),
+                    color: Color(0xFF9AA1A9),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -290,26 +292,34 @@ class _ServerCard extends ConsumerWidget {
   }
 
   Widget _metric(BuildContext context, String label, double value) {
-    final color = value > 85
-        ? Colors.red
-        : value > 60
-        ? Colors.orange
-        : Colors.green;
     return Expanded(
       child: Column(
         children: [
           Text(
             '${value.toStringAsFixed(0)}%',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: color,
+              color: Color(0xFF0C1014),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: SizedBox(
+              width: 40,
+              height: 3,
+              child: LinearProgressIndicator(
+                value: (value / 100).clamp(0.0, 1.0),
+                backgroundColor: const Color(0xFFE8EAEE),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF9AA1A9)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF686F78)),
+            style: const TextStyle(fontSize: 11, color: Color(0xFF9AA1A9)),
           ),
         ],
       ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/animated_nav_bar.dart';
 import 'ai/ai_chat_page.dart';
-import 'resource/resource_page.dart';
 import 'settings/settings_page.dart';
 import 'servers/server_cards_page.dart';
 
@@ -26,11 +25,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           if (!_showAi)
             IndexedStack(
               index: _stackIdx,
-              children: const [
-                ServerCardsPage(),
-                ResourcePage(),
-                SettingsPage(),
-              ],
+              children: const [ServerCardsPage(), SettingsPage()],
             ),
           if (_showAi)
             Positioned.fill(
@@ -82,11 +77,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           label: '服务器',
                         ),
                         AnimatedNavItem(
-                          icon: Icons.dashboard_customize_outlined,
-                          activeIcon: Icons.dashboard_customize,
-                          label: '资源',
-                        ),
-                        AnimatedNavItem(
                           icon: Icons.settings_outlined,
                           activeIcon: Icons.settings,
                           label: '设置',
@@ -107,7 +97,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onTap: () => setState(() => _showAi = true),
                         child: const Icon(
                           Icons.auto_awesome,
-                          color: Color(0xFF0062F5),
+                          color: Color(0xFF0C1014),
                         ),
                       ),
                     ),

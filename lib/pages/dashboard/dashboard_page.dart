@@ -594,7 +594,7 @@ class DashboardPage extends ConsumerWidget {
                       RingChart(
                         value: data.cpuUsage,
                         label: 'CPU',
-                        color: const Color(0xFF0062F5),
+                        color: const Color(0xFF0C1014),
                       ),
                       RingChart(
                         value: data.memoryUsage,

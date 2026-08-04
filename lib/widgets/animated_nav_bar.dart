@@ -78,7 +78,7 @@ class AnimatedNavBar extends StatelessWidget {
                                       : items[i].icon,
                                   size: 22,
                                   color: isSelected
-                                      ? const Color(0xFF0062F5)
+                                      ? const Color(0xFF0C1014)
                                       : const Color(0xFF686F78),
                                 ),
                               ),
@@ -91,7 +91,7 @@ class AnimatedNavBar extends StatelessWidget {
                                       ? FontWeight.w600
                                       : FontWeight.normal,
                                   color: isSelected
-                                      ? const Color(0xFF0062F5)
+                                      ? const Color(0xFF0C1014)
                                       : const Color(0xFF686F78),
                                 ),
                               ),

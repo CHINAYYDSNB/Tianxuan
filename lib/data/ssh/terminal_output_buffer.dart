@@ -12,11 +12,20 @@ class TerminalOutputBuffer {
   final _buffer = <int>[];
   Timer? _timer;
   bool _flushScheduled = false;
+  bool _disposed = false;
 
   TerminalOutputBuffer(this._onFlush);
 
   /// Add incoming SSH stdout bytes. Flush is scheduled on first add.
   void add(List<int> data) {
+    if (_disposed || data.isEmpty) return;
+    // 单次数据超过上限时只保留末尾 maxSize 字节
+    if (data.length >= _maxSize) {
+      _buffer.clear();
+      _buffer.addAll(data.sublist(data.length - _maxSize));
+      _scheduleFlush();
+      return;
+    }
     if (_buffer.length + data.length > _maxSize) {
       _trimBuffer(data.length);
     }
@@ -81,6 +90,7 @@ class TerminalOutputBuffer {
   }
 
   void dispose() {
+    _disposed = true;
     _timer?.cancel();
     _buffer.clear();
   }

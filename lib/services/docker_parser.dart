@@ -61,7 +61,7 @@ class DockerParser {
     }
     return Container(
       containerID: s(j['ID']),
-      name: names.split(',').first.trim(),
+      name: names.split(',').first.trim().replaceFirst('/', ''),
       imageName: s(j['Image']),
       createTime: s(j['CreatedAt']),
       state: state,
@@ -276,14 +276,23 @@ class DockerParser {
 
   static int _extractRunningCount(String status) {
     if (status.isEmpty) return 0;
-    final match = RegExp(r'(\d+)\s*running').firstMatch(status.toLowerCase());
-    return match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+    // 兼容 "running (2)" 与 "2 running" 两种格式
+    final match = RegExp(
+      r'running\s*\((\d+)\)|(\d+)\s*running',
+    ).firstMatch(status.toLowerCase());
+    if (match == null) return 0;
+    final v = match.group(1) ?? match.group(2);
+    return int.tryParse(v ?? '') ?? 0;
   }
 
   static int _extractTotalCount(String status) {
     if (status.isEmpty) return 0;
-    final match = RegExp(r'(\d+)\s*exited').firstMatch(status.toLowerCase());
-    final count = match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
+    final match = RegExp(
+      r'exited\s*\((\d+)\)|(\d+)\s*exited',
+    ).firstMatch(status.toLowerCase());
+    if (match == null) return _extractRunningCount(status);
+    final v = match.group(1) ?? match.group(2);
+    final count = int.tryParse(v ?? '') ?? 0;
     return _extractRunningCount(status) + count;
   }
 }

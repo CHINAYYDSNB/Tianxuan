@@ -14,6 +14,8 @@ class LogtoAuthState {
   final String name;
   final String email;
   final String avatarUrl;
+  final List<String> linkedProviders;
+  final bool emailMissing;
 
   const LogtoAuthState({
     this.isLoggedIn = false,
@@ -22,6 +24,8 @@ class LogtoAuthState {
     this.name = '',
     this.email = '',
     this.avatarUrl = '',
+    this.linkedProviders = const [],
+    this.emailMissing = false,
   });
 
   LogtoAuthState copyWith({
@@ -31,6 +35,8 @@ class LogtoAuthState {
     String? name,
     String? email,
     String? avatarUrl,
+    List<String>? linkedProviders,
+    bool? emailMissing,
   }) => LogtoAuthState(
     isLoggedIn: isLoggedIn ?? this.isLoggedIn,
     checking: checking ?? this.checking,
@@ -38,6 +44,8 @@ class LogtoAuthState {
     name: name ?? this.name,
     email: email ?? this.email,
     avatarUrl: avatarUrl ?? this.avatarUrl,
+    linkedProviders: linkedProviders ?? this.linkedProviders,
+    emailMissing: emailMissing ?? this.emailMissing,
   );
 }
 
@@ -54,16 +62,8 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     try {
       final loggedIn = await CasdoorService.isLoggedIn;
       if (loggedIn) {
-        final info = await CasdoorService.getUserInfo();
-        state = LogtoAuthState(
-          isLoggedIn: true,
-          checking: false,
-          userId: info?.sub ?? '',
-          name: info?.name ?? '',
-          email: info?.email ?? '',
-          avatarUrl: info?.picture ?? '',
-        );
-        _setupListeners(); // 仍需监听以实现登出等
+        await refreshUserInfo();
+        _setupListeners();
         return;
       }
     } catch (_) {}
@@ -131,16 +131,32 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
 
   Future<void> refreshUserInfo() async {
     final loggedIn = await CasdoorService.isLoggedIn;
-    if (!loggedIn) return;
+    if (!loggedIn) {
+      state = state.copyWith(isLoggedIn: false, checking: false);
+      return;
+    }
 
     final info = await CasdoorService.getUserInfo();
+    final account = await CasdoorService.getAccount();
     state = LogtoAuthState(
       isLoggedIn: true,
       checking: false,
-      userId: info?.sub ?? '',
-      name: info?.name ?? '',
-      email: info?.email ?? '',
-      avatarUrl: info?.picture ?? '',
+      userId: info?.sub ?? account?.id ?? '',
+      name: (info?.name.isNotEmpty == true)
+          ? info!.name
+          : (account?.displayName.isNotEmpty == true)
+          ? account!.displayName
+          : account?.name ?? '',
+      email: info?.email.isNotEmpty == true
+          ? info!.email
+          : account?.email ?? '',
+      avatarUrl: info?.picture.isNotEmpty == true
+          ? info!.picture
+          : account?.avatar ?? '',
+      linkedProviders: account?.linkedProviders ?? const [],
+      emailMissing:
+          (info?.email.isNotEmpty != true) &&
+          (account?.email.isNotEmpty != true),
     );
   }
 
@@ -159,16 +175,71 @@ class LogtoAuthNotifier extends StateNotifier<LogtoAuthState> {
     } catch (_) {}
   }
 
-  /// 密码模式登录（skill 方式 B）：直接在 App 内输账号密码
-  Future<bool> loginWithPassword(String username, String password) async {
+  /// 第三方快捷登录（provider 浏览器授权）
+  Future<void> loginWithProvider(String providerName) async {
+    try {
+      final pkce = CasdoorService.buildPkce();
+      await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
+      final url = CasdoorService.buildProviderAuthUrl(
+        providerName: providerName,
+        redirectUri: LogtoBridge.callbackUri,
+        state: pkce.state,
+      );
+      await LogtoBridge.redirect(url);
+    } catch (_) {}
+  }
+
+  /// 网页注册（跳 Casdoor 注册页，自带验证码）
+  Future<void> signupViaBrowser() async {
+    try {
+      final pkce = CasdoorService.buildPkce();
+      await StorageService.instance.saveLogtoPending(pkce.verifier, pkce.state);
+      final url = CasdoorService.buildSignupUrl(
+        verifier: pkce.verifier,
+        challenge: pkce.challenge,
+        state: pkce.state,
+        redirectUri: LogtoBridge.callbackUri,
+      );
+      await LogtoBridge.redirect(url);
+    } catch (_) {}
+  }
+
+  /// 密码模式登录（邮箱 + 密码 + 极验验证）
+  Future<bool> loginWithPassword(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
     final ok = await CasdoorService.loginWithPassword(
-      username: username,
+      email: email,
       password: password,
+      captchaToken: captchaToken,
     );
     if (ok) {
       await refreshUserInfo();
     }
     return ok;
+  }
+
+  /// 原生注册（邮箱 + 用户名 + 密码 + 极验验证）
+  Future<({bool ok, String? message})> signup({
+    required String email,
+    required String username,
+    required String password,
+    String? name,
+    String? captchaToken,
+  }) async {
+    final result = await CasdoorService.signup(
+      email: email,
+      username: username,
+      password: password,
+      name: name,
+      captchaToken: captchaToken,
+    );
+    if (result.ok) {
+      await refreshUserInfo();
+    }
+    return result;
   }
 
   /// 刷新 access_token（skill 5.4）

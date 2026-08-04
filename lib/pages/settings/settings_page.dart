@@ -92,9 +92,15 @@ class SettingsPage extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              auth.isLoggedIn ? '已登录 — 点击登出' : '点击登录以加密备份数据',
+                              auth.isLoggedIn
+                                  ? (auth.emailMissing
+                                        ? '已登录 — 未绑定邮箱，点击查看'
+                                        : '已登录 — 点击管理账户')
+                                  : '点击登录以加密备份数据',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF686F78),
+                                color: auth.isLoggedIn && auth.emailMissing
+                                    ? Colors.orange
+                                    : const Color(0xFF686F78),
                               ),
                             ),
                           ],

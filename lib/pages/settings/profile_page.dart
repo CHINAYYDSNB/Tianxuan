@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/casdoor_service.dart';
 import '../../providers/logto_auth_provider.dart';
 
+/// 账户资料页：头像 / 昵称 / 邮箱 / 绑定的快捷登录项
+/// 未绑定邮箱时提示用户绑定
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -81,6 +83,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  /// 邮箱缺失时提示用户去 Casdoor 绑定邮箱
+  void _promptBindEmail() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.mark_email_unread_outlined, size: 40),
+        title: const Text('尚未绑定邮箱'),
+        content: const Text(
+          '当前账号没有绑定邮箱，部分功能（如找回密码、通知）可能不可用。'
+          '请登录 Casdoor 控制台在个人资料中绑定邮箱。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,17 +111,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     if (auth.checking) {
       return Scaffold(
-        appBar: AppBar(title: const Text('个人资料')),
+        appBar: AppBar(title: const Text('账户资料')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
+    final linkedProviders = auth.linkedProviders;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('个人资料')),
+      appBar: AppBar(title: const Text('账户资料')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Avatar preview
+          // 头像 / 昵称 / 邮箱
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -134,13 +159,67 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
                     ),
                   ],
+                  if (auth.emailMissing) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _promptBindEmail,
+                      icon: const Icon(
+                        Icons.mark_email_unread_outlined,
+                        size: 18,
+                        color: Colors.orange,
+                      ),
+                      label: const Text(
+                        '未绑定邮箱，点击查看',
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
 
-          // Edit form
+          // 绑定的快捷登录项
+          if (linkedProviders.isNotEmpty) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('快捷登录绑定', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: linkedProviders
+                          .map(
+                            (p) => Chip(
+                              avatar: Icon(_providerIcon(p), size: 18),
+                              label: Text(_providerLabel(p)),
+                              side: BorderSide(
+                                color: theme.colorScheme.primary.withAlpha(60),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '以上第三方账号与本账户已绑定',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF686F78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // 编辑资料
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -174,9 +253,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '邮箱由 Logto 管理，如需修改请联系管理员',
+                    auth.emailMissing
+                        ? '未绑定邮箱，请在 Casdoor 控制台绑定'
+                        : '邮箱由 Logto 管理，如需修改请联系管理员',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFAAB4BF),
+                      color: auth.emailMissing
+                          ? Colors.orange
+                          : const Color(0xFFAAB4BF),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -207,14 +290,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       color: const Color(0xFFAAB4BF),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '哎呀，上传图片什么的。。。。。。有服务器了再说嘛',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFAAB4BF),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -236,7 +311,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
           const SizedBox(height: 24),
 
-          // Logout
+          // 登出
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -252,5 +327,61 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ],
       ),
     );
+  }
+
+  IconData _providerIcon(String type) {
+    switch (type) {
+      case 'github':
+        return Icons.code;
+      case 'google':
+        return Icons.g_mobiledata;
+      case 'qq':
+        return Icons.chat_bubble;
+      case 'wechat':
+        return Icons.chat;
+      case 'apple':
+        return Icons.apple;
+      case 'dingtalk':
+        return Icons.work_outline;
+      case 'facebook':
+        return Icons.facebook;
+      case 'weibo':
+        return Icons.public;
+      default:
+        return Icons.link;
+    }
+  }
+
+  String _providerLabel(String type) {
+    switch (type) {
+      case 'github':
+        return 'GitHub';
+      case 'google':
+        return 'Google';
+      case 'qq':
+        return 'QQ';
+      case 'wechat':
+        return '微信';
+      case 'apple':
+        return 'Apple';
+      case 'dingtalk':
+        return '钉钉';
+      case 'facebook':
+        return 'Facebook';
+      case 'weibo':
+        return '微博';
+      case 'gitee':
+        return 'Gitee';
+      case 'linkedin':
+        return 'LinkedIn';
+      case 'wecom':
+        return '企业微信';
+      case 'lark':
+        return '飞书';
+      case 'gitlab':
+        return 'GitLab';
+      default:
+        return type;
+    }
   }
 }

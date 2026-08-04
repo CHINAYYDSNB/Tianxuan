@@ -9,17 +9,128 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
 
+/// Casdoor 登录提供商（快捷登录 / GEETEST 验证码等）
+class CasdoorProvider {
+  final String name;
+  final String type;
+  final String category;
+  final String displayName;
+  final String clientId;
+  final String rule;
+
+  const CasdoorProvider({
+    required this.name,
+    this.type = '',
+    this.category = '',
+    this.displayName = '',
+    this.clientId = '',
+    this.rule = '',
+  });
+
+  /// 是否为 OAuth 第三方快捷登录（GitHub/Google/QQ/WeChat 等）
+  bool get isOAuthProvider => category == 'OAuth';
+
+  /// 是否为 GEETEST 验证码提供方
+  bool get isCaptchaProvider => category == 'Captcha' && type == 'GEETEST';
+
+  /// 图标名（用于快捷登录按钮）
+  String get iconKey => type.toLowerCase().replaceAll(' ', '');
+
+  factory CasdoorProvider.fromJson(Map<String, dynamic> json) {
+    final provider = json['provider'];
+    final p = provider is Map ? Map<String, dynamic>.from(provider) : null;
+    String s(String key) => json[key]?.toString() ?? '';
+    return CasdoorProvider(
+      name: s('name'),
+      type: p?['type']?.toString() ?? s('type'),
+      category: p?['category']?.toString() ?? s('category'),
+      displayName: p?['displayName']?.toString() ?? s('displayName'),
+      clientId: p?['clientId']?.toString() ?? s('clientId'),
+      rule: s('rule'),
+    );
+  }
+}
+
+/// 用户账户资料（来自 /api/get-account）
+class CasdoorAccount {
+  final String id;
+  final String name;
+  final String displayName;
+  final String avatar;
+  final String email;
+  final bool emailVerified;
+  final String phone;
+  final List<String> linkedProviders;
+
+  const CasdoorAccount({
+    this.id = '',
+    this.name = '',
+    this.displayName = '',
+    this.avatar = '',
+    this.email = '',
+    this.emailVerified = false,
+    this.phone = '',
+    this.linkedProviders = const [],
+  });
+
+  bool get hasEmail => email.isNotEmpty;
+
+  factory CasdoorAccount.fromJson(Map<String, dynamic> json) {
+    String s(dynamic v) => v?.toString() ?? '';
+    // 绑定的第三方账号：非空的 oauth 字段
+    const oauthFields = [
+      'github',
+      'google',
+      'qq',
+      'wechat',
+      'facebook',
+      'dingtalk',
+      'weibo',
+      'gitee',
+      'linkedin',
+      'wecom',
+      'lark',
+      'gitlab',
+      'apple',
+      'azuread',
+      'slack',
+    ];
+    final linked = oauthFields
+        .where((f) => s(json[f]).isNotEmpty)
+        .map((f) => f)
+        .toList();
+    final avatar = s(json['avatar']);
+    final permanentAvatar = s(json['permanentAvatar']);
+    return CasdoorAccount(
+      id: s(json['id']),
+      name: s(json['name']),
+      displayName: s(json['displayName']),
+      avatar: avatar.isNotEmpty ? avatar : permanentAvatar,
+      email: s(json['email']),
+      emailVerified: json['emailVerified'] == true,
+      phone: s(json['phone']),
+      linkedProviders: linked,
+    );
+  }
+}
+
 class CasdoorService {
-  static const _base = 'https://logto.lingqi.vip';
-  static const _authEndpoint = '$_base/login/oauth/authorize';
-  static const _tokenEndpoint = '$_base/api/login/oauth/access_token';
-  static const _userinfoEndpoint = '$_base/api/userinfo';
+  /// 测试注入用：可在测试中指向本地 mock server
+  static String baseUrl = 'https://logto.lingqi.vip';
+  static const _authEndpointPath = '/login/oauth/authorize';
+  static const _tokenEndpointPath = '/api/login/oauth/access_token';
+  static const _userinfoEndpointPath = '/api/userinfo';
+  static const _appLoginEndpointPath = '/api/get-app-login';
+  static const _loginEndpointPath = '/api/login';
+  static const _signupEndpointPath = '/api/signup';
+  static const _accountEndpointPath = '/api/get-account';
 
   static const _clientId = '2eb37714fa37f170af58';
   static const _clientSecret = '06e4cde32f530421187f51404fb914aacf2b2d37';
   static const _scopes = 'openid profile email';
   // Casdoor 应用标识：{组织}/{应用}。组织与应用均为 Tianxuan。
   static const _applicationId = 'Tianxuan/Tianxuan';
+  static const _organization = 'Tianxuan';
 
   /// 生成 PKCE 参数（Casdoor 支持 S256）
   static ({String verifier, String challenge, String state}) buildPkce() {
@@ -46,35 +157,122 @@ class CasdoorService {
       'code_challenge': challenge,
       'applicationId': _applicationId,
     };
-    return Uri.parse(_authEndpoint).replace(queryParameters: params).toString();
+    return Uri.parse(
+      '$baseUrl$_authEndpointPath',
+    ).replace(queryParameters: params).toString();
   }
 
-  /// 密码模式登录（skill 方式 B，App 内直接输账号密码）
+  /// 构建第三方快捷登录授权 URL
+  static String buildProviderAuthUrl({
+    required String providerName,
+    required String redirectUri,
+    required String state,
+  }) {
+    final params = {
+      'client_id': _clientId,
+      'redirect_uri': redirectUri,
+      'response_type': 'code',
+      'scope': _scopes,
+      'state': state,
+      'applicationId': _applicationId,
+      'provider': providerName,
+    };
+    return Uri.parse(
+      '$baseUrl$_authEndpointPath',
+    ).replace(queryParameters: params).toString();
+  }
+
+  /// 构建注册页授权 URL（网页注册）
+  static String buildSignupUrl({
+    required String verifier,
+    required String challenge,
+    required String state,
+    required String redirectUri,
+  }) {
+    final params = {
+      'client_id': _clientId,
+      'redirect_uri': redirectUri,
+      'response_type': 'code',
+      'scope': _scopes,
+      'state': state,
+      'code_challenge_method': 'S256',
+      'code_challenge': challenge,
+      'applicationId': _applicationId,
+    };
+    return Uri.parse(
+      '$baseUrl$_signupEndpointPath',
+    ).replace(queryParameters: params).toString();
+  }
+
+  /// 获取应用登录配置（快捷登录提供商 + GEETEST captchaId）
+  /// GET /api/get-app-login?clientId=...&type=code
+  static Future<List<CasdoorProvider>> getLoginProviders() async {
+    final uri = Uri.parse('$baseUrl$_appLoginEndpointPath').replace(
+      queryParameters: {
+        'clientId': _clientId,
+        'responseType': 'code',
+        'redirectUri': '',
+        'scope': _scopes,
+        'state': _randomBase64(8),
+        'type': 'code',
+      },
+    );
+    try {
+      final resp = await http.get(uri);
+      if (resp.statusCode != 200) return [];
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      if (data['data'] is! Map) return [];
+      final app = data['data'] as Map;
+      final providers = app['providers'];
+      if (providers is! List) return [];
+      return providers
+          .whereType<Map>()
+          .map((e) => CasdoorProvider.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// 邮箱 + 密码 + 极验验证码登录（Casdoor POST /api/login）
+  /// 登录成功保存 tokens。
   static Future<bool> loginWithPassword({
-    required String username,
+    required String email,
     required String password,
+    String? captchaToken,
   }) async {
     try {
-      final uri = Uri.parse(_tokenEndpoint).replace(
-        queryParameters: {
-          'grant_type': 'password',
-          'client_id': _clientId,
-          'client_secret': _clientSecret,
-          'username': username,
-          'password': password,
-          'scope': _scopes,
-        },
+      final body = <String, dynamic>{
+        'type': 'login',
+        'application': _applicationId,
+        'organization': _organization,
+        'username': email,
+        'password': password,
+        'autoSignin': false,
+      };
+      if (captchaToken != null && captchaToken.isNotEmpty) {
+        body['captchaType'] = 'GEETEST';
+        body['captchaToken'] = captchaToken;
+      }
+      final resp = await http.post(
+        Uri.parse('$baseUrl$_loginEndpointPath'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
       );
-      final resp = await http.post(uri);
       if (resp.statusCode != 200) return false;
       final data = json.decode(resp.body) as Map<String, dynamic>;
-      await StorageService.instance.saveLogtoTokens(
-        accessToken: data['access_token']?.toString() ?? '',
-        refreshToken: data['refresh_token']?.toString() ?? '',
-        idToken: data['id_token']?.toString() ?? '',
-        expiresIn: data['expires_in'] as int? ?? 3600,
-      );
-      return data['access_token']?.toString().isNotEmpty == true;
+      // 保存 tokens（如果返回了 accessToken）
+      final accessToken = data['accessToken']?.toString() ?? '';
+      if (accessToken.isNotEmpty) {
+        await StorageService.instance.saveLogtoTokens(
+          accessToken: accessToken,
+          refreshToken: data['refreshToken']?.toString() ?? '',
+          idToken: data['idToken']?.toString() ?? '',
+          expiresIn: 3600,
+        );
+        return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -85,7 +283,7 @@ class CasdoorService {
     final refreshToken = await StorageService.instance.getLogtoRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) return false;
     try {
-      final uri = Uri.parse(_tokenEndpoint).replace(
+      final uri = Uri.parse('$baseUrl$_tokenEndpointPath').replace(
         queryParameters: {
           'grant_type': 'refresh_token',
           'client_id': _clientId,
@@ -124,7 +322,7 @@ class CasdoorService {
 
     try {
       final resp = await http.post(
-        Uri.parse(_tokenEndpoint).replace(
+        Uri.parse('$baseUrl$_tokenEndpointPath').replace(
           queryParameters: {
             'grant_type': 'authorization_code',
             'client_id': _clientId,
@@ -151,6 +349,65 @@ class CasdoorService {
     return false;
   }
 
+  /// 原生注册（Casdoor POST /api/signup）
+  static Future<({bool ok, String? message})> signup({
+    required String email,
+    required String username,
+    required String password,
+    String? name,
+    String? phone,
+    String? captchaToken,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'type': 'signup',
+        'application': _applicationId,
+        'organization': _organization,
+        'username': username,
+        'email': email,
+        'password': password,
+      };
+      if (name != null && name.isNotEmpty) body['name'] = name;
+      if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+      if (captchaToken != null && captchaToken.isNotEmpty) {
+        body['captchaType'] = 'GEETEST';
+        body['captchaToken'] = captchaToken;
+      }
+      final resp = await http.post(
+        Uri.parse('$baseUrl$_signupEndpointPath'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 && (data['code'] ?? 200) == 200) {
+        return (ok: true, message: data['msg']?.toString());
+      }
+      return (ok: false, message: data['msg']?.toString());
+    } catch (_) {
+      return (ok: false, message: null);
+    }
+  }
+
+  /// 获取当前用户完整资料（GET /api/get-account）
+  static Future<CasdoorAccount?> getAccount() async {
+    final token = await StorageService.instance.getLogtoAccessToken();
+    if (token == null || token.isEmpty) return null;
+    try {
+      final resp = await http.get(
+        Uri.parse('$baseUrl$_accountEndpointPath'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        final user = data['data'];
+        if (user is Map) {
+          return CasdoorAccount.fromJson(Map<String, dynamic>.from(user));
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// 获取用户信息（userinfo endpoint）
   static Future<({String sub, String name, String email, String picture})?>
   getUserInfo() async {
@@ -167,7 +424,7 @@ class CasdoorService {
     // 回退 userinfo endpoint
     try {
       final resp = await http.get(
-        Uri.parse(_userinfoEndpoint),
+        Uri.parse('$baseUrl$_userinfoEndpointPath'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (resp.statusCode == 200) {
@@ -241,7 +498,7 @@ class CasdoorService {
       if (avatar != null) body['avatar'] = avatar;
       if (body.isEmpty) return false;
       final resp = await http.post(
-        Uri.parse('$_base/api/update-user'),
+        Uri.parse('$baseUrl/api/update-user'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

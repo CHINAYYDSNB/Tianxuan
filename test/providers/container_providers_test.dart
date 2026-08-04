@@ -117,4 +117,62 @@ void main() {
       expect(list.length, 1);
     });
   });
+
+  group('provider fallback（API 失败 + 无 SSH）', () {
+    test('容器 API 失败返回空列表', () async {
+      stub['/api/v2/containers/search'] = {'code': 500, 'message': 'err'};
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final list = await container.read(containerListProvider.future);
+      expect(list, isEmpty);
+    });
+
+    test('镜像 API 失败返回空列表', () async {
+      stub['/api/v2/containers/image/search'] = {'code': 500};
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final list = await container.read(imageListProvider.future);
+      expect(list, isEmpty);
+    });
+
+    test('Compose API 失败返回空列表', () async {
+      stub['/api/v2/containers/compose/search'] = {'code': 500};
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final list = await container.read(composeListProvider.future);
+      expect(list, isEmpty);
+    });
+  });
+
+  group('provider operate', () {
+    test('容器 operate API 成功', () async {
+      stub['/api/v2/containers/operate'] = {'code': 200, 'data': null};
+      stub['/api/v2/containers/search'] = {
+        'code': 200,
+        'data': {'items': []},
+      };
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(containerListProvider.future);
+      await container
+          .read(containerListProvider.notifier)
+          .operate('nginx', 'restart');
+      // 无异常即通过
+    });
+
+    test('容器 operate API 失败 + 无 SSH 静默返回', () async {
+      stub['/api/v2/containers/operate'] = {'code': 500};
+      stub['/api/v2/containers/search'] = {
+        'code': 200,
+        'data': {'items': []},
+      };
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(containerListProvider.future);
+      await container
+          .read(containerListProvider.notifier)
+          .operate('nginx', 'restart');
+      // 无异常即通过
+    });
+  });
 }

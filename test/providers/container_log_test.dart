@@ -59,5 +59,15 @@ void main() {
       expect(n.state.isPaused, isFalse);
       n.dispose();
     });
+
+    test('disconnect 置为未连接', () {
+      final ssh = MockSsh();
+      when(() => ssh.isConnected).thenReturn(false);
+      final n = ContainerLogNotifier('c1', ssh: ssh);
+      n.state = n.state.copyWith(isConnected: true);
+      n.disconnect();
+      expect(n.state.isConnected, isFalse);
+      n.dispose();
+    });
   });
 }

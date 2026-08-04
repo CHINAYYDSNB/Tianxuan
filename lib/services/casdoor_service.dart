@@ -252,8 +252,14 @@ class CasdoorService {
         return false;
       }
       final data = json.decode(resp.body) as Map<String, dynamic>;
+      final accessToken = data['access_token']?.toString() ?? '';
+      if (resp.statusCode != 200 || accessToken.isEmpty) {
+        // refresh 失效 → 清除 token，需重新登录
+        await StorageService.instance.deleteLogtoTokens();
+        return false;
+      }
       await StorageService.instance.saveLogtoTokens(
-        accessToken: data['access_token']?.toString() ?? '',
+        accessToken: accessToken,
         refreshToken: data['refresh_token']?.toString() ?? refreshToken,
         idToken: data['id_token']?.toString() ?? '',
         expiresIn: data['expires_in'] as int? ?? 3600,

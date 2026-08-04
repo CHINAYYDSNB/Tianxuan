@@ -137,4 +137,72 @@ void main() {
       expect(uri.queryParameters['provider'], 'GitHub');
     });
   });
+
+  group('CasdoorService.refreshAccessToken', () {
+    test('刷新成功更新 token', () async {
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: 'old',
+        refreshToken: 'rt',
+        expiresIn: 3600,
+      );
+      stub['/api/login/oauth/access_token'] = {
+        'access_token': 'new_at',
+        'refresh_token': 'new_rt',
+        'expires_in': 7200,
+      };
+      expect(await CasdoorService.refreshAccessToken(), isTrue);
+      expect(await StorageService.instance.getLogtoAccessToken(), 'new_at');
+    });
+
+    test('刷新失败清除 token', () async {
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: 'old',
+        refreshToken: 'rt',
+        expiresIn: 3600,
+      );
+      stub['/api/login/oauth/access_token'] = {'code': 401};
+      expect(await CasdoorService.refreshAccessToken(), isFalse);
+      expect(await StorageService.instance.getLogtoAccessToken(), isNull);
+    });
+  });
+
+  group('CasdoorService.updateProfile', () {
+    test('无 token 返回 false', () async {
+      expect(
+        await CasdoorService.updateProfile(userId: 'u1', name: 'x'),
+        isFalse,
+      );
+    });
+
+    test('更新成功返回 true', () async {
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: 'at',
+        expiresIn: 3600,
+      );
+      stub['/api/update-user'] = {'code': 200, 'data': null};
+      expect(
+        await CasdoorService.updateProfile(userId: 'u1', name: 'x'),
+        isTrue,
+      );
+    });
+  });
+
+  group('CasdoorService.getUserInfo userinfo 回退', () {
+    test('无 ID token 时走 userinfo endpoint', () async {
+      await StorageService.instance.saveLogtoTokens(
+        accessToken: 'at',
+        expiresIn: 3600,
+      );
+      stub['/api/userinfo'] = {
+        'sub': 'u9',
+        'name': 'Alice',
+        'email': 'a@b.com',
+        'picture': 'http://img/a.png',
+      };
+      final info = await CasdoorService.getUserInfo();
+      expect(info, isNotNull);
+      expect(info!.sub, 'u9');
+      expect(info.email, 'a@b.com');
+    });
+  });
 }

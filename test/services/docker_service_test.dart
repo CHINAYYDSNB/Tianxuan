@@ -70,5 +70,147 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('logsOnce 执行 docker logs', () async {
+      await svc.logsOnce('nginx');
+      verify(() => ssh.execute('docker logs --tail 200 nginx')).called(1);
+    });
+
+    test('stats 执行 docker stats', () async {
+      await svc.stats('nginx');
+      verify(
+        () =>
+            ssh.execute("docker stats --no-stream --format '{{json .}}' nginx"),
+      ).called(1);
+    });
+
+    test('inspect 执行 docker inspect', () async {
+      await svc.inspect('nginx');
+      verify(() => ssh.execute('docker inspect nginx')).called(1);
+    });
+
+    test('removeImage 执行 docker rmi', () async {
+      await svc.removeImage('sha256:abc');
+      verify(() => ssh.execute('docker rmi  sha256:abc')).called(1);
+    });
+
+    test('pruneImages 执行 docker image prune', () async {
+      await svc.pruneImages();
+      verify(() => ssh.execute('docker image prune  -f')).called(1);
+    });
+
+    test('dockerInfo 执行 docker info', () async {
+      await svc.dockerInfo();
+      verify(
+        () => ssh.execute(
+          "docker info --format '{{json .}}' 2>/dev/null || echo '{}'",
+        ),
+      ).called(1);
+    });
+
+    test('daemonStatus 执行 systemctl', () async {
+      await svc.daemonStatus();
+      verify(
+        () => ssh.execute(
+          'systemctl status docker --no-pager 2>/dev/null || echo "inactive"',
+        ),
+      ).called(1);
+    });
+
+    test('readDaemonJson 读取配置', () async {
+      await svc.readDaemonJson();
+      verify(
+        () =>
+            ssh.execute('cat /etc/docker/daemon.json 2>/dev/null || echo "{}"'),
+      ).called(1);
+    });
+
+    test('pullSync 执行 docker pull', () async {
+      await svc.pullSync('nginx');
+      verify(
+        () => ssh.execute('docker pull nginx', timeout: any(named: 'timeout')),
+      ).called(1);
+    });
+
+    test('remove 执行 docker rm -f', () async {
+      await svc.remove('nginx');
+      verify(() => ssh.execute('docker rm -f nginx')).called(1);
+    });
+
+    test('rename 执行 docker rename', () async {
+      await svc.rename('old', 'new');
+      verify(() => ssh.execute('docker rename old new')).called(1);
+    });
+
+    test('updateContainer 执行 docker update', () async {
+      await svc.updateContainer('nginx', {'restart': 'always'});
+      verify(
+        () => ssh.execute('docker update --restart=always nginx'),
+      ).called(1);
+    });
+
+    test('findContainer 执行 docker ps filter', () async {
+      await svc.findContainer('nginx');
+      verify(
+        () => ssh.execute(
+          "docker ps --all --filter 'name=nginx' --format '{{json .}}'",
+        ),
+      ).called(1);
+    });
+
+    test('listComposes 执行 compose ls', () async {
+      await svc.listComposes();
+      verify(
+        () => ssh.execute(
+          'docker compose ls --format json 2>/dev/null || echo "[]"',
+        ),
+      ).called(1);
+    });
+
+    test('composePs 执行 compose ps', () async {
+      await svc.composePs('/opt/app');
+      verify(
+        () => ssh.execute(
+          'cd "/opt/app" && docker compose -f "docker-compose.yml" ps --format json 2>/dev/null || echo "[]"',
+        ),
+      ).called(1);
+    });
+
+    test('checkImageUpdate 执行 manifest inspect', () async {
+      await svc.checkImageUpdate('nginx');
+      verify(
+        () => ssh.execute(
+          'docker manifest inspect nginx 2>/dev/null || echo "{}"',
+        ),
+      ).called(1);
+    });
+
+    test('inspectImage 执行 image inspect', () async {
+      await svc.inspectImage('nginx');
+      verify(() => ssh.execute('docker image inspect nginx')).called(1);
+    });
+
+    test('daemonOp 执行 systemctl docker', () async {
+      await svc.daemonOp('restart');
+      verify(() => ssh.execute('sudo systemctl restart docker')).called(1);
+    });
+
+    test('reloadDaemon 执行 reload', () async {
+      await svc.reloadDaemon();
+      verify(
+        () => ssh.execute(
+          'sudo systemctl reload docker 2>/dev/null || sudo systemctl restart docker',
+        ),
+      ).called(1);
+    });
+
+    test('writeDaemonJson 写入配置', () async {
+      await svc.writeDaemonJson('{"x":1}');
+      verify(
+        () => ssh.execute(
+          "echo '{\"x\":1}' | sudo tee /etc/docker/daemon.json > /dev/null",
+        ),
+      ).called(1);
+    });
   });
 }

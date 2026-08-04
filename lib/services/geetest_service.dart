@@ -39,6 +39,9 @@ class GeeTestResult {
 
 /// GEETEST 验证服务
 class GeeTestService {
+  /// 默认极验 captchaId（来自极验后台申请；若 Casdoor 应用未配置 GEETEST provider 时兜底）
+  static const defaultCaptchaId = '8b30b275d564df723d6f4a75419b3d09';
+
   /// 是否支持原生极验（仅 Android/iOS）
   static bool get isSupported => !kIsWeb;
 

@@ -31,12 +31,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _loadCaptchaId() async {
     final providers = await CasdoorService.getLoginProviders();
     if (!mounted) return;
+    String? captchaId;
     for (final p in providers) {
       if (p.isCaptchaProvider) {
-        setState(() => _captchaId = p.clientId);
+        captchaId = p.clientId;
         break;
       }
     }
+    // 兜底：Casdoor 未配置 GEETEST provider 时用默认 captchaId
+    setState(() {
+      _captchaId = (captchaId != null && captchaId.isNotEmpty)
+          ? captchaId
+          : GeeTestService.defaultCaptchaId;
+    });
   }
 
   @override

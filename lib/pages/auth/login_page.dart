@@ -32,12 +32,17 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
     if (!mounted) return;
     setState(() {
       _providers = providers;
+      String? captchaId;
       for (final p in providers) {
         if (p.isCaptchaProvider) {
-          _captchaId = p.clientId;
+          captchaId = p.clientId;
           break;
         }
       }
+      // 兜底：Casdoor 未配置 GEETEST provider 时用默认 captchaId
+      _captchaId = (captchaId != null && captchaId.isNotEmpty)
+          ? captchaId
+          : GeeTestService.defaultCaptchaId;
     });
   }
 

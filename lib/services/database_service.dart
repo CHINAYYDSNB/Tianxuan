@@ -132,7 +132,7 @@ class SshDatabaseService implements DatabaseService {
       DbType.redis => _buildCli(inst, 'CONFIG GET databases'),
       DbType.mongodb => _buildCli(
         inst,
-        'db.adminCommand({listDatabases:1}).databases.forEach(d=>print(d.name))',
+        'db.adminCommand({listDatabases:1}).databases.map(d=>d.name).join("\\n")',
       ),
     };
     final r = await _ssh.execute(cmd, timeout: const Duration(seconds: 12));

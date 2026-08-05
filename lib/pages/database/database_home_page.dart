@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/database.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
+import 'database_add_sheet.dart';
 import 'database_detail_page.dart';
-import '../settings/ssh_config_page.dart';
 
-/// 数据库管理（移植自 Lanxi）：SSH 自动检测实例，按类型分组。
+/// 数据库实例列表（本地保存，手动添加 / 从 1Panel 导入）
 class DatabaseHomePage extends ConsumerStatefulWidget {
   const DatabaseHomePage({super.key});
 
@@ -15,245 +16,187 @@ class DatabaseHomePage extends ConsumerStatefulWidget {
 }
 
 class _DatabaseHomePageState extends ConsumerState<DatabaseHomePage> {
-  Map<DbType, List<DbInstance>> _grouped = {};
-  bool _loading = true;
-  String? _error;
+  bool _importing = false;
 
-  static const _order = [
-    DbType.mysql,
-    DbType.postgresql,
-    DbType.mongodb,
-    DbType.redis,
-  ];
+  IconData _typeIcon(DbType t) => switch (t) {
+    DbType.mysql || DbType.mariadb => Icons.storage_rounded,
+    DbType.postgresql => Icons.account_tree_outlined,
+    DbType.mongodb => Icons.park_outlined,
+    DbType.redis => Icons.memory,
+  };
 
-  @override
-  void initState() {
-    super.initState();
-    _scan();
-  }
+  Color _typeColor(DbType t) => switch (t) {
+    DbType.mysql || DbType.mariadb => const Color(0xFF1976D2),
+    DbType.postgresql => const Color(0xFF00838F),
+    DbType.mongodb => const Color(0xFF43A047),
+    DbType.redis => const Color(0xFFE53935),
+  };
 
-  Future<void> _scan() async {
-    final svc = ref.read(databaseServiceProvider);
-    if (svc == null) {
-      setState(() {
-        _loading = false;
-        _error = 'SSH 未连接';
-      });
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _importFromApi() async {
+    setState(() => _importing = true);
     try {
-      final all = await svc.detectAll();
-      final grouped = <DbType, List<DbInstance>>{};
-      for (final inst in all) {
-        grouped.putIfAbsent(inst.type, () => []).add(inst);
-      }
-      if (mounted) setState(() => _grouped = grouped);
+      final n = await ref
+          .read(databaseInstancesProvider.notifier)
+          .importFromApi();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(n > 0 ? '已导入 $n 个数据库实例' : '没有可导入的新实例'),
+          backgroundColor: n > 0 ? Colors.green : Colors.orange,
+        ),
+      );
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导入失败: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
-    if (mounted) setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final svc = ref.watch(databaseServiceProvider);
-
-    if (svc == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text('数据库')),
-        body: Center(
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.terminal_outlined, size: 48, color: Colors.orange),
-                SizedBox(height: 12),
-                Text(
-                  'SSH 未连接',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  '数据库管理通过 SSH 检测与操作，请先配置 SSH 连接',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SshConfigPage()),
-                    );
-                    _scan();
-                  },
-                  icon: const Icon(Icons.settings, size: 18),
-                  label: const Text('去配置 SSH'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final instances = ref.watch(databaseInstancesProvider);
+    final connected = ref.watch(settingsProvider.select((s) => s.isConnected));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('数据库'),
-        actions: [IconButton(icon: Icon(Icons.refresh), onPressed: _scan)],
+        title: const Text('数据库'),
+        actions: [
+          if (connected)
+            IconButton(
+              tooltip: '从 1Panel 导入',
+              onPressed: _importing ? null : _importFromApi,
+              icon: _importing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_download_outlined),
+            ),
+        ],
       ),
-      body: _loading
-          ? Center(child: CircularProgressIndicator())
-          : _error != null
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showDatabaseAddSheet(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('添加实例'),
+      ),
+      body: instances.isEmpty
           ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  SizedBox(height: 12),
-                  Text(_error!, style: TextStyle(fontSize: 13)),
-                  SizedBox(height: 16),
-                  FilledButton(onPressed: _scan, child: Text('重试')),
-                ],
-              ),
-            )
-          : _grouped.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.storage_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    '未检测到数据库实例',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    '支持 MySQL / PostgreSQL / MongoDB / Redis\n宿主机与 Docker 容器',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('重新检测'),
-                    onPressed: _scan,
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.storage_outlined,
+                      size: 56,
+                      color: AppColors.iconFaint,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '还没有数据库实例',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      connected ? '点右上角从 1Panel 导入，或点右下角手动添加' : '点右下角手动添加实例',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => showDatabaseAddSheet(context, ref),
+                      icon: const Icon(Icons.add),
+                      label: const Text('手动添加'),
+                    ),
+                  ],
+                ),
               ),
             )
           : RefreshIndicator(
-              onRefresh: _scan,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                children: _order
-                    .where((t) => _grouped.containsKey(t))
-                    .expand<Widget>((type) {
-                      final list = _grouped[type]!;
-                      return [
-                        _typeHeader(type, list.length),
-                        ...list.map((inst) => _instanceCard(inst, type)),
-                        const SizedBox(height: 8),
-                      ];
-                    })
-                    .toList(),
+              onRefresh: () async {},
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: instances.length,
+                itemBuilder: (context, i) {
+                  final inst = instances[i];
+                  return Card(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DatabaseDetailPage(instance: inst),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _typeColor(
+                                  inst.type,
+                                ).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _typeIcon(inst.type),
+                                color: _typeColor(inst.type),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    inst.name,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${inst.type.label} · ${inst.displayAddress}'
+                                    '${inst.fromApi ? ' · 1Panel' : ''}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: AppColors.iconFaint,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-    );
-  }
-
-  (IconData, Color) _typeMeta(DbType type) => switch (type) {
-    DbType.mysql => (Icons.storage, Colors.blue),
-    DbType.postgresql => (Icons.storage, Colors.indigo),
-    DbType.mongodb => (Icons.storage, Colors.green),
-    DbType.redis => (Icons.memory, Colors.red),
-  };
-
-  Widget _typeHeader(DbType type, int count) {
-    final (icon, color) = _typeMeta(type);
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, top: 8, bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Text(
-            type.label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: BoxDecoration(
-              color: color.withAlpha(20),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _instanceCard(DbInstance inst, DbType type) {
-    final (icon, color) = _typeMeta(type);
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withAlpha(30),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(
-          inst.label,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-        subtitle: Text(
-          inst.subtitle,
-          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (inst.authFailed)
-              Icon(Icons.lock, color: Colors.red, size: 18)
-            else if (inst.authUser != null)
-              Icon(Icons.lock_open, color: Colors.green, size: 18),
-            SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: AppColors.iconFaint),
-          ],
-        ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DatabaseDetailPage(
-              instance: inst,
-              onAuthChanged: () => setState(() {}),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

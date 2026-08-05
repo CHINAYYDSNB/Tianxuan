@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -69,7 +69,10 @@ void main() {
     test('getDeviceConf 解析 data', () async {
       stub['/api/v2/toolbox/device/conf'] = {
         'code': 200,
-        'data': {'hostname': 'demo', 'dns': ['8.8.8.8']},
+        'data': {
+          'hostname': 'demo',
+          'dns': ['8.8.8.8'],
+        },
       };
       final conf = await HostApi.getDeviceConf();
       expect(conf.hostname, 'demo');
@@ -92,7 +95,10 @@ void main() {
     });
 
     test('updatePasswd 成功', () async {
-      stub['/api/v2/toolbox/device/update/passwd'] = {'code': 200, 'data': null};
+      stub['/api/v2/toolbox/device/update/passwd'] = {
+        'code': 200,
+        'data': null,
+      };
       await HostApi.updatePasswd('secret');
     });
 
@@ -104,7 +110,9 @@ void main() {
     test('getTimeZones 解析 zones', () async {
       stub['/api/v2/toolbox/device/zone/options'] = {
         'code': 200,
-        'data': {'zones': ['Asia/Shanghai', 'UTC']},
+        'data': {
+          'zones': ['Asia/Shanghai', 'UTC'],
+        },
       };
       final zones = await HostApi.getTimeZones();
       expect(zones, contains('Asia/Shanghai'));

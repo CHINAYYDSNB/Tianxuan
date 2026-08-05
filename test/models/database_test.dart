@@ -4,20 +4,11 @@ import 'package:tianxuan/models/database.dart';
 
 void main() {
   group('DbTypeMeta', () {
-    test('fromString 识别各类型', () {
-      expect(DbTypeMeta.fromString('mysql'), DbType.mysql);
-      expect(DbTypeMeta.fromString('MariaDB'), DbType.mysql);
-      expect(DbTypeMeta.fromString('postgresql'), DbType.postgresql);
-      expect(DbTypeMeta.fromString('mongo'), DbType.mongodb);
-      expect(DbTypeMeta.fromString('redis'), DbType.redis);
-      expect(DbTypeMeta.fromString(''), isNull);
-    });
-
     test('默认端口', () {
-      expect(DbType.mysql.defaultPort, 3306);
-      expect(DbType.postgresql.defaultPort, 5432);
-      expect(DbType.redis.defaultPort, 6379);
-      expect(DbType.mongodb.defaultPort, 27017);
+      expect(DbType.mysql.defaultPort, '3306');
+      expect(DbType.postgresql.defaultPort, '5432');
+      expect(DbType.redis.defaultPort, '6379');
+      expect(DbType.mongodb.defaultPort, '27017');
     });
 
     test('默认用户', () {
@@ -25,75 +16,73 @@ void main() {
       expect(DbType.postgresql.defaultUser, 'postgres');
     });
 
-    test('apiListTypes 含全部类型', () {
-      expect(DbTypeMeta.apiListTypes, contains('mysql'));
-      expect(DbTypeMeta.apiListTypes, contains('postgresql'));
-      expect(DbTypeMeta.apiListTypes, contains('redis'));
+    test('密码环境变量', () {
+      expect(DbType.mysql.passwordEnvVars, contains('MYSQL_ROOT_PASSWORD'));
+      expect(DbType.postgresql.passwordEnvVars, contains('POSTGRES_PASSWORD'));
     });
   });
 
-  group('DatabaseInstance', () {
-    test('toJson/fromJson 往返', () {
-      const inst = DatabaseInstance(
-        id: '1',
+  group('DbInstance', () {
+    test('label 组合', () {
+      final inst = DbInstance(
         type: DbType.mysql,
-        name: 'test',
-        address: 'localhost',
-        port: 3306,
-        username: 'root',
+        inDocker: true,
+        containerName: 'mysql-1',
         version: '8.0',
-        source: 'api',
       );
-      final restored = DatabaseInstance.fromJson(inst.toJson());
-      expect(restored.id, '1');
-      expect(restored.type, DbType.mysql);
-      expect(restored.name, 'test');
-      expect(restored.address, 'localhost');
-      expect(restored.port, 3306);
-      expect(restored.username, 'root');
-      expect(restored.source, 'api');
-      expect(restored.fromApi, isTrue);
+      expect(inst.label, contains('MySQL'));
+      expect(inst.label, contains('[Docker]'));
+      expect(inst.label, contains('mysql-1'));
     });
 
-    test('默认值', () {
-      final inst = DatabaseInstance.fromJson({
-        'id': 'x',
-        'type': 'redis',
-        'name': 'r',
-      });
-      expect(inst.port, 6379);
-      expect(inst.address, 'localhost');
-      expect(inst.source, 'manual');
-      expect(inst.fromApi, isFalse);
+    test('subtitle 组合', () {
+      final inst = DbInstance(
+        type: DbType.redis,
+        port: 6379,
+        status: 'running',
+      );
+      expect(inst.subtitle, contains('6379'));
+      expect(inst.subtitle, contains('running'));
     });
 
-    test('copyWith 保留字段', () {
-      const inst = DatabaseInstance(id: '1', type: DbType.mysql, name: 'n');
-      final updated = inst.copyWith(password: 'p', version: '9.0');
-      expect(updated.password, 'p');
-      expect(updated.version, '9.0');
-      expect(updated.name, 'n');
-    });
-  });
-
-  group('DatabaseItem', () {
-    test('fromJson 解析', () {
-      final item = DatabaseItem.fromJson({
-        'name': 'mydb',
-        'format': 'utf8mb4',
-        'collation': 'utf8mb4_unicode_ci',
-        'username': 'root',
-        'permission': 'ALL',
-      });
-      expect(item.name, 'mydb');
-      expect(item.format, 'utf8mb4');
-      expect(item.collation, 'utf8mb4_unicode_ci');
-      expect(item.username, 'root');
+    test('cliCmd 映射', () {
+      expect(DbInstance(type: DbType.mysql).cliCmd, 'mysql');
+      expect(DbInstance(type: DbType.postgresql).cliCmd, 'psql');
+      expect(DbInstance(type: DbType.mongodb).cliCmd, 'mongosh');
+      expect(DbInstance(type: DbType.redis).cliCmd, 'redis-cli');
     });
 
-    test('mysqlName 回退', () {
-      final item = DatabaseItem.fromJson({'mysqlName': 'db1'});
-      expect(item.name, 'db1');
+    test('connArgs 注入用户名', () {
+      final inst = DbInstance(type: DbType.mysql, authUser: 'root');
+      expect(inst.connArgs, '-uroot');
+    });
+
+    test('wrapCmd 注入密码环境变量', () {
+      final inst = DbInstance(
+        type: DbType.mysql,
+        authUser: 'root',
+        authPass: 'secret',
+      );
+      final wrapped = inst.wrapCmd('mysql -uroot -e "SELECT 1"');
+      expect(wrapped, contains("MYSQL_PWD='secret'"));
+      expect(wrapped, contains('mysql -uroot'));
+    });
+
+    test('wrapCmd docker exec', () {
+      final inst = DbInstance(
+        type: DbType.redis,
+        inDocker: true,
+        containerName: 'redis-1',
+        authPass: 'p',
+      );
+      final wrapped = inst.wrapCmd('redis-cli PING');
+      expect(wrapped, contains('docker exec redis-1'));
+      expect(wrapped, contains('redis-cli PING'));
+    });
+
+    test('needsAuth', () {
+      expect(DbInstance(type: DbType.mysql, authPass: 'x').needsAuth, isTrue);
+      expect(DbInstance(type: DbType.redis).needsAuth, isFalse);
     });
   });
 }

@@ -9,40 +9,63 @@ class _MockSsh extends Mock implements SshCommandService {}
 
 void main() {
   late _MockSsh ssh;
+  late DatabaseService svc;
 
-  setUp(() => ssh = _MockSsh());
+  setUp(() {
+    ssh = _MockSsh();
+    svc = DatabaseService(ssh);
+  });
 
-  const mysqlInst = DatabaseInstance(
-    id: '1',
+  void stubOk(String? stdout, {String stderr = ''}) {
+    when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
+      (_) async => SshResult(
+        exitCode: stderr.isEmpty ? 0 : 1,
+        stdout: stdout ?? '',
+        stderr: stderr,
+      ),
+    );
+  }
+
+  DbInstance mysqlInst({String? pass}) => DbInstance(
     type: DbType.mysql,
-    name: 'mysql',
-    username: 'root',
-    password: 'secret',
-    source: 'manual',
+    authUser: 'root',
+    authPass: pass ?? 'secret',
   );
 
-  const dockerInst = DatabaseInstance(
-    id: '2',
-    type: DbType.mysql,
-    name: 'db',
-    username: 'root',
-    password: 'secret',
-    containerName: 'mysql-container',
-    inDocker: true,
-    source: 'manual',
-  );
-
-  group('SshDatabaseService.listDatabases', () {
-    test('解析并过滤系统库', () async {
+  group('detectAll', () {
+    test('原生 + Docker 检测', () async {
       when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(
-          exitCode: 0,
-          stdout:
-              'information_schema\nappdb\nmysql\nperformance_schema\nblog\n',
-        ),
+        (inv) async {
+          final cmd = inv.positionalArguments.first as String;
+          if (cmd.contains('docker ps')) {
+            return const SshResult(
+              exitCode: 0,
+              stdout: 'abc123\tmysql-1\tmysql:8.0\t0.0.0.0:3306->3306/tcp\n',
+            );
+          }
+          if (cmd.contains('--version')) {
+            return const SshResult(
+              exitCode: 0,
+              stdout: 'mysql  Ver 8.0.36\nFOUND',
+            );
+          }
+          return const SshResult(exitCode: 0, stdout: '');
+        },
       );
-      final svc = SshDatabaseService(ssh);
-      final dbs = await svc.listDatabases(mysqlInst);
+      final all = await svc.detectAll();
+      expect(all, isNotEmpty);
+      final docker = all.where((e) => e.inDocker).toList();
+      expect(docker, isNotEmpty);
+      expect(docker.first.containerName, 'mysql-1');
+    });
+  });
+
+  group('listDatabases', () {
+    test('mysql 过滤系统库', () async {
+      stubOk(
+        'appdb\ninformation_schema\nmysql\nperformance_schema\nblog\nsys\n',
+      );
+      final dbs = await svc.listDatabases(mysqlInst());
       expect(dbs.map((e) => e.name), ['appdb', 'blog']);
       final cmd =
           verify(
@@ -50,307 +73,97 @@ void main() {
               ).captured.first
               as String;
       expect(cmd, contains('SHOW DATABASES'));
-      expect(cmd, contains('MYSQL_PWD'));
     });
 
-    test('docker 容器用 docker exec', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0, stdout: 'db1\n'));
-      final svc = SshDatabaseService(ssh);
-      await svc.listDatabases(dockerInst);
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains('docker exec mysql-container'));
-    });
-
-    test('远程地址加 -h -P', () async {
-      const remote = DatabaseInstance(
-        id: '3',
-        type: DbType.mysql,
-        name: 'r',
-        address: '192.168.1.50',
-        port: 3307,
-        username: 'root',
-        source: 'manual',
+    test('redis 解析数量', () async {
+      stubOk('__REDIS__\ndatabases\n16\n');
+      final dbs = await svc.listDatabases(
+        DbInstance(type: DbType.redis, authPass: 'p'),
       );
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0, stdout: 'x\n'));
-      final svc = SshDatabaseService(ssh);
-      await svc.listDatabases(remote);
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains('-h 192.168.1.50 -P 3307'));
-    });
-  });
-
-  group('SshDatabaseService.operations', () {
-    test('createDatabase 生成 CREATE DATABASE', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0));
-      final svc = SshDatabaseService(ssh);
-      await svc.createDatabase(mysqlInst, 'newdb');
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains('CREATE DATABASE `newdb`'));
-    });
-
-    test('deleteDatabase 生成 DROP DATABASE', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0));
-      final svc = SshDatabaseService(ssh);
-      await svc.deleteDatabase(mysqlInst, 'olddb');
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains('DROP DATABASE `olddb`'));
-    });
-
-    test('changePassword 生成 ALTER USER', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0));
-      final svc = SshDatabaseService(ssh);
-      await svc.changePassword(mysqlInst, 'newpass');
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains("ALTER USER 'root'@'%' IDENTIFIED BY 'newpass'"));
-    });
-
-    test('操作失败抛异常', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(exitCode: 1, stderr: 'Access denied'),
-      );
-      final svc = SshDatabaseService(ssh);
-      expect(svc.createDatabase(mysqlInst, 'x'), throwsA(isA<Exception>()));
-    });
-  });
-
-  group('SshDatabaseService.testConnection', () {
-    test('PONG 成功', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0, stdout: 'PONG'));
-      const redis = DatabaseInstance(
-        id: '4',
-        type: DbType.redis,
-        name: 'r',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      expect(await svc.testConnection(redis), isNull);
-    });
-
-    test('失败返回错误', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(exitCode: 1, stderr: 'timeout'),
-      );
-      final svc = SshDatabaseService(ssh);
-      final err = await svc.testConnection(mysqlInst);
-      expect(err, contains('timeout'));
-    });
-  });
-
-  group('SshDatabaseService 多类型分支', () {
-    test('pg listDatabases 过滤系统库', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(
-          exitCode: 0,
-          stdout: 'appdb\npostgres\ntemplate0\ntemplate1\npg_catalog\nblog\n',
-        ),
-      );
-      const pg = DatabaseInstance(
-        id: 'pg',
-        type: DbType.postgresql,
-        name: 'pg',
-        username: 'postgres',
-        password: 'p',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      final dbs = await svc.listDatabases(pg);
-      expect(dbs.map((e) => e.name), ['appdb', 'blog']);
-      final cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.first
-              as String;
-      expect(cmd, contains('command -v psql'));
-      expect(cmd, contains('find /usr/lib/postgresql -name psql'));
-      expect(cmd, contains('docker exec'));
-      expect(cmd, contains('PGPASSWORD'));
-      expect(cmd, contains('POSTGRES_USER'));
-    });
-
-    test('redis listDatabases 解析数量', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(exitCode: 0, stdout: 'databases\n16\n'),
-      );
-      const redis = DatabaseInstance(
-        id: 'r',
-        type: DbType.redis,
-        name: 'redis',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      final dbs = await svc.listDatabases(redis);
       expect(dbs.length, 16);
       expect(dbs.first.name, 'db0');
     });
+  });
 
-    test('mongo listDatabases', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(exitCode: 0, stdout: 'admin\napp\n'),
-      );
-      const mongo = DatabaseInstance(
-        id: 'm',
-        type: DbType.mongodb,
-        name: 'mongo',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      final dbs = await svc.listDatabases(mongo);
-      expect(dbs.map((e) => e.name), ['admin', 'app']);
-    });
-
-    test('getStatus 执行 VERSION', () async {
-      when(() => ssh.execute(any(), timeout: any(named: 'timeout'))).thenAnswer(
-        (_) async => const SshResult(exitCode: 0, stdout: '8.0.36\n'),
-      );
-      final svc = SshDatabaseService(ssh);
-      final status = await svc.getStatus(mysqlInst);
-      expect(status['raw'], contains('8.0'));
-    });
-
-    test('createDatabase pg/mongo', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0));
-      const pg = DatabaseInstance(
-        id: 'pg',
-        type: DbType.postgresql,
-        name: 'pg',
-        username: 'postgres',
-        source: 'manual',
-      );
-      const mongo = DatabaseInstance(
-        id: 'm',
-        type: DbType.mongodb,
-        name: 'mongo',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      await svc.createDatabase(pg, 'newdb');
-      var cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.last
-              as String;
-      expect(cmd, contains('CREATE DATABASE "newdb"'));
-      await svc.createDatabase(mongo, 'mydb');
-      cmd =
-          verify(
-                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
-              ).captured.last
-              as String;
-      expect(cmd, contains('getSiblingDB'));
-    });
-
-    test('changePassword redis', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0));
-      const redis = DatabaseInstance(
-        id: 'r',
-        type: DbType.redis,
-        name: 'redis',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      await svc.changePassword(redis, 'newpass');
+  group('operations', () {
+    test('createDatabase', () async {
+      stubOk('');
+      final err = await svc.createDatabase(mysqlInst(), 'newdb');
+      expect(err, isEmpty);
       final cmd =
           verify(
                 () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
               ).captured.first
               as String;
-      expect(cmd, contains('CONFIG SET requirepass'));
+      expect(cmd, contains('CREATE DATABASE'));
     });
 
-    test('redis 不支持创建/删除数据库', () async {
-      const redis = DatabaseInstance(
-        id: 'r',
-        type: DbType.redis,
-        name: 'redis',
-        source: 'manual',
-      );
-      final svc = SshDatabaseService(ssh);
-      expect(svc.createDatabase(redis, 'x'), throwsA(isA<Exception>()));
-      expect(svc.deleteDatabase(redis, 'x'), throwsA(isA<Exception>()));
+    test('deleteDatabase', () async {
+      stubOk('');
+      final err = await svc.deleteDatabase(mysqlInst(), 'olddb');
+      expect(err, isEmpty);
+    });
+
+    test('操作失败返回错误', () async {
+      stubOk('', stderr: 'Access denied');
+      final err = await svc.createDatabase(mysqlInst(), 'x');
+      expect(err, contains('Access denied'));
     });
   });
 
-  group('FallbackDatabaseService', () {
-    test('手动实例无 SSH 抛异常', () async {
-      final svc = FallbackDatabaseService(ssh: null);
-      expect(svc.listDatabases(mysqlInst), throwsA(isA<Exception>()));
+  group('users', () {
+    test('listUsers mysql 解析', () async {
+      stubOk('root\t%\napp\nroot\tlocalhost\n');
+      final users = await svc.listUsers(mysqlInst());
+      expect(users, isNotEmpty);
+      expect(users.first.name, 'root');
+      expect(users.first.host, '%');
     });
 
-    test('手动实例走 SSH', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0, stdout: 'db1\n'));
-      final svc = FallbackDatabaseService(ssh: SshDatabaseService(ssh));
-      final dbs = await svc.listDatabases(mysqlInst);
-      expect(dbs.map((e) => e.name), ['db1']);
-    });
-
-    test('api 实例 API 失败 fallback SSH', () async {
-      when(
-        () => ssh.execute(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async => const SshResult(exitCode: 0, stdout: 'db1\n'));
-      const apiInst = DatabaseInstance(
-        id: 'a',
-        type: DbType.mysql,
-        name: 'mysql',
-        source: 'api',
+    test('createUser/deleteUser/changePassword', () async {
+      stubOk('');
+      expect(await svc.createUser(mysqlInst(), 'alice', 'pass'), isEmpty);
+      expect(await svc.deleteUser(mysqlInst(), 'alice'), isEmpty);
+      expect(
+        await svc.changePassword(mysqlInst(), 'alice', 'newpass'),
+        isEmpty,
       );
-      final svc = FallbackDatabaseService(ssh: SshDatabaseService(ssh));
-      final dbs = await svc.listDatabases(apiInst);
-      expect(dbs.map((e) => e.name), ['db1']);
     });
 
-    test('无 SSH 时 testConnection 返回提示', () async {
-      final svc = FallbackDatabaseService(ssh: null);
-      expect(await svc.testConnection(mysqlInst), contains('无可用连接方式'));
+    test('grantPrivileges', () async {
+      stubOk('');
+      expect(await svc.grantPrivileges(mysqlInst(), 'alice', 'appdb'), isEmpty);
+    });
+  });
+
+  group('credentials & connection', () {
+    test('testCredentials 成功', () async {
+      stubOk('1');
+      expect(await svc.testCredentials(mysqlInst()), isNull);
     });
 
-    test('无 SSH 时 getStatus 返回空', () async {
-      final svc = FallbackDatabaseService(ssh: null);
-      expect(await svc.getStatus(mysqlInst), isEmpty);
+    test('testCredentials 失败返回错误', () async {
+      stubOk('', stderr: 'failed');
+      expect(await svc.testCredentials(mysqlInst()), isNotNull);
     });
 
-    test('无 SSH 时 delete 抛异常', () async {
-      final svc = FallbackDatabaseService(ssh: null);
-      expect(svc.deleteDatabase(mysqlInst, 'x'), throwsA(isA<Exception>()));
-      expect(svc.createDatabase(mysqlInst, 'x'), throwsA(isA<Exception>()));
-      expect(svc.changePassword(mysqlInst, 'x'), throwsA(isA<Exception>()));
+    test('tryDetectCredentials docker env', () async {
+      stubOk('POSTGRES_PASSWORD=secret\nPOSTGRES_USER=pguser\n');
+      final inst = DbInstance(
+        type: DbType.postgresql,
+        inDocker: true,
+        containerName: 'pg-1',
+      );
+      final creds = await svc.tryDetectCredentials(inst);
+      expect(creds, isNotNull);
+      expect(creds!.user, 'pguser');
+      expect(creds.pass, 'secret');
+    });
+
+    test('getConnectionInfo 宿主机', () async {
+      stubOk('8.0.36\n');
+      final info = await svc.getConnectionInfo(mysqlInst());
+      expect(info, contains('8.0'));
     });
   });
 }

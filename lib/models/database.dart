@@ -1,178 +1,144 @@
-/// 数据库类型
-enum DbType { mysql, mariadb, postgresql, mongodb, redis }
+/// 数据库类型（移植自 Lanxi）
+enum DbType { mysql, postgresql, mongodb, redis }
 
 extension DbTypeMeta on DbType {
   String get label => switch (this) {
     DbType.mysql => 'MySQL',
-    DbType.mariadb => 'MariaDB',
     DbType.postgresql => 'PostgreSQL',
     DbType.mongodb => 'MongoDB',
     DbType.redis => 'Redis',
   };
 
-  /// 1Panel API 的类型名（导入列表用，逗号分隔）
-  String get apiType => switch (this) {
-    DbType.mysql => 'mysql',
-    DbType.mariadb => 'mariadb',
-    DbType.postgresql => 'postgresql',
-    DbType.mongodb => 'mongodb',
-    DbType.redis => 'redis',
-  };
-
-  /// 数据库实例组合类型（1Panel GET /databases/db/list/{types}）
-  static const apiListTypes =
-      'mysql,mariadb,mysql-cluster,postgresql,postgresql-cluster,redis,redis-cluster';
-
-  int get defaultPort => switch (this) {
-    DbType.mysql => 3306,
-    DbType.mariadb => 3306,
-    DbType.postgresql => 5432,
-    DbType.mongodb => 27017,
-    DbType.redis => 6379,
+  String get defaultPort => switch (this) {
+    DbType.mysql => '3306',
+    DbType.postgresql => '5432',
+    DbType.mongodb => '27017',
+    DbType.redis => '6379',
   };
 
   String get defaultUser => switch (this) {
     DbType.mysql => 'root',
-    DbType.mariadb => 'root',
     DbType.postgresql => 'postgres',
     DbType.mongodb => 'admin',
     DbType.redis => 'default',
   };
 
-  static DbType? fromString(String? s) {
-    if (s == null || s.isEmpty) return null;
-    final v = s.toLowerCase();
-    if (v.contains('mysql') || v.contains('maria')) return DbType.mysql;
-    if (v.contains('postgres')) return DbType.postgresql;
-    if (v.contains('mongo')) return DbType.mongodb;
-    if (v.contains('redis')) return DbType.redis;
-    return null;
-  }
+  /// Docker 容器常见环境变量（可能保存密码）
+  List<String> get passwordEnvVars => switch (this) {
+    DbType.mysql => [
+      'MYSQL_ROOT_PASSWORD',
+      'MYSQL_PASSWORD',
+      'MARIADB_ROOT_PASSWORD',
+    ],
+    DbType.postgresql => ['POSTGRES_PASSWORD', 'POSTGRES_ROOT_PASSWORD'],
+    DbType.mongodb => [
+      'MONGO_INITDB_ROOT_PASSWORD',
+      'MONGO_INITDB_ROOT_USERNAME',
+    ],
+    DbType.redis => ['REDIS_PASSWORD', 'REQUIREPASS'],
+  };
 }
 
-/// 数据库实例（本地持久化，密码单独加密存储）
-class DatabaseInstance {
-  final String id;
+/// 数据库实例（检测结果，含会话级认证信息）
+class DbInstance {
   final DbType type;
-  final String name;
-
-  /// 连接地址：服务器本机为 localhost / 127.0.0.1
-  final String address;
-  final int port;
-  final String username;
-  final String? password;
-  final String version;
-  final String? containerName;
-
-  /// 来源：manual（手动添加）| api（从 1Panel 导入）
-  final String source;
-
   final bool inDocker;
+  final String? containerName;
+  final String? version;
+  int? port;
+  final String? status;
 
-  const DatabaseInstance({
-    required this.id,
+  // 会话级认证（不持久化）
+  String? authUser;
+  String? authPass;
+  bool authFailed = false;
+
+  DbInstance({
     required this.type,
-    required this.name,
-    this.address = 'localhost',
-    this.port = 3306,
-    this.username = 'root',
-    this.password,
-    this.version = '',
-    this.containerName,
-    this.source = 'manual',
     this.inDocker = false,
+    this.containerName,
+    this.version,
+    this.port,
+    this.status,
+    this.authUser,
+    this.authPass,
   });
 
-  bool get fromApi => source == 'api';
+  String get label {
+    final v = version ?? '';
+    final d = inDocker ? ' [Docker]' : '';
+    final n = containerName != null ? ' ($containerName)' : '';
+    return '${type.label} $v$d$n';
+  }
 
-  /// 展示地址
-  String get displayAddress => inDocker && containerName != null
-      ? 'Docker: $containerName'
-      : '$address:$port';
+  String get subtitle {
+    final parts = <String>[];
+    if (port != null) parts.add('端口: $port');
+    if (inDocker) parts.add('容器: $containerName');
+    if (status != null) parts.add(status!);
+    return parts.join(' · ');
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type.name,
-    'name': name,
-    'address': address,
-    'port': port,
-    'username': username,
-    'version': version,
-    'containerName': containerName,
-    'source': source,
-    'inDocker': inDocker,
+  String get cliCmd => switch (type) {
+    DbType.mysql => 'mysql',
+    DbType.postgresql => 'psql',
+    DbType.mongodb => 'mongosh',
+    DbType.redis => 'redis-cli',
   };
 
-  factory DatabaseInstance.fromJson(Map<String, dynamic> json) {
-    final type = DbTypeMeta.fromString(json['type'] as String?) ?? DbType.mysql;
-    return DatabaseInstance(
-      id: json['id'] as String? ?? '',
-      type: type,
-      name: json['name'] as String? ?? '',
-      address: json['address'] as String? ?? 'localhost',
-      port: (json['port'] as num?)?.toInt() ?? type.defaultPort,
-      username: json['username'] as String? ?? type.defaultUser,
-      version: json['version'] as String? ?? '',
-      containerName: json['containerName'] as String?,
-      source: json['source'] as String? ?? 'manual',
-      inDocker: json['inDocker'] as bool? ?? false,
-    );
+  bool get needsAuth => type != DbType.redis || authPass != null;
+
+  /// 连接参数（密码用环境变量 MYSQL_PWD / PGPASSWORD）
+  String get connArgs {
+    final u = authUser ?? type.defaultUser;
+    final buf = StringBuffer();
+    if (type == DbType.mysql) {
+      buf.write('-u$u');
+    } else if (type == DbType.postgresql) {
+      buf.write('-U $u');
+      if (inDocker) buf.write(' -h localhost');
+    } else if (type == DbType.mongodb) {
+      buf.write('-u $u');
+      if (authPass != null && authPass!.isNotEmpty) {
+        buf.write(' -p $authPass --authenticationDatabase admin');
+      }
+    } else if (type == DbType.redis) {
+      if (authPass != null && authPass!.isNotEmpty) {
+        buf.write('-a $authPass --no-auth-warning');
+      }
+    }
+    return buf.toString();
   }
 
-  DatabaseInstance copyWith({String? password, String? version}) {
-    return DatabaseInstance(
-      id: id,
-      type: type,
-      name: name,
-      address: address,
-      port: port,
-      username: username,
-      password: password ?? this.password,
-      version: version ?? this.version,
-      containerName: containerName,
-      source: source,
-      inDocker: inDocker,
-    );
+  /// 包裹命令（注入密码环境变量 / docker exec）
+  String wrapCmd(String cmd) {
+    final envs = <String>[];
+    final p = authPass;
+    if (p != null && p.isNotEmpty) {
+      final escapedP = p.replaceAll("'", "'\\''");
+      if (type == DbType.mysql) envs.add("MYSQL_PWD='$escapedP'");
+      if (type == DbType.postgresql) envs.add("PGPASSWORD='$escapedP'");
+    }
+    final prefix = envs.isNotEmpty ? '${envs.join(' ')} ' : '';
+
+    if (inDocker && containerName != null) {
+      final escaped = cmd.replaceAll("'", "'\\''");
+      return 'docker exec $containerName sh -c \'$prefix$escaped\'';
+    }
+    return '$prefix$cmd';
   }
 }
 
-/// 实例下的数据库项
-class DatabaseItem {
+/// 数据库项
+class DbDatabase {
   final String name;
-  final String format;
-  final String collation;
-  final String username;
-  final String permission;
-  final String description;
-
-  const DatabaseItem({
-    required this.name,
-    this.format = '',
-    this.collation = '',
-    this.username = '',
-    this.permission = '',
-    this.description = '',
-  });
-
-  factory DatabaseItem.fromJson(Map<String, dynamic> json) {
-    return DatabaseItem(
-      name: json['name'] as String? ?? json['mysqlName'] as String? ?? '',
-      format: json['format'] as String? ?? '',
-      collation: json['collation'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      permission: json['permission'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-    );
-  }
+  const DbDatabase({required this.name});
 }
 
 /// 数据库用户
-class DatabaseUser {
+class DbUser {
   final String name;
-  final String host;
-  final String grants;
-
-  const DatabaseUser({required this.name, this.host = '', this.grants = ''});
-
-  String get label => host.isEmpty ? name : '$name@$host';
+  final String? host;
+  final String? grants;
+  const DbUser({required this.name, this.host, this.grants});
 }

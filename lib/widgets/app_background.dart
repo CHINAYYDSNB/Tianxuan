@@ -53,10 +53,10 @@ class AppBackground extends ConsumerWidget {
       return Container(color: scheme.surface, child: child);
     }
 
-    // 有背景图时叠加模糊 + 遮罩保证可读性
-    // 暗色主题（darkText）用深色遮罩 + 白字，亮色用浅色遮罩 + 黑字
+    // 有背景图时叠加模糊 + 浅色遮罩压浅，保证黑字在任何明暗背景下都可读
+    // 暗图用更浓的白色遮罩（0.55），亮图用 0.82
     final maskColor = darkText
-        ? Colors.black.withValues(alpha: 0.55)
+        ? Colors.white.withValues(alpha: 0.55)
         : Colors.white.withValues(alpha: 0.82);
     return Stack(
       fit: StackFit.expand,

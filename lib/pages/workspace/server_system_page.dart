@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ssh_connection_provider.dart';
 import '../../services/ssh_command_service.dart';
+import '../settings/ssh_config_page.dart';
 
 /// 服务器系统设置页 — 全部通过 SSH 直接执行命令（不走 1Panel API）
 class ServerSystemPage extends ConsumerStatefulWidget {
@@ -297,13 +298,38 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 12),
-                    Text(_error!),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('重试'),
+                    Text(
+                      _error!,
+                      style: const TextStyle(fontSize: 14),
+                      textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 16),
+                    if (_error == 'SSH 未连接') ...[
+                      const Text(
+                        '系统设置通过 SSH 读取服务器信息，请先配置 SSH 连接',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9AA1A9),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SshConfigPage(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.settings, size: 18),
+                        label: const Text('去配置 SSH'),
+                      ),
+                    ] else
+                      FilledButton.icon(
+                        onPressed: _load,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重试'),
+                      ),
                   ],
                 ),
               ),

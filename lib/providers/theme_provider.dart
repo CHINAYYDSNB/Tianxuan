@@ -186,27 +186,23 @@ ColorScheme buildColorScheme(AppTheme theme, Brightness brightness) {
   );
 }
 
-/// 生成 ThemeData（应用到全局），配色取自 [theme.scheme]，
-/// [darkText] 为 true 表示深色背景（暗色主题），前景文字用白色。
+/// 生成 ThemeData（应用到全局），配色取自 [theme.scheme]。
+/// 始终使用浅色主题（白卡黑字）：背景图由 AppBackground 用浅色遮罩压浅，
+/// 避免深色背景下出现"黑底黑字"不可读的问题。
 ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
   final scheme = theme.scheme;
   final surface = scheme.surface;
   const cardColor = Color(0xFFFFFFFF);
-  final onSurface = darkText ? Colors.white : scheme.onSurface;
-  final onSurfaceVariant = darkText
-      ? const Color(0xFFB8BEC6)
-      : const Color(0xFF6B7280);
-  final outline = darkText ? const Color(0xFF3A3F45) : const Color(0xFFD8DCE2);
-  final outlineVariant = darkText
-      ? const Color(0xFF2E3339)
-      : const Color(0xFFE8EAEE);
-  final primary = darkText ? Colors.white : scheme.primary;
-  final scaffold = darkText ? const Color(0xFF1A1C1F) : surface;
+  final onSurface = scheme.onSurface;
+  final onSurfaceVariant = const Color(0xFF6B7280);
+  final outline = const Color(0xFFD8DCE2);
+  final outlineVariant = const Color(0xFFE8EAEE);
+  final primary = scheme.primary;
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
-      surface: scaffold,
+      surface: surface,
       onSurface: onSurface,
       onSurfaceVariant: onSurfaceVariant,
       outline: outline,
@@ -215,9 +211,9 @@ ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
       secondary: primary,
     ),
     scaffoldBackgroundColor: Colors.transparent,
-    canvasColor: darkText ? const Color(0xFF24262A) : cardColor,
+    canvasColor: cardColor,
     appBarTheme: AppBarTheme(
-      backgroundColor: scaffold,
+      backgroundColor: surface,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
@@ -229,7 +225,7 @@ ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
       iconTheme: IconThemeData(color: onSurface),
     ),
     cardTheme: CardThemeData(
-      color: darkText ? const Color(0xFF24262A) : cardColor,
+      color: cardColor,
       elevation: 0,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
@@ -246,7 +242,7 @@ ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
     ),
     listTileTheme: ListTileThemeData(iconColor: onSurface),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: darkText ? const Color(0xFF24262A) : cardColor,
+      backgroundColor: cardColor,
       surfaceTintColor: Colors.transparent,
       indicatorColor: outlineVariant,
       elevation: 0,

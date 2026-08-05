@@ -88,7 +88,7 @@ class SshCommandService {
     }
 
     // 等待认证完成：认证失败（SSHAuthFailError 等）会在此抛出，由上层捕获
-    await _client!.authenticated;
+    await _client!.authenticated.timeout(const Duration(seconds: 20));
 
     _connected = true;
     _startKeepAlive();
@@ -113,7 +113,9 @@ class SshCommandService {
     }
 
     try {
-      final session = await _client!.execute(command);
+      // 建立会话也要超时（防止 transport 异常时挂起）
+      final effTimeout = timeout ?? const Duration(seconds: 20);
+      final session = await _client!.execute(command).timeout(effTimeout);
 
       final outBuf = StringBuffer();
       final errBuf = StringBuffer();
@@ -122,7 +124,7 @@ class SshCommandService {
       final errSub = session.stderr.listen((d) => errBuf.write(utf8.decode(d)));
 
       // 默认 20s 超时，防止挂起命令永久阻塞调用方
-      await session.done.timeout(timeout ?? const Duration(seconds: 20));
+      await session.done.timeout(effTimeout);
       final exitCode = session.exitCode ?? 0;
       await outSub.cancel();
       await errSub.cancel();

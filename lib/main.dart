@@ -23,7 +23,7 @@ class OnePanelApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Tianxuan',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(theme),
+      theme: buildAppTheme(theme, darkText: theme.darkText),
       home: AppBackground(child: const InitPage()),
       routes: {'/home': (context) => const HomePage()},
     );

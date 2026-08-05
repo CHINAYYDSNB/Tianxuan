@@ -64,6 +64,11 @@ class ThemeNotifier extends StateNotifier<AppTheme> {
     state = state.copyWith(backgroundBlur: v);
     await _save();
   }
+
+  Future<void> setDarkText(bool v) async {
+    state = state.copyWith(darkText: v);
+    await _save();
+  }
 }
 
 final themeProvider = StateNotifierProvider<ThemeNotifier, AppTheme>(
@@ -81,25 +86,36 @@ ColorScheme buildColorScheme(AppTheme theme, Brightness brightness) {
 }
 
 /// 生成 ThemeData（应用到全局）
-ThemeData buildAppTheme(AppTheme theme) {
+/// [darkText] 为 true 表示深色背景（暗色主题），前景文字用白色。
+ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
   const surface = Color(0xFFF6F7F9); // 浅灰背景
-  const onSurface = Color(0xFF0C1014);
   const cardColor = Color(0xFFFFFFFF);
+  final onSurface = darkText ? Colors.white : const Color(0xFF0C1014);
+  final onSurfaceVariant = darkText
+      ? const Color(0xFFB8BEC6)
+      : const Color(0xFF6B7280);
+  final outline = darkText ? const Color(0xFF3A3F45) : const Color(0xFFD8DCE2);
+  final outlineVariant = darkText
+      ? const Color(0xFF2E3339)
+      : const Color(0xFFE8EAEE);
+  final primary = darkText ? Colors.white : const Color(0xFF0C1014);
+  final scaffold = darkText ? const Color(0xFF1A1C1F) : surface;
+
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
-      surface: surface,
+      surface: scaffold,
       onSurface: onSurface,
-      onSurfaceVariant: const Color(0xFF6B7280),
-      outline: const Color(0xFFD8DCE2),
-      outlineVariant: const Color(0xFFE8EAEE),
-      primary: const Color(0xFF0C1014),
-      secondary: const Color(0xFF0C1014),
+      onSurfaceVariant: onSurfaceVariant,
+      outline: outline,
+      outlineVariant: outlineVariant,
+      primary: primary,
+      secondary: primary,
     ),
-    scaffoldBackgroundColor: surface,
-    canvasColor: cardColor,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: surface,
+    scaffoldBackgroundColor: scaffold,
+    canvasColor: darkText ? const Color(0xFF24262A) : cardColor,
+    appBarTheme: AppBarTheme(
+      backgroundColor: scaffold,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
@@ -110,27 +126,27 @@ ThemeData buildAppTheme(AppTheme theme) {
       ),
       iconTheme: IconThemeData(color: onSurface),
     ),
-    cardTheme: const CardThemeData(
-      color: cardColor,
+    cardTheme: CardThemeData(
+      color: darkText ? const Color(0xFF24262A) : cardColor,
       elevation: 0,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
-        side: BorderSide(color: Color(0xFFE8EAEE)),
+        side: BorderSide(color: outlineVariant),
       ),
     ),
-    dividerTheme: const DividerThemeData(
-      color: Color(0xFFE8EAEE),
+    dividerTheme: DividerThemeData(
+      color: outlineVariant,
       thickness: 1,
       space: 1,
     ),
-    listTileTheme: const ListTileThemeData(iconColor: onSurface),
+    listTileTheme: ListTileThemeData(iconColor: onSurface),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: cardColor,
+      backgroundColor: darkText ? const Color(0xFF24262A) : cardColor,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: const Color(0xFFE8EAEE),
+      indicatorColor: outlineVariant,
       elevation: 0,
     ),
     splashFactory: NoSplash.splashFactory,

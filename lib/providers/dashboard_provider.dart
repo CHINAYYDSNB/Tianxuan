@@ -51,10 +51,24 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
   @override
   Future<ServerStatus> build() async {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _autoRefresh());
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _autoRefresh());
     ref.onDispose(() => _timer?.cancel());
     _lastFetchTime = DateTime.now();
-    return _fetch();
+    try {
+      return await _fetch();
+    } catch (e) {
+      // SSH 未就绪等 — 首次失败返回空状态，靠 _autoRefresh 重试
+      return ServerStatus(
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        uptime: '',
+        memoryTotal: '',
+        memoryUsed: '',
+        diskTotal: '',
+        diskUsed: '',
+      );
+    }
   }
 
   DateTime get lastFetchTime => _lastFetchTime;

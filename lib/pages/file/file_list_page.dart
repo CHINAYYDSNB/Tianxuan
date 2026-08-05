@@ -34,67 +34,83 @@ class _FileListPageState extends ConsumerState<FileListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: _showSearch
-            ? TextField(
-                controller: _searchCtrl,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: '搜索文件...',
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8),
-                ),
-                onSubmitted: (v) =>
-                    ref.read(fileListProvider.notifier).setSearch(v),
+    // 系统返回键：非根目录时返回上一级
+    final currentPath = ref.watch(currentPathProvider);
+    return PopScope(
+      canPop: currentPath == '/',
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        final crumbs = buildBreadcrumbs(currentPath);
+        if (crumbs.length >= 2) {
+          final parent = crumbs[crumbs.length - 2].path;
+          ref.read(currentPathProvider.notifier).state = parent;
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: _showSearch
+              ? TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: '搜索文件...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onSubmitted: (v) =>
+                      ref.read(fileListProvider.notifier).setSearch(v),
+                )
+              : const Text('文件管理'),
+          actions: [
+            IconButton(
+              icon: Icon(_showSearch ? Icons.search_off : Icons.search),
+              onPressed: () => setState(() => _showSearch = !_showSearch),
+            ),
+            if (_multiSelect)
+              IconButton(
+                icon: const Icon(Icons.checklist, color: Colors.blue),
+                tooltip: '退出多选',
+                onPressed: () {
+                  setState(() => _multiSelect = false);
+                  ref.read(fileSelectionProvider.notifier).clear();
+                },
               )
-            : const Text('文件管理'),
-        actions: [
-          IconButton(
-            icon: Icon(_showSearch ? Icons.search_off : Icons.search),
-            onPressed: () => setState(() => _showSearch = !_showSearch),
-          ),
-          if (_multiSelect)
-            IconButton(
-              icon: const Icon(Icons.checklist, color: Colors.blue),
-              tooltip: '退出多选',
-              onPressed: () {
-                setState(() => _multiSelect = false);
-                ref.read(fileSelectionProvider.notifier).clear();
-              },
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.checklist),
-              tooltip: '多选',
-              onPressed: () => setState(() => _multiSelect = true),
+            else
+              IconButton(
+                icon: const Icon(Icons.checklist),
+                tooltip: '多选',
+                onPressed: () => setState(() => _multiSelect = true),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: PopupMenuButton<String>(
+                icon: const Icon(Icons.add),
+                onSelected: (v) {
+                  if (v == 'create_dir') {
+                    _showCreateDialog(context);
+                  } else if (v == 'upload') {
+                    _pickAndUpload();
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'create_dir',
+                    child: Text('新建文件夹'),
+                  ),
+                  const PopupMenuItem(value: 'upload', child: Text('上传文件')),
+                ],
+              ),
             ),
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.add),
-              onSelected: (v) {
-                if (v == 'create_dir') {
-                  _showCreateDialog(context);
-                } else if (v == 'upload') {
-                  _pickAndUpload();
-                }
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: 'create_dir', child: Text('新建文件夹')),
-                const PopupMenuItem(value: 'upload', child: Text('上传文件')),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: FileListBody(
-        initialPath: widget.initialPath,
-        showSearch: _showSearch,
-        searchCtrl: _searchCtrl,
-        multiSelect: _multiSelect,
-        onMultiSelectChanged: (v) => setState(() => _multiSelect = v),
+          ],
+        ),
+        body: FileListBody(
+          initialPath: widget.initialPath,
+          showSearch: _showSearch,
+          searchCtrl: _searchCtrl,
+          multiSelect: _multiSelect,
+          onMultiSelectChanged: (v) => setState(() => _multiSelect = v),
+        ),
       ),
     );
   }

@@ -52,7 +52,11 @@ class AppBackground extends ConsumerWidget {
       return Container(color: scheme.surface, child: child);
     }
 
-    // 有背景图时叠加模糊 + 半透明遮罩保证可读性
+    // 有背景图时叠加模糊 + 遮罩保证可读性
+    // 暗色主题（darkText）用深色遮罩 + 白字，亮色用浅色遮罩 + 黑字
+    final maskColor = theme.darkText
+        ? Colors.black.withValues(alpha: 0.55)
+        : Colors.white.withValues(alpha: 0.82);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -63,8 +67,8 @@ class AppBackground extends ConsumerWidget {
           ),
           child: bgImage,
         ),
-        // 半透明遮罩（浅色，保证文字可读）
-        Container(color: Colors.white.withValues(alpha: 0.82)),
+        // 半透明遮罩（暗色主题用深色遮罩，保证白字可读）
+        Container(color: maskColor),
         child,
       ],
     );

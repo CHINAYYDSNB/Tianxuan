@@ -10,6 +10,9 @@ class WebsitesNotifier extends AsyncNotifier<List<Website>> {
   int _page = 1;
   static const _pageSize = 20;
   bool _hasMore = true;
+
+  /// 是否还有更多分页
+  bool get hasMore => _hasMore;
   String _search = '';
 
   @override

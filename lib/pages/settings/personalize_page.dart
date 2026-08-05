@@ -111,6 +111,16 @@ class PersonalizePage extends ConsumerWidget {
           if (theme.backgroundType == AppBackgroundType.custom)
             _customBackground(context, theme, notifier),
 
+          // 暗色模式（深色背景用白字）
+          const SizedBox(height: 24),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('暗色模式'),
+            subtitle: const Text('深色背景时使用白色文字'),
+            value: theme.darkText,
+            onChanged: (v) => notifier.setDarkText(v),
+          ),
+
           // 模糊强度
           const SizedBox(height: 24),
           _sectionTitle(context, '背景模糊'),

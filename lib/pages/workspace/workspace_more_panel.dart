@@ -1,9 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../docker/container_list_page.dart';
-import '../docker/registry_mirror_page.dart';
-import '../docker/docker_daemon_page.dart';
 import '../script_store/script_store_page.dart';
 import '../ssh/ssh_home_page.dart';
 
@@ -29,24 +26,6 @@ final List<MoreEntry> kMoreEntries = [
     title: 'SSH 终端',
     icon: Icons.terminal,
     builder: (_) => const SshHomePage(),
-  ),
-  MoreEntry(
-    id: 'containers',
-    title: '容器',
-    icon: Icons.view_in_ar_outlined,
-    builder: (_) => const ContainerListPage(),
-  ),
-  MoreEntry(
-    id: 'registry',
-    title: '镜像站',
-    icon: Icons.cloud_sync_outlined,
-    builder: (_) => const RegistryMirrorPage(),
-  ),
-  MoreEntry(
-    id: 'daemon',
-    title: 'Docker 管理',
-    icon: Icons.settings_applications_outlined,
-    builder: (_) => const DockerDaemonPage(),
   ),
   MoreEntry(
     id: 'scripts',

@@ -12,7 +12,8 @@ void main() {
 
   group('workspace_more_panel 入口管理', () {
     test('kMoreEntries 默认全展示', () {
-      expect(kMoreEntries.length, greaterThanOrEqualTo(5));
+      expect(kMoreEntries.length, 2);
+      expect(kMoreEntries.map((e) => e.id), containsAll(['ssh', 'scripts']));
       expect(kMoreEntries.map((e) => e.id).toSet().length, kMoreEntries.length);
       expect(kMoreEntries.every((e) => e.title.isNotEmpty), isTrue);
     });

@@ -111,6 +111,25 @@ class WebsiteListBody extends ConsumerWidget {
             itemCount: list.length + 1,
             itemBuilder: (context, i) {
               if (i == list.length) {
+                final hasMore = ref.read(websitesProvider.notifier).hasMore;
+                // 滚动到底部时加载更多
+                if (hasMore && i > 4) {
+                  ref.read(websitesProvider.notifier).loadMore();
+                }
+                if (!hasMore) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        '没有更多了',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9AA1A9),
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ssh_connection_provider.dart';
@@ -15,6 +16,7 @@ class DockerDaemonPage extends ConsumerStatefulWidget {
 class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
   Map<String, dynamic>? _info;
   String _status = '';
+  Map<String, dynamic>? _daemonJson;
   bool _loading = true;
   String? _error;
 
@@ -40,12 +42,17 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
       }
       final svc = DockerService(ssh);
 
-      // Load info and status in parallel
-      final results = await Future.wait([svc.dockerInfo(), svc.daemonStatus()]);
+      // Load info, status, and daemon.json in parallel
+      final results = await Future.wait([
+        svc.dockerInfo(),
+        svc.daemonStatus(),
+        svc.readDaemonJson(),
+      ]);
 
       setState(() {
         _info = DockerParser.parseDockerInfo(results[0].stdout);
         _status = results[1].stdout;
+        _daemonJson = _parseDaemonJson(results[2].stdout);
         _loading = false;
       });
     } catch (e) {
@@ -53,6 +60,16 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
         _loading = false;
         _error = e.toString();
       });
+    }
+  }
+
+  Map<String, dynamic> _parseDaemonJson(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || trimmed == '{}') return {};
+    try {
+      return jsonDecode(trimmed) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
     }
   }
 
@@ -280,6 +297,76 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
                               'Architecture',
                               _info!['Architecture']?.toString() ?? '-',
                             ),
+                            _infoRow(
+                              '日志驱动',
+                              _info!['LoggingDriver']?.toString() ?? '-',
+                            ),
+                            _infoRow(
+                              'IPv4 转发',
+                              _info!['IPv4Forwarding']?.toString() ?? '-',
+                            ),
+                            _infoRow(
+                              'IPv6 转发',
+                              _info!['IPv6Forwarding']?.toString() ?? '-',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  // 守护进程配置（daemon.json）
+                  if (_daemonJson != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      '守护进程配置',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _daemonRow(
+                              'iptables',
+                              _daemonJson!['iptables']?.toString() ?? '默认开启',
+                            ),
+                            _daemonRow(
+                              'IPv6',
+                              _daemonJson!['ipv6']?.toString() ?? '默认关闭',
+                            ),
+                            _daemonRow(
+                              'Live Restore',
+                              _daemonJson!['live-restore']?.toString() ??
+                                  '默认关闭',
+                            ),
+                            _daemonRow(
+                              '日志驱动',
+                              _daemonJson!['log-driver']?.toString() ?? '默认',
+                            ),
+                            _daemonRow(
+                              'Socket 路径',
+                              _daemonJson!['hosts']?.toString() ?? '默认',
+                            ),
+                            _daemonRow(
+                              '存储驱动',
+                              _daemonJson!['storage-driver']?.toString() ??
+                                  '默认',
+                            ),
+                            _daemonRow(
+                              'Cgroup Driver',
+                              _daemonJson!['exec-opts']?.toString() ?? '默认',
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '以上为 /etc/docker/daemon.json 配置，可在服务器上直接编辑该文件修改',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF9AA1A9),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -292,6 +379,29 @@ class _DockerDaemonPageState extends ConsumerState<DockerDaemonPage> {
   }
 
   Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF686F78)),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _daemonRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

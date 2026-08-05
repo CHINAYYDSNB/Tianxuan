@@ -269,12 +269,6 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
       appBar: AppBar(
         title: Text('${widget.username}@${widget.host}:${widget.port}'),
         actions: [
-          if (_sshService.isConnected)
-            IconButton(
-              icon: const Icon(Icons.keyboard),
-              tooltip: '虚拟键盘',
-              onPressed: _showKeyboard,
-            ),
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: '断开',
@@ -353,89 +347,6 @@ class _SshTerminalPageState extends State<SshTerminalPage> {
               ),
               autofocus: true,
             ),
-    );
-  }
-
-  void _showKeyboard() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF2D2D2D),
-      builder: (ctx) =>
-          _TerminalKeyboard(onKey: (key) => _terminal.textInput(key)),
-    );
-  }
-}
-
-// ─── Virtual Keyboard ───
-
-class _TerminalKeyboard extends StatelessWidget {
-  final void Function(String key) onKey;
-
-  const _TerminalKeyboard({required this.onKey});
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = [
-      ['Esc', 'Tab', 'Ctrl', 'Alt', 'Space'],
-      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-      ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
-      ['.', '-', '_', '/', '@'],
-      ['Enter', 'Backspace'],
-    ];
-    final keyToChar = <String, String>{
-      'Enter': '\n',
-      'Backspace': '\x7f',
-      'Esc': '\x1b',
-      'Tab': '\t',
-      'Space': ' ',
-    };
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            '虚拟键盘',
-            style: TextStyle(color: Colors.white, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          for (final row in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: row.map((key) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Material(
-                      color: key.length > 2
-                          ? Colors.blueGrey
-                          : const Color(0xFF3C3C3C),
-                      borderRadius: BorderRadius.circular(4),
-                      child: InkWell(
-                        onTap: () => onKey(keyToChar[key] ?? key),
-                        borderRadius: BorderRadius.circular(4),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            key,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          const SizedBox(height: 8),
-        ],
-      ),
     );
   }
 }

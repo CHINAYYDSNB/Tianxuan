@@ -198,6 +198,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element // 服务器切换下拉（当前不触发，保留备用）
   void _showDropdownCard(
     BuildContext ctx,
     WidgetRef ref,
@@ -518,8 +519,6 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(serverStatusProvider);
-    final servers = ref.watch(savedServersProvider);
-    final currUrl = ref.watch(settingsProvider.select((s) => s.serverUrl));
     final siteCount = ref
         .watch(websitesProvider)
         .when(
@@ -549,27 +548,17 @@ class DashboardPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Builder(
-          builder: (ctx) => GestureDetector(
-            onTap: () =>
-                _showDropdownCard(ctx, ref, servers, currUrl ?? '', hostname),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  hostname,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+          builder: (ctx) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                hostname,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 30,
-                  color: Color(0xFFAAB4BF),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

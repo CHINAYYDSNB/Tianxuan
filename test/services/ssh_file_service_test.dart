@@ -78,7 +78,9 @@ void main() {
       ).thenAnswer((_) async => const SshResult(exitCode: 0));
       await svc.save('/a.txt', 'new content');
       verify(
-        () => ssh.execute('cp "/a.txt" "/a.txt.bak.\$(date +%s)"'),
+        () => ssh.execute(
+          'rm -f "/a.txt.bak" 2>/dev/null; cp "/a.txt" "/a.txt.bak" 2>/dev/null || true',
+        ),
       ).called(1);
       final captured = verify(() => ssh.execute(captureAny())).captured;
       final writeCmd = captured.last as String;

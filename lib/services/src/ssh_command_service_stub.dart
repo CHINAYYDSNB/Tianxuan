@@ -40,8 +40,12 @@ class SshResult {
 class SshCommandService {
   SSHClient? _client;
   bool _connected = false;
+  Timer? _keepAliveTimer;
 
   bool get isConnected => _connected;
+
+  /// 连接是否已断开（transport closed）
+  bool get isBroken => _client != null && _client!.isClosed && !_connected;
 
   Future<void> connect(SshConfig config) async {
     disconnect();
@@ -87,6 +91,7 @@ class SshCommandService {
     await _client!.authenticated;
 
     _connected = true;
+    _startKeepAlive();
   }
 
   /// Read key content: try as file path first, fallback to treating input as PEM.
@@ -127,6 +132,10 @@ class SshCommandService {
         stderr: errBuf.toString(),
       );
     } catch (e) {
+      // 连接已断开（transport closed）时标记，供上层自动重连
+      if (_client?.isClosed == true) {
+        _connected = false;
+      }
       return SshResult(exitCode: -1, stderr: e.toString());
     }
   }
@@ -154,7 +163,18 @@ class SshCommandService {
     }
   }
 
+  /// 启动 keepalive：每 30s ping 一次，防止空闲断连；失败时标记断开
+  void _startKeepAlive() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!_connected || _client == null) return;
+      execute('echo pong');
+    });
+  }
+
   void disconnect() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = null;
     _client?.close();
     _client = null;
     _connected = false;

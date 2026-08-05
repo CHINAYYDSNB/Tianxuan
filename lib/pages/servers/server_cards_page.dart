@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/server_list_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
+import '../../services/ssh_command_service.dart';
 import '../../widgets/server_add_sheet.dart';
 import '../workspace/server_workspace_page.dart';
 
@@ -70,14 +72,37 @@ class ServerCardsPage extends ConsumerWidget {
     bool isCurrent,
   ) async {
     if (!isCurrent) {
-      final err = await ref
-          .read(savedServersProvider.notifier)
-          .switchTo(server);
-      if (err != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('连接失败: $err'), backgroundColor: Colors.red),
+      // SSH 服务器：直接建立 SSH 连接
+      if (server.isSshOnly) {
+        final config = SshConfig(
+          host: server.sshHost,
+          port: server.sshPort,
+          username: server.sshUsername,
+          password: server.sshPassword,
+          privateKey: server.sshPrivateKey,
         );
-        return;
+        final err = await ref
+            .read(sshConnectionProvider.notifier)
+            .connect(config);
+        if (err != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('SSH 连接失败: $err'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      } else {
+        final err = await ref
+            .read(savedServersProvider.notifier)
+            .switchTo(server);
+        if (err != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('连接失败: $err'), backgroundColor: Colors.red),
+          );
+          return;
+        }
       }
     }
     if (!context.mounted) return;

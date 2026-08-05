@@ -130,6 +130,29 @@ class StorageService {
   /// Delete a single saved server's apiKey.
   Future<void> deleteServerKey(String serverId) => _delete('srv_key_$serverId');
 
+  /// 单个已保存服务器的 SSH 凭据（密码/私钥，加密存储）
+  Future<void> saveServerSshPass(String serverId, String? pass) async {
+    if (pass == null || pass.isEmpty) {
+      await _delete('srv_ssh_pass_$serverId');
+    } else {
+      await _write('srv_ssh_pass_$serverId', pass);
+    }
+  }
+
+  Future<String?> getServerSshPass(String serverId) =>
+      _read('srv_ssh_pass_$serverId');
+
+  Future<void> saveServerSshKey(String serverId, String? key) async {
+    if (key == null || key.isEmpty) {
+      await _delete('srv_ssh_key_$serverId');
+    } else {
+      await _write('srv_ssh_key_$serverId', key);
+    }
+  }
+
+  Future<String?> getServerSshKey(String serverId) =>
+      _read('srv_ssh_key_$serverId');
+
   // ─── First-launch migration (SharedPreferences → secure storage) ───
 
   Future<void> migrateIfNeeded() async {

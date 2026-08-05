@@ -7,6 +7,9 @@ import '../website/website_list_page.dart';
 import '../ssh/ssh_home_page.dart';
 import '../settings/ssh_config_page.dart';
 import '../settings/connection_test_page.dart';
+import '../../providers/ssh_connection_provider.dart';
+import 'server_system_page.dart';
+import 'server_cronjob_page.dart';
 import 'workspace_more_panel.dart';
 
 /// 服务器工作台 — 点服务器卡片进入，底部六 tab 导航。
@@ -164,8 +167,46 @@ class MoreTabPage extends StatelessWidget {
 }
 
 /// 「设置」tab — 服务器相关设置
-class ServerSettingsTab extends StatelessWidget {
+class ServerSettingsTab extends ConsumerStatefulWidget {
   const ServerSettingsTab({super.key});
+
+  @override
+  ConsumerState<ServerSettingsTab> createState() => _ServerSettingsTabState();
+}
+
+class _ServerSettingsTabState extends ConsumerState<ServerSettingsTab> {
+  int? _sshLatencyMs;
+  bool _testingSsh = false;
+
+  Future<void> _testSshLatency() async {
+    final ssh = ref.read(sshServiceProvider);
+    if (ssh == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('SSH 未连接，请先配置 SSH 连接')));
+      return;
+    }
+    setState(() {
+      _testingSsh = true;
+      _sshLatencyMs = null;
+    });
+    try {
+      final start = DateTime.now();
+      final res = await ssh.execute('echo pong');
+      final ms = DateTime.now().difference(start).inMilliseconds;
+      if (!mounted) return;
+      setState(() {
+        _testingSsh = false;
+        _sshLatencyMs = res.isSuccess ? ms : -1;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _testingSsh = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('检测失败: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -193,12 +234,39 @@ class ServerSettingsTab extends StatelessWidget {
             ),
           ),
           _SettingTile(
+            icon: Icons.speed_outlined,
+            title: 'SSH 延迟检测',
+            subtitle: _sshLatencyMs != null
+                ? (_sshLatencyMs! >= 0 ? '延迟: $_sshLatencyMs ms' : 'SSH 连接异常')
+                : (_testingSsh ? '检测中...' : '测试 SSH 往返延迟'),
+            trailing: Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+            onTap: _testingSsh ? null : _testSshLatency,
+          ),
+          _SettingTile(
             icon: Icons.terminal_outlined,
             title: 'SSH 终端',
             subtitle: '打开远程终端连接',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SshHomePage()),
+            ),
+          ),
+          _SettingTile(
+            icon: Icons.computer_outlined,
+            title: '系统设置',
+            subtitle: 'DNS / 主机名 / 密码 / NTP / 时区',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ServerSystemPage()),
+            ),
+          ),
+          _SettingTile(
+            icon: Icons.schedule_outlined,
+            title: '计划任务',
+            subtitle: '管理服务器定时任务',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ServerCronjobPage()),
             ),
           ),
         ],
@@ -211,13 +279,15 @@ class _SettingTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
   const _SettingTile({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
+    this.trailing,
   });
 
   @override
@@ -227,7 +297,9 @@ class _SettingTile extends StatelessWidget {
         leading: Icon(icon, size: 22),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+        trailing:
+            trailing ??
+            const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
         onTap: onTap,
       ),
     );

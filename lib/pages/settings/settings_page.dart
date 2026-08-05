@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/settings_provider.dart';
 import '../../providers/logto_auth_provider.dart';
 import '../../services/update_service.dart';
-import 'connection_test_page.dart';
 import 'cloud_backup_page.dart';
 import 'ai_config_page.dart';
-import 'ssh_config_page.dart';
 import 'about_page.dart';
 import 'personalize_page.dart';
 import 'profile_page.dart';
@@ -18,7 +15,6 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final connected = ref.watch(settingsProvider.select((s) => s.isConnected));
     final auth = ref.watch(logtoAuthProvider);
 
     return Scaffold(
@@ -113,30 +109,10 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 10),
-          // ═══ 连接检测 + 数据备份 + AI 配置（合并卡片）═══
+          // ═══ 数据备份 + AI 配置（合并卡片）═══
           Card(
             child: Column(
               children: [
-                _SettingRow(
-                  icon: Icons.terminal,
-                  title: 'SSH 连接',
-                  subtitle: '配置 Docker SSH 管理',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SshConfigPage()),
-                  ),
-                ),
-                _SettingRow(
-                  icon: Icons.wifi_find_outlined,
-                  title: '连接检测',
-                  subtitle: connected ? '已连接服务器' : '未连接',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ConnectionTestPage(),
-                    ),
-                  ),
-                ),
                 _SettingRow(
                   icon: Icons.cloud_outlined,
                   title: '数据备份',

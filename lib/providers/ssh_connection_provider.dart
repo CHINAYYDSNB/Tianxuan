@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ssh_command_service.dart';
 import '../services/storage_service.dart';
@@ -7,6 +9,9 @@ import '../services/storage_service.dart';
 class SshConnectionNotifier
     extends StateNotifier<AsyncValue<SshCommandService?>> {
   SshCommandService? _service;
+  SshConfig? _lastConfig;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
 
   SshConnectionNotifier() : super(const AsyncValue.data(null)) {
     _autoConnect();
@@ -46,14 +51,18 @@ class SshConnectionNotifier
   }
 
   Future<String?> connect(SshConfig config) async {
+    _reconnectTimer?.cancel();
     state = const AsyncValue.loading();
     try {
       _service?.disconnect();
       _service = SshCommandService();
       await _service!.connect(config);
+      _lastConfig = config;
+      _reconnectAttempts = 0;
       state = AsyncValue.data(_service);
       // Save credentials
       await StorageService.instance.saveSshConnections([config.toJson()]);
+      _scheduleReconnectCheck();
       return null;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -61,16 +70,40 @@ class SshConnectionNotifier
     }
   }
 
+  /// 定时检测断连并自动重连（带退避）
+  void _scheduleReconnectCheck() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (state is! AsyncData) return;
+      final svc = _service;
+      if (svc == null) return;
+      if (svc.isConnected) {
+        _reconnectAttempts = 0;
+        return;
+      }
+      // 已断开 → 自动重连
+      final config = _lastConfig;
+      if (config == null) return;
+      _reconnectAttempts++;
+      if (_reconnectAttempts > 3) return; // 最多重试 3 次后停止
+      debugPrint('[ssh] 连接断开，尝试重连 (${_reconnectAttempts}/3)...');
+      connect(config);
+    });
+  }
+
   void disconnect() {
+    _reconnectTimer?.cancel();
     try {
       _service?.disconnect();
     } catch (_) {}
     _service = null;
+    _lastConfig = null;
     state = const AsyncValue.data(null);
   }
 
   @override
   void dispose() {
+    _reconnectTimer?.cancel();
     _service?.disconnect();
     super.dispose();
   }

@@ -125,8 +125,10 @@ class SshFileService implements FileService {
 
   @override
   Future<void> save(String path, String content) async {
-    // 备份 + 引号 heredoc 写入
-    final backup = 'cp "$path" "$path.bak.\$(date +%s)"';
+    // 备份到固定 `.bak`（保存前清理旧备份，单一备份自动覆盖，
+    // 避免 `xxx.bak.<timestamp>` 累积且不会被自动清理）
+    final backup =
+        'rm -f "$path.bak" 2>/dev/null; cp "$path" "$path.bak" 2>/dev/null || true';
     await _ssh.execute(backup);
     final write = 'cat > "$path" <<\'LANXI_EOF\'\n$content\nLANXI_EOF';
     final res = await _ssh.execute(write);

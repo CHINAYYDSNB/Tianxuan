@@ -23,7 +23,7 @@ class AppColorScheme {
 const appColorSchemes = <AppColorScheme>[
   AppColorScheme(
     id: 'tianxuan',
-    name: '简约黑',
+    name: '经典黑白',
     primary: Color(0xFF0C1014),
     surface: Color(0xFFF6F7F9),
     onSurface: Color(0xFF0C1014),

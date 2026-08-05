@@ -5,10 +5,14 @@ class AnimatedNavItem {
   final IconData activeIcon;
   final String label;
 
+  /// 选中时图标颜色（不传则用默认黑）
+  final Color? activeColor;
+
   const AnimatedNavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.activeColor,
   });
 }
 
@@ -78,7 +82,8 @@ class AnimatedNavBar extends StatelessWidget {
                                       : items[i].icon,
                                   size: 22,
                                   color: isSelected
-                                      ? const Color(0xFF0C1014)
+                                      ? (items[i].activeColor ??
+                                            const Color(0xFF0C1014))
                                       : const Color(0xFF686F78),
                                 ),
                               ),

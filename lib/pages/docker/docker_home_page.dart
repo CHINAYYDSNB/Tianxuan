@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'container_list_page.dart';
 import 'image_list_page.dart';
 import 'compose_list_page.dart';
-import 'registry_mirror_page.dart';
 import 'docker_daemon_page.dart';
 
 class DockerHomePage extends StatelessWidget {
@@ -19,6 +18,7 @@ class DockerHomePage extends StatelessWidget {
             icon: Icons.view_in_ar_outlined,
             title: '容器',
             subtitle: '启动 / 停止 / 重启 / 日志',
+            color: const Color(0xFF1976D2),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ContainerListPage()),
@@ -29,6 +29,7 @@ class DockerHomePage extends StatelessWidget {
             icon: Icons.image_outlined,
             title: '镜像',
             subtitle: '拉取 / 删除 / 构建',
+            color: const Color(0xFF7B61FF),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ImageListPage()),
@@ -39,6 +40,7 @@ class DockerHomePage extends StatelessWidget {
             icon: Icons.dns_outlined,
             title: 'Compose',
             subtitle: '编排 / 启动 / 停止',
+            color: const Color(0xFF00838F),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ComposeListPage()),
@@ -46,19 +48,10 @@ class DockerHomePage extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _DockerCard(
-            icon: Icons.cloud_sync_outlined,
-            title: '镜像站',
-            subtitle: 'Registry Mirror 配置',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RegistryMirrorPage()),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _DockerCard(
             icon: Icons.settings_applications_outlined,
             title: 'Docker 管理',
-            subtitle: '守护进程状态与操作',
+            subtitle: '守护进程状态与配置',
+            color: const Color(0xFFF57C00),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const DockerDaemonPage()),
@@ -75,12 +68,14 @@ class _DockerCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color color;
 
   const _DockerCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    required this.color,
   });
 
   @override
@@ -93,7 +88,7 @@ class _DockerCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: const Color(0xFF0C1014)),
+              Icon(icon, size: 22, color: color),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

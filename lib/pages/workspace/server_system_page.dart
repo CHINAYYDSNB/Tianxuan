@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ssh_connection_provider.dart';
+import '../../services/ssh_command_service.dart';
 
 /// 服务器系统设置页 — 全部通过 SSH 直接执行命令（不走 1Panel API）
 class ServerSystemPage extends ConsumerStatefulWidget {
@@ -37,16 +38,23 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
       return;
     }
     try {
-      // 聚合读取系统信息（单次往返）
+      // 聚合读取系统信息（单次往返），每条命令 shell 层加 timeout 5 防挂起
       final cmd = [
         "hostname 2>/dev/null || echo '-'",
-        "cat /etc/timezone 2>/dev/null || timedatectl show -p Timezone --value 2>/dev/null || echo '-'",
-        "timedatectl show-timesync -p FallbackNTPServers --value 2>/dev/null || echo '-'",
+        "cat /etc/timezone 2>/dev/null || timeout 5 timedatectl show -p Timezone --value 2>/dev/null || echo '-'",
+        "timeout 5 timedatectl show-timesync -p FallbackNTPServers --value 2>/dev/null || echo '-'",
         "grep '^nameserver' /etc/resolv.conf 2>/dev/null | awk '{print \$2}' || echo '-'",
         "free -h 2>/dev/null | grep Swap || echo '-'",
         "date '+%Y-%m-%d %H:%M:%S'",
       ].join("; echo '\$__SEP__'; ");
-      final res = await ssh.execute(cmd);
+      final res = await ssh
+          .execute(cmd)
+          .timeout(
+            const Duration(seconds: 25),
+            onTimeout: () {
+              return const SshResult(exitCode: -1, stderr: '读取超时');
+            },
+          );
       final parts = res.stdout.split('\$__SEP__');
       if (!mounted) return;
       setState(() {

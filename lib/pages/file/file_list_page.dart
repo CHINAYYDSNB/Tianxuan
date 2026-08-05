@@ -26,7 +26,6 @@ class FileListPage extends ConsumerStatefulWidget {
 }
 
 class _FileListPageState extends ConsumerState<FileListPage> {
-  bool _showSearch = false;
   bool _multiSelect = false;
   final _searchCtrl = TextEditingController();
 
@@ -36,12 +35,62 @@ class _FileListPageState extends ConsumerState<FileListPage> {
     super.dispose();
   }
 
+  void _showSortMenu(BuildContext context) {
+    final notifier = ref.read(fileListProvider.notifier);
+    final by = notifier.sortBy;
+    final order = notifier.sortOrder;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        Widget item(String label, String? value) {
+          final selected = by == value;
+          return ListTile(
+            title: Text(label),
+            trailing: selected
+                ? Icon(
+                    order == 'desc' ? Icons.arrow_downward : Icons.arrow_upward,
+                    size: 18,
+                  )
+                : null,
+            selected: selected,
+            onTap: () {
+              // 同一字段再点切换升降序
+              final newOrder = selected && order == 'asc' ? 'desc' : 'asc';
+              notifier.setSort(value, newOrder);
+              Navigator.pop(ctx);
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  '排序方式',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              item('按名称排序', 'name'),
+              item('按修改日期排序', 'mtime'),
+              item('按大小排序', 'size'),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 系统返回键：
     //  - 子目录 → 返回上一级文件夹
     //  - 根目录 → 内嵌时切回概览 tab；独立时正常退出
     final currentPath = ref.watch(currentPathProvider);
+    final showSearch = ref.watch(fileSearchActiveProvider);
     return PopScope(
       canPop: widget.onRootBack == null && currentPath == '/',
       onPopInvokedWithResult: (didPop, _) {
@@ -58,7 +107,7 @@ class _FileListPageState extends ConsumerState<FileListPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: _showSearch
+          title: showSearch
               ? TextField(
                   controller: _searchCtrl,
                   autofocus: true,
@@ -74,8 +123,15 @@ class _FileListPageState extends ConsumerState<FileListPage> {
               : const Text('文件管理'),
           actions: [
             IconButton(
-              icon: Icon(_showSearch ? Icons.search_off : Icons.search),
-              onPressed: () => setState(() => _showSearch = !_showSearch),
+              icon: const Icon(Icons.sort),
+              tooltip: '排序',
+              onPressed: () => _showSortMenu(context),
+            ),
+            IconButton(
+              icon: Icon(showSearch ? Icons.search_off : Icons.search),
+              onPressed: () =>
+                  ref.read(fileSearchActiveProvider.notifier).state =
+                      !showSearch,
             ),
             if (_multiSelect)
               IconButton(
@@ -116,7 +172,7 @@ class _FileListPageState extends ConsumerState<FileListPage> {
         ),
         body: FileListBody(
           initialPath: widget.initialPath,
-          showSearch: _showSearch,
+          showSearch: showSearch,
           searchCtrl: _searchCtrl,
           multiSelect: _multiSelect,
           onMultiSelectChanged: (v) => setState(() => _multiSelect = v),

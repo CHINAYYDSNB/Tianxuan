@@ -214,7 +214,7 @@ ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
       primary: primary,
       secondary: primary,
     ),
-    scaffoldBackgroundColor: scaffold,
+    scaffoldBackgroundColor: Colors.transparent,
     canvasColor: darkText ? const Color(0xFF24262A) : cardColor,
     appBarTheme: AppBarTheme(
       backgroundColor: scaffold,

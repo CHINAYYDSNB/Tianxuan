@@ -75,11 +75,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                           icon: Icons.dns_outlined,
                           activeIcon: Icons.dns,
                           label: '服务器',
+                          activeColor: Color(0xFF1976D2),
                         ),
                         AnimatedNavItem(
                           icon: Icons.settings_outlined,
                           activeIcon: Icons.settings,
                           label: '设置',
+                          activeColor: Color(0xFF7B61FF),
                         ),
                       ],
                     ),

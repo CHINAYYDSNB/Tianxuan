@@ -7,6 +7,9 @@ import '../services/file_service.dart';
 /// 当前浏览路径
 final currentPathProvider = StateProvider<String>((_) => '/');
 
+/// 文件列表搜索栏是否展开（跨 tab 切换持久化）
+final fileSearchActiveProvider = StateProvider<bool>((_) => false);
+
 /// 文件列表 (依赖 currentPathProvider)
 final fileListProvider =
     AsyncNotifierProvider<FileListNotifier, FileListResult>(
@@ -18,6 +21,9 @@ class FileListNotifier extends AsyncNotifier<FileListResult> {
   String? _sortOrder;
   String? _search;
 
+  String? get sortBy => _sortBy;
+  String? get sortOrder => _sortOrder;
+
   FileService get _svc => ref.watch(fileServiceProvider);
 
   @override
@@ -27,12 +33,45 @@ class FileListNotifier extends AsyncNotifier<FileListResult> {
   }
 
   Future<FileListResult> _load(String path) async {
-    return _svc.list(
+    final result = await _svc.list(
       path: path,
       sortBy: _sortBy,
       sortOrder: _sortOrder,
       search: _search,
     );
+    // 客户端排序 + 文件夹永远置顶（跨 API/SSH 结果一致）
+    if (_sortBy != null) {
+      final sorted = _sortItems(result.items);
+      return FileListResult(items: sorted, total: result.total);
+    }
+    // 无排序时也保证文件夹置顶
+    return FileListResult(items: _dirsFirst(result.items), total: result.total);
+  }
+
+  /// 文件夹优先，内部按当前排序
+  List<FileItem> _sortItems(List<FileItem> items) {
+    final dirs = items.where((e) => e.isDir).toList();
+    final files = items.where((e) => !e.isDir).toList();
+    Comparator<FileItem> cmp = switch (_sortBy) {
+      'name' => (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      'mtime' => (a, b) => (a.modTime ?? '').compareTo(b.modTime ?? ''),
+      'size' => (a, b) => a.size.compareTo(b.size),
+      _ => (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    };
+    if (_sortOrder == 'desc') {
+      final c = cmp;
+      cmp = (a, b) => c(b, a);
+    }
+    dirs.sort(cmp);
+    files.sort(cmp);
+    return [...dirs, ...files];
+  }
+
+  /// 无排序时保持原顺序，仅文件夹置顶
+  List<FileItem> _dirsFirst(List<FileItem> items) {
+    final dirs = items.where((e) => e.isDir).toList();
+    final files = items.where((e) => !e.isDir).toList();
+    return [...dirs, ...files];
   }
 
   /// 刷新当前目录

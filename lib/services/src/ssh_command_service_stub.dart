@@ -121,7 +121,8 @@ class SshCommandService {
       final outSub = session.stdout.listen((d) => outBuf.write(utf8.decode(d)));
       final errSub = session.stderr.listen((d) => errBuf.write(utf8.decode(d)));
 
-      await session.done;
+      // 默认 20s 超时，防止挂起命令永久阻塞调用方
+      await session.done.timeout(timeout ?? const Duration(seconds: 20));
       final exitCode = session.exitCode ?? 0;
       await outSub.cancel();
       await errSub.cancel();
@@ -135,6 +136,9 @@ class SshCommandService {
       // 连接已断开（transport closed）时标记，供上层自动重连
       if (_client?.isClosed == true) {
         _connected = false;
+      }
+      if (e is TimeoutException) {
+        return const SshResult(exitCode: -1, stderr: '命令执行超时');
       }
       return SshResult(exitCode: -1, stderr: e.toString());
     }

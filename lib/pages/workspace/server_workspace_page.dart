@@ -25,16 +25,42 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
   final _navigators = List.generate(6, (_) => GlobalKey<NavigatorState>());
 
   static const _tabs = [
-    (icon: Icons.dashboard_outlined, active: Icons.dashboard, label: '概览'),
-    (icon: Icons.folder_outlined, active: Icons.folder, label: '文件'),
+    (
+      icon: Icons.dashboard_outlined,
+      active: Icons.dashboard,
+      label: '概览',
+      color: Color(0xFF1976D2),
+    ),
+    (
+      icon: Icons.folder_outlined,
+      active: Icons.folder,
+      label: '文件',
+      color: Color(0xFFF57C00),
+    ),
     (
       icon: Icons.view_in_ar_outlined,
       active: Icons.view_in_ar,
       label: 'Docker',
+      color: Color(0xFF00838F),
     ),
-    (icon: Icons.language_outlined, active: Icons.language, label: '网站'),
-    (icon: Icons.apps_outlined, active: Icons.apps, label: '更多'),
-    (icon: Icons.settings_outlined, active: Icons.settings, label: '设置'),
+    (
+      icon: Icons.language_outlined,
+      active: Icons.language,
+      label: '网站',
+      color: Color(0xFF43A047),
+    ),
+    (
+      icon: Icons.apps_outlined,
+      active: Icons.apps,
+      label: '更多',
+      color: Color(0xFF7B61FF),
+    ),
+    (
+      icon: Icons.settings_outlined,
+      active: Icons.settings,
+      label: '设置',
+      color: Color(0xFF7B61FF),
+    ),
   ];
 
   void _onTabTap(int i) {
@@ -117,9 +143,7 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
                         Icon(
                           selected ? t.active : t.icon,
                           size: 22,
-                          color: selected
-                              ? const Color(0xFF0C1014)
-                              : const Color(0xFF9AA1A9),
+                          color: selected ? t.color : const Color(0xFF9AA1A9),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -129,9 +153,7 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
                             fontWeight: selected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
-                            color: selected
-                                ? const Color(0xFF0C1014)
-                                : const Color(0xFF9AA1A9),
+                            color: selected ? t.color : const Color(0xFF9AA1A9),
                           ),
                         ),
                       ],

@@ -14,18 +14,18 @@ void main() {
       }
     });
 
-    test('包含简约黑默认主题', () {
+    test('包含经典黑白默认主题', () {
       final tianxuan = appColorSchemes.firstWhere((s) => s.id == 'tianxuan');
-      expect(tianxuan.name, '简约黑');
+      expect(tianxuan.name, '经典黑白');
     });
   });
 
   group('AppTheme', () {
-    test('默认主题是简约黑 + 纯色背景', () {
+    test('默认主题是经典黑白 + 纯色背景', () {
       const theme = AppTheme();
       expect(theme.schemeId, 'tianxuan');
       expect(theme.backgroundType, AppBackgroundType.solid);
-      expect(theme.scheme.name, '简约黑');
+      expect(theme.scheme.name, '经典黑白');
     });
 
     test('copyWith 更新字段', () {
@@ -51,9 +51,9 @@ void main() {
       expect(restored.backgroundBlur, 0.3);
     });
 
-    test('未知 schemeId 回退到简约黑', () {
+    test('未知 schemeId 回退到经典黑白', () {
       final theme = AppTheme.fromJson({'schemeId': 'unknown'});
-      expect(theme.scheme.name, '简约黑');
+      expect(theme.scheme.name, '经典黑白');
     });
 
     test('未知 backgroundType 回退到 solid', () {

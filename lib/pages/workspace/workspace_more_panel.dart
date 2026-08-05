@@ -10,12 +10,14 @@ class MoreEntry {
   final String title;
   final IconData icon;
   final WidgetBuilder builder;
+  final Color color;
 
   const MoreEntry({
     required this.id,
     required this.title,
     required this.icon,
     required this.builder,
+    this.color = const Color(0xFF0C1014),
   });
 }
 
@@ -25,12 +27,14 @@ final List<MoreEntry> kMoreEntries = [
     id: 'ssh',
     title: 'SSH 终端',
     icon: Icons.terminal,
+    color: const Color(0xFF00838F),
     builder: (_) => const SshHomePage(),
   ),
   MoreEntry(
     id: 'scripts',
     title: '脚本商店',
     icon: Icons.article_outlined,
+    color: const Color(0xFF7B61FF),
     builder: (_) => const ScriptStorePage(),
   ),
 ];
@@ -183,7 +187,7 @@ class _MorePanelState extends State<_MorePanel> {
                                 size: 24,
                                 color: _editing && !on
                                     ? const Color(0xFFC0C5CC)
-                                    : const Color(0xFF0C1014),
+                                    : e.color,
                               ),
                             ),
                             if (_editing)

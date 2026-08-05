@@ -117,6 +117,7 @@ class SettingsPage extends ConsumerWidget {
                   icon: Icons.cloud_outlined,
                   title: '数据备份',
                   subtitle: '备份/恢复服务器配置',
+                  color: const Color(0xFF1976D2),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CloudBackupPage()),
@@ -126,6 +127,7 @@ class SettingsPage extends ConsumerWidget {
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI 配置',
                   subtitle: 'OpenAI 兼容接口设置',
+                  color: const Color(0xFF7B61FF),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AiConfigPage()),
@@ -135,6 +137,7 @@ class SettingsPage extends ConsumerWidget {
                   icon: Icons.palette_outlined,
                   title: '个性化',
                   subtitle: '主题配色、背景',
+                  color: const Color(0xFFF57C00),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const PersonalizePage()),
@@ -228,12 +231,14 @@ class _SettingRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
+  final Color? color;
 
   const _SettingRow({
     required this.icon,
     required this.title,
     this.subtitle,
     required this.onTap,
+    this.color,
   });
 
   @override
@@ -245,7 +250,7 @@ class _SettingRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: const Color(0xFF0C1014)),
+            Icon(icon, size: 22, color: color ?? const Color(0xFF0C1014)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

@@ -107,10 +107,22 @@ class SshDatabaseService implements DatabaseService {
 
     switch (inst.type) {
       case DbType.mysql || DbType.mariadb:
-        final inner = '$env mysql -u$user$hostArg -e "$innerCmd" -N';
-        return insideDocker ? inner : inner;
+        // 动态查找 mysql；找不到则尝试 mysql/maria 容器 docker exec
+        return '$env M="\$(command -v mysql || find /usr/bin /usr/local/bin -name mysql 2>/dev/null | head -1)"; '
+            'if [ -n "\$M" ]; then "\$M" -u$user$hostArg -e "$innerCmd" -N; '
+            'else C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -iE \'mysql|maria\' | head -1)"; '
+            'if [ -n "\$C" ]; then '
+            "MYSQL_PWD='${inst.password?.replaceAll("'", "'\\''")}' docker exec \"\$C\" mysql -u$user -e \"$innerCmd\" -N; "
+            'else echo "mysql not found"; fi; fi';
       case DbType.postgresql:
-        return '$env psql -U $user$hostArg -c "$innerCmd" -t -A';
+        // 动态查找 psql（原生安装可能在 /usr/lib/postgresql/*/bin/psql）；
+        // 找不到则尝试 postgres 容器 docker exec
+        return '$env P="\$(command -v psql || find /usr/lib/postgresql -name psql 2>/dev/null | tail -1)"; '
+            'if [ -n "\$P" ]; then "\$P" -U $user$hostArg -c "$innerCmd" -t -A; '
+            'else C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -i postgres | head -1)"; '
+            'if [ -n "\$C" ]; then '
+            "PGPASSWORD='${inst.password?.replaceAll("'", "'\\''")}' docker exec \"\$C\" psql -U $user -c \"$innerCmd\" -t -A; "
+            'else echo "psql not found"; fi; fi';
       case DbType.redis:
         final auth = inst.password != null && inst.password!.isNotEmpty
             ? " -a '${inst.password}' --no-auth-warning"

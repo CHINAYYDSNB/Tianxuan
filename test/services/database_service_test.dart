@@ -192,7 +192,10 @@ void main() {
                 () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
               ).captured.first
               as String;
-      expect(cmd, contains('psql'));
+      expect(cmd, contains('command -v psql'));
+      expect(cmd, contains('find /usr/lib/postgresql -name psql'));
+      expect(cmd, contains('docker exec'));
+      expect(cmd, contains("PGPASSWORD='p'"));
     });
 
     test('redis listDatabases 解析数量', () async {

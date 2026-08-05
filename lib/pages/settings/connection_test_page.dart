@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/ssh_connection_provider.dart';
 import '../../api/client.dart';
 import '../../services/storage_service.dart';
 
@@ -17,6 +18,12 @@ class _ConnectionTestPageState extends ConsumerState<ConnectionTestPage> {
   int? _latencyMs;
   bool? _apiOk;
   String? _error;
+
+  // SSH 检测
+  bool _sshTesting = false;
+  int? _sshLatencyMs;
+  bool? _sshOk;
+  String? _sshError;
 
   @override
   void initState() {
@@ -54,6 +61,42 @@ class _ConnectionTestPageState extends ConsumerState<ConnectionTestPage> {
         _apiOk = false;
         _error = e.toString();
         _testing = false;
+      });
+    }
+  }
+
+  Future<void> _runSshTest() async {
+    final ssh = ref.read(sshServiceProvider);
+    if (ssh == null) {
+      setState(() {
+        _sshOk = false;
+        _sshError = 'SSH 未连接，请先在服务器设置中配置 SSH';
+      });
+      return;
+    }
+    setState(() {
+      _sshTesting = true;
+      _sshError = null;
+      _sshOk = null;
+      _sshLatencyMs = null;
+    });
+    try {
+      final start = DateTime.now();
+      final res = await ssh.execute('echo pong');
+      final ms = DateTime.now().difference(start).inMilliseconds;
+      if (!mounted) return;
+      setState(() {
+        _sshLatencyMs = ms;
+        _sshOk = res.isSuccess;
+        _sshError = res.isSuccess ? null : res.stderr.trim();
+        _sshTesting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sshOk = false;
+        _sshError = e.toString();
+        _sshTesting = false;
       });
     }
   }
@@ -154,10 +197,84 @@ class _ConnectionTestPageState extends ConsumerState<ConnectionTestPage> {
                                 ),
                               )
                             : const Icon(Icons.play_arrow),
-                        label: Text(_testing ? '测试中...' : '运行检测'),
+                        label: Text(_testing ? '测试中...' : '运行 API 检测'),
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // SSH 连接与延迟检测
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.terminal, size: 20),
+                      const SizedBox(width: 8),
+                      Text('SSH 连接', style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_sshLatencyMs != null) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          _sshOk == true ? Icons.check_circle : Icons.error,
+                          color: _sshOk == true ? Colors.green : Colors.red,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _sshOk == true ? 'SSH 连接正常' : 'SSH 连接异常',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_sshOk == true)
+                      Text(
+                        'SSH 延迟: $_sshLatencyMs ms',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    if (_sshError != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _sshError!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _sshTesting ? null : _runSshTest,
+                      icon: _sshTesting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.speed_outlined),
+                      label: Text(_sshTesting ? '检测中...' : '检测 SSH 连接与延迟'),
+                    ),
+                  ),
                 ],
               ),
             ),

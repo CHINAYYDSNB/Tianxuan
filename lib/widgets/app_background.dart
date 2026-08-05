@@ -15,6 +15,7 @@ class AppBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
+    final darkText = ref.watch(effectiveDarkTextProvider);
     final scheme = theme.scheme;
 
     Widget? bgImage;
@@ -54,7 +55,7 @@ class AppBackground extends ConsumerWidget {
 
     // 有背景图时叠加模糊 + 遮罩保证可读性
     // 暗色主题（darkText）用深色遮罩 + 白字，亮色用浅色遮罩 + 黑字
-    final maskColor = theme.darkText
+    final maskColor = darkText
         ? Colors.black.withValues(alpha: 0.55)
         : Colors.white.withValues(alpha: 0.82);
     return Stack(

@@ -79,7 +79,12 @@ class AppTheme {
   final String? backgroundAsset; // 内置图名
   final String? backgroundPath; // 用户自定义图路径
   final double backgroundBlur; // 背景模糊强度 0-1
-  final bool darkText;
+
+  /// 手动指定前景色模式；null 表示自动（按背景亮度检测）
+  final bool? darkText;
+
+  /// 背景图平均亮度（0-1，运行时计算，不持久化）
+  final double? backgroundLuminance;
 
   const AppTheme({
     this.schemeId = 'tianxuan',
@@ -87,7 +92,8 @@ class AppTheme {
     this.backgroundAsset,
     this.backgroundPath,
     this.backgroundBlur = 0.0,
-    this.darkText = false,
+    this.darkText,
+    this.backgroundLuminance,
   });
 
   AppColorScheme get scheme {
@@ -104,6 +110,7 @@ class AppTheme {
     String? backgroundPath,
     double? backgroundBlur,
     bool? darkText,
+    double? backgroundLuminance,
   }) {
     return AppTheme(
       schemeId: schemeId ?? this.schemeId,
@@ -112,6 +119,7 @@ class AppTheme {
       backgroundPath: backgroundPath ?? this.backgroundPath,
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
       darkText: darkText ?? this.darkText,
+      backgroundLuminance: backgroundLuminance ?? this.backgroundLuminance,
     );
   }
 
@@ -121,7 +129,7 @@ class AppTheme {
     'backgroundAsset': backgroundAsset,
     'backgroundPath': backgroundPath,
     'backgroundBlur': backgroundBlur,
-    'darkText': darkText,
+    if (darkText != null) 'darkText': darkText,
   };
 
   factory AppTheme.fromJson(Map<String, dynamic> json) {
@@ -136,7 +144,7 @@ class AppTheme {
       backgroundAsset: json['backgroundAsset'] as String?,
       backgroundPath: json['backgroundPath'] as String?,
       backgroundBlur: (json['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
-      darkText: json['darkText'] as bool? ?? false,
+      darkText: json['darkText'] as bool?,
     );
   }
 }

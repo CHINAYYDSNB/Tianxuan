@@ -15,7 +15,11 @@ import 'file_image_preview_page.dart';
 class FileListPage extends ConsumerStatefulWidget {
   final String? initialPath;
 
-  const FileListPage({super.key, this.initialPath});
+  /// 工作台内嵌时传入：根目录返回时切回概览 tab（而非 pop 退出）
+  /// 独立使用时不传：根目录返回正常退出
+  final VoidCallback? onRootBack;
+
+  const FileListPage({super.key, this.initialPath, this.onRootBack});
 
   @override
   ConsumerState<FileListPage> createState() => _FileListPageState();
@@ -34,16 +38,22 @@ class _FileListPageState extends ConsumerState<FileListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 系统返回键：非根目录时返回上一级
+    // 系统返回键：
+    //  - 子目录 → 返回上一级文件夹
+    //  - 根目录 → 内嵌时切回概览 tab；独立时正常退出
     final currentPath = ref.watch(currentPathProvider);
     return PopScope(
-      canPop: currentPath == '/',
+      canPop: widget.onRootBack == null && currentPath == '/',
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        final crumbs = buildBreadcrumbs(currentPath);
-        if (crumbs.length >= 2) {
-          final parent = crumbs[crumbs.length - 2].path;
-          ref.read(currentPathProvider.notifier).state = parent;
+        if (currentPath != '/') {
+          final crumbs = buildBreadcrumbs(currentPath);
+          if (crumbs.length >= 2) {
+            final parent = crumbs[crumbs.length - 2].path;
+            ref.read(currentPathProvider.notifier).state = parent;
+          }
+        } else if (widget.onRootBack != null) {
+          widget.onRootBack!();
         }
       },
       child: Scaffold(

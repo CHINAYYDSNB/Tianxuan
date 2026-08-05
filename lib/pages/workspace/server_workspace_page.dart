@@ -4,10 +4,8 @@ import '../dashboard/dashboard_page.dart';
 import '../file/file_list_page.dart';
 import '../docker/docker_home_page.dart';
 import '../website/website_list_page.dart';
-import '../ssh/ssh_home_page.dart';
 import '../settings/ssh_config_page.dart';
 import '../settings/connection_test_page.dart';
-import '../../providers/ssh_connection_provider.dart';
 import 'server_system_page.dart';
 import 'server_cronjob_page.dart';
 import 'workspace_more_panel.dart';
@@ -48,6 +46,15 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
     setState(() => _tab = i);
   }
 
+  /// 返回键：非概览 tab 先切回概览（上一级菜单），概览才退出工作台
+  void _handleTabBack() {
+    if (_tab == 0) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _tab = 0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
@@ -58,26 +65,32 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
           _TabNavigator(
             key: _navigators[0],
             builder: (_) => const DashboardPage(),
+            onRootBack: _handleTabBack,
           ),
           _TabNavigator(
             key: _navigators[1],
-            builder: (_) => const FileListPage(),
+            builder: (_) => FileListPage(onRootBack: _handleTabBack),
+            onRootBack: _handleTabBack,
           ),
           _TabNavigator(
             key: _navigators[2],
             builder: (_) => const DockerHomePage(),
+            onRootBack: _handleTabBack,
           ),
           _TabNavigator(
             key: _navigators[3],
             builder: (_) => const WebsiteListPage(),
+            onRootBack: _handleTabBack,
           ),
           _TabNavigator(
             key: _navigators[4],
             builder: (_) => const MoreTabPage(),
+            onRootBack: _handleTabBack,
           ),
           _TabNavigator(
             key: _navigators[5],
             builder: (_) => const ServerSettingsTab(),
+            onRootBack: _handleTabBack,
           ),
         ],
       ),
@@ -135,14 +148,29 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
 }
 
 /// 每个 tab 的独立 Navigator 容器
+/// 根 route 包 PopScope(canPop:false)：tab 根不直接 pop（否则内层栈空白屏），
+/// 返回时通过 [onRootBack] 交给工作台处理（切回概览 / 退出）。
 class _TabNavigator extends StatelessWidget {
   final WidgetBuilder builder;
-  const _TabNavigator({super.key, required this.builder});
+  final VoidCallback onRootBack;
+  const _TabNavigator({
+    super.key,
+    required this.builder,
+    required this.onRootBack,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Navigator(
-      onGenerateRoute: (_) => MaterialPageRoute(builder: builder),
+      onGenerateRoute: (_) => MaterialPageRoute(
+        builder: (_) => PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) onRootBack();
+          },
+          child: builder(context),
+        ),
+      ),
     );
   }
 }
@@ -175,39 +203,6 @@ class ServerSettingsTab extends ConsumerStatefulWidget {
 }
 
 class _ServerSettingsTabState extends ConsumerState<ServerSettingsTab> {
-  int? _sshLatencyMs;
-  bool _testingSsh = false;
-
-  Future<void> _testSshLatency() async {
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('SSH 未连接，请先配置 SSH 连接')));
-      return;
-    }
-    setState(() {
-      _testingSsh = true;
-      _sshLatencyMs = null;
-    });
-    try {
-      final start = DateTime.now();
-      final res = await ssh.execute('echo pong');
-      final ms = DateTime.now().difference(start).inMilliseconds;
-      if (!mounted) return;
-      setState(() {
-        _testingSsh = false;
-        _sshLatencyMs = res.isSuccess ? ms : -1;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _testingSsh = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('检测失败: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,28 +222,10 @@ class _ServerSettingsTabState extends ConsumerState<ServerSettingsTab> {
           _SettingTile(
             icon: Icons.wifi_find_outlined,
             title: '连接检测',
-            subtitle: '测试与服务器的连接状态',
+            subtitle: '测试 API 与 SSH 连接状态和延迟',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ConnectionTestPage()),
-            ),
-          ),
-          _SettingTile(
-            icon: Icons.speed_outlined,
-            title: 'SSH 延迟检测',
-            subtitle: _sshLatencyMs != null
-                ? (_sshLatencyMs! >= 0 ? '延迟: $_sshLatencyMs ms' : 'SSH 连接异常')
-                : (_testingSsh ? '检测中...' : '测试 SSH 往返延迟'),
-            trailing: Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
-            onTap: _testingSsh ? null : _testSshLatency,
-          ),
-          _SettingTile(
-            icon: Icons.terminal_outlined,
-            title: 'SSH 终端',
-            subtitle: '打开远程终端连接',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SshHomePage()),
             ),
           ),
           _SettingTile(
@@ -280,14 +257,12 @@ class _SettingTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
-  final Widget? trailing;
 
   const _SettingTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     this.onTap,
-    this.trailing,
   });
 
   @override
@@ -297,9 +272,7 @@ class _SettingTile extends StatelessWidget {
         leading: Icon(icon, size: 22),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing:
-            trailing ??
-            const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+        trailing: const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
         onTap: onTap,
       ),
     );

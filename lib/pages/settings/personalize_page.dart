@@ -111,14 +111,13 @@ class PersonalizePage extends ConsumerWidget {
           if (theme.backgroundType == AppBackgroundType.custom)
             _customBackground(context, theme, notifier),
 
-          // 暗色模式（深色背景用白字）
+          // 文字颜色自动适配（按背景亮度自动切换黑白）
           const SizedBox(height: 24),
-          SwitchListTile(
+          const ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('暗色模式'),
-            subtitle: const Text('深色背景时使用白色文字'),
-            value: theme.darkText,
-            onChanged: (v) => notifier.setDarkText(v),
+            leading: Icon(Icons.brightness_auto_outlined),
+            title: Text('文字颜色自动适配'),
+            subtitle: Text('亮色背景用黑字，暗色背景用白字'),
           ),
 
           // 模糊强度

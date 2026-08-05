@@ -20,11 +20,15 @@ class OnePanelApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
+    final darkText = ref.watch(effectiveDarkTextProvider);
     return MaterialApp(
       title: 'Tianxuan',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(theme, darkText: theme.darkText),
-      home: AppBackground(child: const InitPage()),
+      theme: buildAppTheme(theme, darkText: darkText),
+      // 背景容器覆盖所有路由（含 push 出的子页面）
+      builder: (context, child) =>
+          AppBackground(child: child ?? const SizedBox()),
+      home: const InitPage(),
       routes: {'/home': (context) => const HomePage()},
     );
   }

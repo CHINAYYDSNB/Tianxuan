@@ -30,7 +30,7 @@ class PersonalizePage extends ConsumerWidget {
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             childAspectRatio: 1.2,
-            children: appColorSchemes.map((s) {
+            children: appColorSchemes.where((s) => s.id != 'tianxuan').map((s) {
               final selected = theme.schemeId == s.id;
               return InkWell(
                 borderRadius: BorderRadius.circular(12),

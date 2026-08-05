@@ -153,6 +153,29 @@ class StorageService {
   Future<String?> getServerSshKey(String serverId) =>
       _read('srv_ssh_key_$serverId');
 
+  // ─── Database instances (metadata in prefs, passwords encrypted) ───
+
+  Future<void> saveDatabaseInstancesJson(String json) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('db_instances', json);
+  }
+
+  Future<String?> getDatabaseInstancesJson() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString('db_instances');
+  }
+
+  /// 加密保存单个数据库实例密码
+  Future<void> saveDatabasePass(String id, String? pass) async {
+    if (pass == null || pass.isEmpty) {
+      await _delete('db_pass_$id');
+    } else {
+      await _write('db_pass_$id', pass);
+    }
+  }
+
+  Future<String?> getDatabasePass(String id) => _read('db_pass_$id');
+
   // ─── First-launch migration (SharedPreferences → secure storage) ───
 
   Future<void> migrateIfNeeded() async {

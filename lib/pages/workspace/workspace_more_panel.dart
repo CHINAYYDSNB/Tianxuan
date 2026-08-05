@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../script_store/script_store_page.dart';
 import '../ssh/ssh_home_page.dart';
+import '../database/database_home_page.dart';
 import 'package:tianxuan/theme/app_colors.dart';
 
 /// 更多功能入口定义
@@ -37,6 +38,13 @@ final List<MoreEntry> kMoreEntries = [
     icon: Icons.article_outlined,
     color: const Color(0xFF7B61FF),
     builder: (_) => const ScriptStorePage(),
+  ),
+  MoreEntry(
+    id: 'database',
+    title: '数据库',
+    icon: Icons.storage_outlined,
+    color: const Color(0xFF1976D2),
+    builder: (_) => const DatabaseHomePage(),
   ),
 ];
 

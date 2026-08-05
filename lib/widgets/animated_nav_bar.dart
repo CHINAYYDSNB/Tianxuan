@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class AnimatedNavItem {
   final IconData icon;
@@ -75,7 +76,7 @@ class AnimatedNavBar extends StatelessWidget {
                             children: [
                               AnimatedScale(
                                 scale: isSelected ? 1.15 : 1.0,
-                                duration: const Duration(milliseconds: 200),
+                                duration: Duration(milliseconds: 200),
                                 child: Icon(
                                   isSelected
                                       ? items[i].activeIcon
@@ -83,11 +84,11 @@ class AnimatedNavBar extends StatelessWidget {
                                   size: 22,
                                   color: isSelected
                                       ? (items[i].activeColor ??
-                                            const Color(0xFF0C1014))
-                                      : const Color(0xFF686F78),
+                                            AppColors.textMain)
+                                      : AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 items[i].label,
                                 style: TextStyle(
@@ -96,8 +97,8 @@ class AnimatedNavBar extends StatelessWidget {
                                       ? FontWeight.w600
                                       : FontWeight.normal,
                                   color: isSelected
-                                      ? const Color(0xFF0C1014)
-                                      : const Color(0xFF686F78),
+                                      ? AppColors.textMain
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                             ],

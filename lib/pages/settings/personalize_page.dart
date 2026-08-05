@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:tianxuan/theme/app_colors.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,13 +112,14 @@ class PersonalizePage extends ConsumerWidget {
           if (theme.backgroundType == AppBackgroundType.custom)
             _customBackground(context, theme, notifier),
 
-          // 文字颜色自动适配（按背景亮度自动切换黑白）
+          // 深色模式开关
           const SizedBox(height: 24),
-          const ListTile(
+          SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.brightness_auto_outlined),
-            title: Text('文字颜色自动适配'),
-            subtitle: Text('亮色背景用黑字，暗色背景用白字'),
+            title: const Text('深色模式'),
+            subtitle: const Text('全局黑底白字'),
+            value: theme.darkText ?? false,
+            onChanged: (v) => notifier.setDarkText(v),
           ),
 
           // 模糊强度
@@ -146,13 +148,13 @@ class PersonalizePage extends ConsumerWidget {
 
   Widget _sectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF686F78),
+          color: AppColors.textSecondary,
         ),
       ),
     );

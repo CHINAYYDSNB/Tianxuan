@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../file/file_list_page.dart';
 import '../ssh/ssh_home_page.dart';
 import '../docker/docker_home_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class ManagementPage extends StatelessWidget {
   const ManagementPage({super.key});
@@ -58,8 +59,8 @@ class ManagementPage extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: Icon(icon),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w500)),
+        trailing: Icon(Icons.chevron_right, color: AppColors.iconFaint),
         onTap: onTap,
       ),
     );

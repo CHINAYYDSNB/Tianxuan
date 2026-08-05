@@ -4,6 +4,7 @@ import '../../providers/container_provider.dart';
 import '../../models/container.dart' as models;
 import 'container_detail_page.dart';
 import 'container_log_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class ContainerListPage extends ConsumerWidget {
   const ContainerListPage({super.key});
@@ -51,24 +52,20 @@ class _ContainerListView extends StatelessWidget {
     if (list.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.dns_outlined,
-                size: 48,
-                color: Color(0xFFAAB4BF),
-              ),
-              const SizedBox(height: 16),
-              const Text(
+              Icon(Icons.dns_outlined, size: 48, color: AppColors.iconFaint),
+              SizedBox(height: 16),
+              Text(
                 '暂无容器',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 '通过 1Panel API 拉取；未获取到容器列表',
-                style: TextStyle(color: Color(0xFF686F78)),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -101,7 +98,7 @@ class _ContainerTile extends ConsumerWidget {
       'running' => Colors.green,
       'exited' || 'stopped' => Colors.red,
       'paused' => Colors.orange,
-      _ => const Color(0xFFAAB4BF),
+      _ => AppColors.iconFaint,
     };
 
     return Card(

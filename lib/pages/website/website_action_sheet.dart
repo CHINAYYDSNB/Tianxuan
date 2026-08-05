@@ -5,6 +5,7 @@ import '../../models/website.dart';
 import '../../providers/website_provider.dart';
 import '../file/file_list_page.dart';
 import 'website_sheets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 点击网站后弹出的操作面板
 /// UI 风格：品牌渐变头部 + 基础操作网格宫格 + 配置项分组折叠（与 Mono-Dash 的列表平铺明显区分）
@@ -402,7 +403,7 @@ class WebsiteActionSheet extends ConsumerWidget {
   ) {
     return ListTile(
       dense: true,
-      leading: Icon(icon, size: 20, color: const Color(0xFF686F78)),
+      leading: Icon(icon, size: 20, color: AppColors.textSecondary),
       title: Text(title, style: const TextStyle(fontSize: 14)),
       trailing: const Icon(Icons.chevron_right, size: 16),
       onTap: onTap,

@@ -5,6 +5,7 @@ import '../../providers/website_provider.dart';
 import '../../api/website_api.dart';
 import '../../api/file_api.dart';
 import '../file/file_list_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 // import 'package:open_file/open_file.dart'; // 添加后用于外部 App 编辑
 
 class WebsiteDetailPage extends ConsumerWidget {
@@ -272,7 +273,7 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
       'Running' => (Colors.green, '运行中'),
-      'Stopped' => (const Color(0xFFAAB4BF), '已停止'),
+      'Stopped' => (AppColors.iconFaint, '已停止'),
       'Error' => (Colors.red, '异常'),
       _ => (Colors.orange, status),
     };
@@ -391,7 +392,7 @@ class _OverviewTab extends StatelessWidget {
 
   Widget _infoTile(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -399,7 +400,7 @@ class _OverviewTab extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
@@ -499,13 +500,13 @@ class _SslTabState extends ConsumerState<_SslTab> {
         final enable = data['enable'] == true;
         final ssl = data['SSL'] as Map? ?? {};
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           children: [
             Card(
               child: ListTile(
                 leading: Icon(
                   enable ? Icons.lock : Icons.lock_open,
-                  color: enable ? Colors.green : const Color(0xFFAAB4BF),
+                  color: enable ? Colors.green : AppColors.iconFaint,
                 ),
                 title: Text(enable ? 'HTTPS 已启用' : 'HTTPS 未启用'),
                 subtitle: Text(enable ? '证书已配置' : '点击下方按钮配置 SSL 证书'),
@@ -583,7 +584,7 @@ class _SslTabState extends ConsumerState<_SslTab> {
 
   Widget _info(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -591,7 +592,7 @@ class _SslTabState extends ConsumerState<_SslTab> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
@@ -645,27 +646,27 @@ class _LogTabState extends ConsumerState<_LogTab> {
                   _loadLog(reset: true);
                 },
               ),
-              const Spacer(),
+              Spacer(),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: Icon(Icons.refresh),
                 onPressed: () => _loadLog(reset: true),
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
+        Divider(height: 1),
         Expanded(
           child: _loading && _lines.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator())
               : _error != null && _lines.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: Color(0xFFAAB4BF),
+                        color: AppColors.iconFaint,
                       ),
                       const SizedBox(height: 8),
                       Text(_error!),

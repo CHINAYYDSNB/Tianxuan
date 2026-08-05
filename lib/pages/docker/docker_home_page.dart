@@ -3,6 +3,7 @@ import 'container_list_page.dart';
 import 'image_list_page.dart';
 import 'compose_list_page.dart';
 import 'docker_daemon_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class DockerHomePage extends StatelessWidget {
   const DockerHomePage({super.key});
@@ -85,11 +86,11 @@ class _DockerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Icon(icon, size: 22, color: color),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,17 +101,17 @@ class _DockerCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+              Icon(Icons.chevron_right, color: AppColors.iconFaint),
             ],
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/image_provider.dart';
 import '../../models/image.dart' as models;
+import 'package:tianxuan/theme/app_colors.dart';
 
 class ImageListPage extends ConsumerWidget {
   const ImageListPage({super.key});
@@ -50,7 +51,7 @@ class _ImageView extends ConsumerWidget {
       children: [
         // Action bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: Row(
             children: [
               Expanded(
@@ -60,45 +61,45 @@ class _ImageView extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.cleaning_services_outlined, size: 20),
+                icon: Icon(Icons.cleaning_services_outlined, size: 20),
                 tooltip: '清理废旧镜像',
                 onPressed: () => _confirmPrune(context, ref),
               ),
               FilledButton.tonalIcon(
                 onPressed: () => _showPullDialog(context, ref),
-                icon: const Icon(Icons.download, size: 18),
-                label: const Text('拉取'),
+                icon: Icon(Icons.download, size: 18),
+                label: Text('拉取'),
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
+        Divider(height: 1),
         // List
         Expanded(
           child: list.isEmpty
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(32),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.image_outlined,
                           size: 48,
-                          color: Color(0xFFAAB4BF),
+                          color: AppColors.iconFaint,
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        SizedBox(height: 16),
+                        Text(
                           '暂无镜像',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8),
+                        Text(
                           '通过 1Panel API 拉取；未获取到镜像列表',
-                          style: TextStyle(color: Color(0xFF686F78)),
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
                     ),

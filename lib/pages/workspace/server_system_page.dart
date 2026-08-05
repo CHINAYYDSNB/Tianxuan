@@ -1,10 +1,14 @@
+import 'dart:async';
+import 'package:tianxuan/theme/app_colors.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ssh_connection_provider.dart';
 import '../../services/ssh_command_service.dart';
 import '../settings/ssh_config_page.dart';
 
-/// 服务器系统设置页 — 全部通过 SSH 直接执行命令（不走 1Panel API）
+/// 服务器系统设置页 — 通过 SSH 直接执行命令（不走 1Panel API）。
+/// 使用 ref.watch 监听 SSH 连接状态：未连接时立即显示引导，不转圈。
 class ServerSystemPage extends ConsumerStatefulWidget {
   const ServerSystemPage({super.key});
 
@@ -25,68 +29,131 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
   String _serverTime = '';
   List<String> _dnsList = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
   Future<void> _load() async {
+    final ssh = ref.read(sshServiceProvider);
+    if (ssh == null) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'SSH 未连接';
+        });
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
     });
-    final ssh = ref.read(sshServiceProvider);
-    if (ssh == null) {
-      setState(() {
-        _loading = false;
-        _error = 'SSH 未连接';
-      });
-      return;
-    }
+    // 分步读取，每条命令独立超时，任一失败不影响其余
     try {
-      // 聚合读取系统信息（单次往返），每条命令 shell 层加 timeout 5 防挂起
-      final cmd = [
-        "hostname 2>/dev/null || echo '-'",
-        "cat /etc/timezone 2>/dev/null || timeout 5 timedatectl show -p Timezone --value 2>/dev/null || echo '-'",
-        "timeout 5 timedatectl show-timesync -p FallbackNTPServers --value 2>/dev/null || echo '-'",
-        "grep '^nameserver' /etc/resolv.conf 2>/dev/null | awk '{print \$2}' || echo '-'",
-        "free -h 2>/dev/null | grep Swap || echo '-'",
-        "date '+%Y-%m-%d %H:%M:%S'",
-      ].join("; echo '\$__SEP__'; ");
-      final res = await ssh
-          .execute(cmd)
-          .timeout(
-            const Duration(seconds: 25),
-            onTimeout: () {
-              return const SshResult(exitCode: -1, stderr: '读取超时');
-            },
-          );
-      final parts = res.stdout.split('\$__SEP__');
-      if (!mounted) return;
-      setState(() {
-        _hostname = parts.length > 0 ? parts[0].trim() : '-';
-        _timezone = parts.length > 1 ? parts[1].trim() : '-';
-        _ntp = parts.length > 2 ? parts[2].trim() : '-';
-        _dns = parts.length > 3 ? parts[3].trim() : '-';
-        _swap = parts.length > 4 ? parts[4].trim() : '-';
-        _serverTime = parts.length > 5 ? parts[5].trim() : '-';
-        _dnsList = _dns
-            .split(RegExp(r'\s+'))
-            .where((e) => e.isNotEmpty && e != '-')
-            .toList();
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      await Future.wait([
+        _readHostname(ssh),
+        _readTimezone(ssh),
+        _readNtp(ssh),
+        _readDns(ssh),
+        _readSwap(ssh),
+        _readServerTime(ssh),
+      ]);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _readHostname(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute('hostname 2>/dev/null || echo "-"')
+          .timeout(const Duration(seconds: 8));
+      _hostname = r.stdout.trim();
+    } catch (_) {
+      _hostname = '-';
+    }
+  }
+
+  Future<void> _readTimezone(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute(
+            'cat /etc/timezone 2>/dev/null || '
+            'timeout 5 timedatectl show -p Timezone --value 2>/dev/null || echo "-"',
+          )
+          .timeout(const Duration(seconds: 8));
+      _timezone = r.stdout.trim();
+    } catch (_) {
+      _timezone = '-';
+    }
+  }
+
+  Future<void> _readNtp(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute(
+            'timeout 5 timedatectl show-timesync -p FallbackNTPServers --value 2>/dev/null || echo "-"',
+          )
+          .timeout(const Duration(seconds: 8));
+      _ntp = r.stdout.trim();
+    } catch (_) {
+      _ntp = '-';
+    }
+  }
+
+  Future<void> _readDns(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute(
+            "grep '^nameserver' /etc/resolv.conf 2>/dev/null | awk '{print \$2}' || echo '-'",
+          )
+          .timeout(const Duration(seconds: 8));
+      _dns = r.stdout.trim();
+      _dnsList = _dns
+          .split(RegExp(r'\s+'))
+          .where((e) => e.isNotEmpty && e != '-')
+          .toList();
+    } catch (_) {
+      _dns = '-';
+      _dnsList = [];
+    }
+  }
+
+  Future<void> _readSwap(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute('free -h 2>/dev/null | grep Swap || echo "-"')
+          .timeout(const Duration(seconds: 8));
+      _swap = r.stdout.trim();
+    } catch (_) {
+      _swap = '-';
+    }
+  }
+
+  Future<void> _readServerTime(SshCommandService ssh) async {
+    try {
+      final r = await ssh
+          .execute("date '+%Y-%m-%d %H:%M:%S' 2>/dev/null")
+          .timeout(const Duration(seconds: 8));
+      _serverTime = r.stdout.trim();
+    } catch (_) {
+      _serverTime = '-';
     }
   }
 
   Future<String?> _runSsh(String cmd) async {
     final ssh = ref.read(sshServiceProvider);
     if (ssh == null) return 'SSH 未连接';
-    final res = await ssh.execute(cmd);
-    if (!res.isSuccess)
-      return res.stderr.trim().isEmpty ? '命令执行失败' : res.stderr.trim();
-    return null;
+    try {
+      final res = await ssh.execute(cmd).timeout(const Duration(seconds: 15));
+      if (!res.isSuccess) {
+        return res.stderr.trim().isEmpty ? '命令执行失败' : res.stderr.trim();
+      }
+      return null;
+    } catch (e) {
+      return e is TimeoutException ? '命令执行超时' : '$e';
+    }
   }
 
   void _showOk(String msg) {
@@ -162,7 +229,6 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
       _ntp == '-' ? '' : _ntp,
     );
     if (v == null || v.isEmpty) return;
-    // 通过 timedatectl 启用时间同步；具体 NTP 服务器写入 timesyncd 配置
     final err = await _runSsh(
       'sudo timedatectl set-ntp true; '
       'echo -e "[Time]\\nNTP=$v" | sudo tee /etc/systemd/timesyncd.conf > /dev/null; '
@@ -198,7 +264,6 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
   Future<void> _editPassword() async {
     final v = await _editDialog('修改系统密码', '新密码', '', obscure: true);
     if (v == null || v.isEmpty) return;
-    // root 用户使用 chpasswd
     final err = await _runSsh("echo 'root:$v' | sudo chpasswd");
     if (!mounted) return;
     if (err != null) {
@@ -212,9 +277,12 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
     final ssh = ref.read(sshServiceProvider);
     if (ssh == null) return;
     try {
-      final res = await ssh.execute(
-        'timedatectl list-timezones 2>/dev/null || cat /usr/share/zoneinfo/zone.tab 2>/dev/null | awk \'NF>=3 {print \$3}\' | head -200',
-      );
+      final res = await ssh
+          .execute(
+            'timedatectl list-timezones 2>/dev/null || '
+            'cat /usr/share/zoneinfo/zone.tab 2>/dev/null | awk \'NF>=3 {print \$3}\' | head -200',
+          )
+          .timeout(const Duration(seconds: 10));
       final zones = res.stdout
           .split('\n')
           .map((e) => e.trim())
@@ -253,25 +321,21 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
       _showErr('请输入合法的 GB 数值');
       return;
     }
-    String err;
+    String? err;
     if (size == 0) {
-      err =
-          await _runSsh(
-            'sudo swapoff -a 2>/dev/null; sudo rm -f /swapfile /swap.img 2>/dev/null; true',
-          ) ??
-          '';
+      err = await _runSsh(
+        'sudo swapoff -a 2>/dev/null; sudo rm -f /swapfile /swap.img 2>/dev/null; true',
+      );
     } else {
-      err =
-          await _runSsh(
-            'sudo swapoff -a 2>/dev/null; '
-            'sudo fallocate -l ${size}G /swapfile && sudo chmod 600 /swapfile && '
-            'sudo mkswap /swapfile > /dev/null && sudo swapon /swapfile && '
-            'echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab > /dev/null; true',
-          ) ??
-          '';
+      err = await _runSsh(
+        'sudo swapoff -a 2>/dev/null; '
+        'sudo fallocate -l ${size}G /swapfile && sudo chmod 600 /swapfile && '
+        'sudo mkswap /swapfile > /dev/null && sudo swapon /swapfile && '
+        'echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab > /dev/null; true',
+      );
     }
     if (!mounted) return;
-    if (err.isNotEmpty) {
+    if (err != null) {
       _showErr('修改失败: $err');
       return;
     }
@@ -281,55 +345,69 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 监听 SSH 连接：未连接直接显示引导，不转圈
+    final ssh = ref.watch(sshServiceProvider);
+    if (ssh == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text('系统设置')),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.terminal_outlined, size: 48, color: Colors.orange),
+                SizedBox(height: 12),
+                Text(
+                  'SSH 未连接',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '系统设置通过 SSH 读取服务器信息，请先配置 SSH 连接',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SshConfigPage()),
+                    );
+                    // 配置返回后若 SSH 已连接则重新加载
+                    _load();
+                  },
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('去配置 SSH'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('系统设置')),
+      appBar: AppBar(title: Text('系统设置')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
+                    Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    SizedBox(height: 12),
+                    Text(_error!, style: TextStyle(fontSize: 14)),
+                    SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _load,
+                      icon: Icon(Icons.refresh),
+                      label: Text('重试'),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _error!,
-                      style: const TextStyle(fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    if (_error == 'SSH 未连接') ...[
-                      const Text(
-                        '系统设置通过 SSH 读取服务器信息，请先配置 SSH 连接',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9AA1A9),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SshConfigPage(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.settings, size: 18),
-                        label: const Text('去配置 SSH'),
-                      ),
-                    ] else
-                      FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('重试'),
-                      ),
                   ],
                 ),
               ),
@@ -337,7 +415,7 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 children: [
                   Card(
                     child: Column(
@@ -359,7 +437,7 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Card(
                     child: Column(
                       children: [
@@ -379,10 +457,10 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
+                  SizedBox(height: 12),
+                  Text(
                     '以上操作通过 SSH 直接执行，需要 root 权限',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF9AA1A9)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -407,7 +485,7 @@ class _ServerSystemPageState extends ConsumerState<ServerSystemPage> {
         style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
       ),
       trailing: onTap != null
-          ? const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF))
+          ? Icon(Icons.chevron_right, color: AppColors.iconFaint)
           : null,
       onTap: onTap,
     );

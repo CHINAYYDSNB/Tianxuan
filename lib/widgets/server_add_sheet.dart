@@ -7,6 +7,7 @@ import '../providers/ssh_connection_provider.dart';
 import '../services/ssh_cert_service.dart';
 import '../services/ssh_command_service.dart';
 import '../services/storage_service.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 添加 1Panel 服务器后自动获取 SSH 密钥并添加连接
 Future<void> _autoSetupSshFor1Panel(
@@ -56,7 +57,7 @@ void showServerAddSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     useRootNavigator: true,
-    shape: const RoundedRectangleBorder(
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) {
@@ -74,14 +75,14 @@ void showServerAddSheet(BuildContext context, WidgetRef ref) {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '添加服务器',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
+                  SizedBox(height: 4),
+                  Text(
                     '支持 1Panel API 或纯 SSH 直连',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF9AA1A9)),
+                    style: TextStyle(fontSize: 13, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 16),
                   // 类型选择

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import '../../models/website_config.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 重定向配置弹层
 void showRedirectSheet(BuildContext context, int websiteId) {
@@ -129,9 +130,7 @@ class _RedirectSheetState extends State<RedirectSheet> {
                   return ListTile(
                     leading: Icon(
                       r.enable ? Icons.arrow_forward : Icons.block,
-                      color: r.enable
-                          ? const Color(0xFF0062F5)
-                          : const Color(0xFFAAB4BF),
+                      color: r.enable ? Color(0xFF0062F5) : AppColors.iconFaint,
                     ),
                     title: Text(r.name),
                     subtitle: Text('${r.source} → ${r.target}'),

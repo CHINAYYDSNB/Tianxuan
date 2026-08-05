@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import '../../models/website.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 基础信息编辑弹层
 void showOtherSheet(BuildContext context, Website website) {
@@ -135,7 +136,7 @@ class _OtherSheetState extends State<OtherSheet> {
 
   Widget _readonlyRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -143,7 +144,7 @@ class _OtherSheetState extends State<OtherSheet> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),

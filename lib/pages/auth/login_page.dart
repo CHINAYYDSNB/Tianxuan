@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/casdoor_service.dart';
 import 'casdoor_webview_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 简约纯白登录入口页
 ///
@@ -66,52 +67,48 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('登录', style: TextStyle(color: Colors.black87)),
+        title: Text('登录', style: TextStyle(color: Colors.black87)),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black54),
+          icon: Icon(Icons.close, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(flex: 2),
+              Spacer(flex: 2),
               // Logo + 标题
               Center(
                 child: Container(
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0C1014),
+                    color: AppColors.textMain,
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const Icon(
-                    Icons.terminal,
-                    color: Colors.white,
-                    size: 36,
-                  ),
+                  child: Icon(Icons.terminal, color: Colors.white, size: 36),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: 16),
+              Text(
                 'Tianxuan',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0C1014),
+                  color: AppColors.textMain,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 '1Panel 服务器管理',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
-              const Spacer(flex: 2),
+              Spacer(flex: 2),
 
               // 邮箱登录主入口
               SizedBox(
@@ -119,7 +116,7 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
                 child: FilledButton(
                   onPressed: _openLogin,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF0C1014),
+                    backgroundColor: AppColors.textMain,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -200,11 +197,11 @@ class _AuthLoginPageState extends ConsumerState<AuthLoginPage> {
                         Navigator.of(context).pop(true);
                       }
                     },
-                    child: const Text(
+                    child: Text(
                       '注册',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF0C1014),
+                        color: AppColors.textMain,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -274,7 +271,7 @@ class _ProviderIconButton extends StatelessWidget {
             color: Colors.grey.shade100,
             shape: BoxShape.circle,
           ),
-          child: Icon(_icon, size: 24, color: const Color(0xFF0C1014)),
+          child: Icon(_icon, size: 24, color: AppColors.textMain),
         ),
       ),
     );

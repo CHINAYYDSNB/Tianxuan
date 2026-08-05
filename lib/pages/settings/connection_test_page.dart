@@ -4,6 +4,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/ssh_connection_provider.dart';
 import '../../api/client.dart';
 import '../../services/storage_service.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class ConnectionTestPage extends ConsumerStatefulWidget {
   const ConnectionTestPage({super.key});
@@ -107,20 +108,20 @@ class _ConnectionTestPageState extends ConsumerState<ConnectionTestPage> {
     final connected = ref.watch(settingsProvider.select((s) => s.isConnected));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('连接检测')),
+      appBar: AppBar(title: Text('连接检测')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               child: Column(
                 children: [
                   Icon(
                     connected ? Icons.wifi_find : Icons.cloud_off,
                     size: 48,
                     color: connected
-                        ? const Color(0xFFAAB4BF)
+                        ? AppColors.iconFaint
                         : theme.colorScheme.outline,
                   ),
                   const SizedBox(height: 12),

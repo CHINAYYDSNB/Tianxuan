@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../script_store/script_store_page.dart';
 import '../ssh/ssh_home_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 更多功能入口定义
 class MoreEntry {
@@ -12,7 +13,7 @@ class MoreEntry {
   final WidgetBuilder builder;
   final Color color;
 
-  const MoreEntry({
+  MoreEntry({
     required this.id,
     required this.title,
     required this.icon,
@@ -126,19 +127,19 @@ class _MorePanelState extends State<_MorePanel> {
                       saveEnabledMoreIds(_enabled);
                       setState(() => _editing = false);
                     },
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('完成'),
+                    icon: Icon(Icons.check, size: 16),
+                    label: Text('完成'),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             if (visible.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
                     '暂无功能，点击右上角「编辑」添加',
-                    style: TextStyle(color: Color(0xFF9AA1A9)),
+                    style: TextStyle(color: AppColors.textMuted),
                   ),
                 ),
               )
@@ -179,14 +180,14 @@ class _MorePanelState extends State<_MorePanel> {
                               width: 52,
                               height: 52,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF5F6F7),
+                                color: Color(0xFFF5F6F7),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
                                 e.icon,
                                 size: 24,
                                 color: _editing && !on
-                                    ? const Color(0xFFC0C5CC)
+                                    ? Color(0xFFC0C5CC)
                                     : e.color,
                               ),
                             ),
@@ -200,7 +201,7 @@ class _MorePanelState extends State<_MorePanel> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: on
-                                        ? const Color(0xFF0C1014)
+                                        ? AppColors.textMain
                                         : const Color(0xFFE0E3E8),
                                     border: Border.all(
                                       color: Colors.white,
@@ -235,12 +236,12 @@ class _MorePanelState extends State<_MorePanel> {
                   );
                 }).toList(),
               ),
-            const SizedBox(height: 8),
-            const Divider(height: 1, color: Color(0xFFE8E9EB)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
+            Divider(height: 1, color: Color(0xFFE8E9EB)),
+            SizedBox(height: 8),
             Text(
               _editing ? '勾选需要展示的功能' : '点击功能即可打开',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF9AA1A9)),
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ],
         ),

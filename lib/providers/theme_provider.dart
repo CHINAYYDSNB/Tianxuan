@@ -10,6 +10,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_theme.dart';
+import '../theme/app_colors.dart';
 
 /// 个性化设置状态管理 + 持久化
 class ThemeNotifier extends StateNotifier<AppTheme> {
@@ -163,17 +164,9 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppTheme>(
   (ref) => ThemeNotifier(),
 );
 
-/// 有效前景模式：手动值优先，否则按背景亮度自动判定
-/// 亮背景（亮度高）→ 黑字；暗背景 → 白字
+/// 有效深色模式：手动开关（darkText），默认浅色
 final effectiveDarkTextProvider = Provider<bool>((ref) {
-  final t = ref.watch(themeProvider);
-  if (t.darkText != null) return t.darkText!;
-
-  if (t.backgroundLuminance != null) {
-    return t.backgroundLuminance! < 0.4;
-  }
-  // 纯色背景用表面色亮度判定
-  return t.scheme.surface.computeLuminance() < 0.4;
+  return ref.watch(themeProvider).darkText ?? false;
 });
 
 /// 由 AppTheme 生成 Material 3 ColorScheme
@@ -187,21 +180,25 @@ ColorScheme buildColorScheme(AppTheme theme, Brightness brightness) {
 }
 
 /// 生成 ThemeData（应用到全局），配色取自 [theme.scheme]。
-/// 始终使用浅色主题（白卡黑字）：背景图由 AppBackground 用浅色遮罩压浅，
-/// 避免深色背景下出现"黑底黑字"不可读的问题。
+/// [darkText] 为 true 时启用全局深色主题（黑底白字）。
 ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
+  AppColors.darkMode = darkText;
   final scheme = theme.scheme;
-  final surface = scheme.surface;
-  const cardColor = Color(0xFFFFFFFF);
-  final onSurface = scheme.onSurface;
-  final onSurfaceVariant = const Color(0xFF6B7280);
-  final outline = const Color(0xFFD8DCE2);
-  final outlineVariant = const Color(0xFFE8EAEE);
-  final primary = scheme.primary;
+  final dark = darkText;
+  final surface = dark ? const Color(0xFF121418) : scheme.surface;
+  final cardColor = dark ? const Color(0xFF1E2126) : Colors.white;
+  final onSurface = dark ? Colors.white : scheme.onSurface;
+  final onSurfaceVariant = dark
+      ? const Color(0xFFB8BEC6)
+      : const Color(0xFF6B7280);
+  final outline = dark ? const Color(0xFF3A3F45) : const Color(0xFFD8DCE2);
+  final outlineVariant = dark ? Color(0xFF2E3339) : AppColors.divider;
+  final primary = dark ? Colors.white : scheme.primary;
 
   return ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.light(
+    colorScheme: ColorScheme(
+      brightness: dark ? Brightness.dark : Brightness.light,
       surface: surface,
       onSurface: onSurface,
       onSurfaceVariant: onSurfaceVariant,
@@ -209,6 +206,10 @@ ThemeData buildAppTheme(AppTheme theme, {bool darkText = false}) {
       outlineVariant: outlineVariant,
       primary: primary,
       secondary: primary,
+      error: const Color(0xFFCF6679),
+      onPrimary: onSurface,
+      onSecondary: onSurface,
+      onError: const Color(0xFF000000),
     ),
     scaffoldBackgroundColor: Colors.transparent,
     canvasColor: cardColor,

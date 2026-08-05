@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 网站模块通用弹层组件
 
@@ -93,13 +94,13 @@ class SheetSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF686F78),
+          color: AppColors.textSecondary,
         ),
       ),
     );

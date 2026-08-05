@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/compose_provider.dart';
 import '../../models/compose.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class ComposeListPage extends ConsumerWidget {
   const ComposeListPage({super.key});
@@ -49,24 +50,20 @@ class _ComposeView extends StatelessWidget {
     if (list.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.dns_outlined,
-                size: 48,
-                color: Color(0xFFAAB4BF),
-              ),
-              const SizedBox(height: 16),
-              const Text(
+              Icon(Icons.dns_outlined, size: 48, color: AppColors.iconFaint),
+              SizedBox(height: 16),
+              Text(
                 '暂无 Compose 项目',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 '通过 1Panel API 拉取；未获取到 Compose 项目',
-                style: TextStyle(color: Color(0xFF686F78)),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
           ),

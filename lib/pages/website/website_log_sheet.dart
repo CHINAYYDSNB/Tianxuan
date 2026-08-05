@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/file_api.dart';
 import '../../api/website_api.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 日志查看弹层
 void showLogSheet(
@@ -160,28 +161,28 @@ class _LogSheetState extends State<LogSheet> {
                   _loadLog(reset: true);
                 },
               ),
-              const Spacer(),
+              Spacer(),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: Icon(Icons.refresh),
                 onPressed: () => _loadLog(reset: true),
                 tooltip: '刷新',
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
+        Divider(height: 1),
         Expanded(
           child: _loading && _lines.isEmpty
-              ? const SheetLoading()
+              ? SheetLoading()
               : _error != null && _lines.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 40,
-                        color: Color(0xFFAAB4BF),
+                        color: AppColors.iconFaint,
                       ),
                       const SizedBox(height: 8),
                       Text(_error!),

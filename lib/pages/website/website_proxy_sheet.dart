@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import '../../models/website_config.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 反向代理配置弹层
 void showProxySheet(BuildContext context, int websiteId) {
@@ -144,7 +145,7 @@ class _ProxySheetState extends State<ProxySheet> {
                   return ListTile(
                     leading: Icon(
                       p.enable ? Icons.swap_horiz : Icons.horizontal_rule,
-                      color: p.enable ? Colors.green : const Color(0xFFAAB4BF),
+                      color: p.enable ? Colors.green : AppColors.iconFaint,
                     ),
                     title: Text(p.name),
                     subtitle: Text('${p.location} → ${p.proxyPass}'),

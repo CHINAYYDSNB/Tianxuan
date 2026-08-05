@@ -8,6 +8,7 @@ import '../../providers/website_provider.dart';
 import '../settings/ssh_config_page.dart';
 import '../website/website_list_page.dart';
 import '../../widgets/ring_chart.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -17,11 +18,11 @@ class DashboardPage extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: const Color(0xFFAAB4BF)),
-        const SizedBox(width: 4),
+        Icon(icon, size: 14, color: AppColors.iconFaint),
+        SizedBox(width: 4),
         Text(
           text,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF686F78)),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -34,7 +35,7 @@ class DashboardPage extends ConsumerWidget {
           width: 80,
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF686F78)),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
         ),
         Expanded(
@@ -79,19 +80,19 @@ class DashboardPage extends ConsumerWidget {
                           Navigator.pop(ctx);
                           _showAddServer(context, ref);
                         },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('添加'),
+                        icon: Icon(Icons.add, size: 18),
+                        label: Text('添加'),
                       ),
                     ],
                   ),
-                  const Divider(),
+                  Divider(),
                   if (servers.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
                           '暂无已保存的服务器',
-                          style: TextStyle(color: const Color(0xFF686F78)),
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
                     )
@@ -102,7 +103,7 @@ class DashboardPage extends ConsumerWidget {
                           s.url == currUrl ? Icons.link : Icons.link_off,
                           color: s.url == currUrl
                               ? Colors.green
-                              : const Color(0xFFAAB4BF),
+                              : AppColors.iconFaint,
                         ),
                         title: Text(s.name),
                         subtitle: Text(
@@ -230,7 +231,7 @@ class DashboardPage extends ConsumerWidget {
       context: ctx,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: const Color(0x08000000),
+      barrierColor: Color(0x08000000),
       pageBuilder: (context, _, __) => Stack(
         children: [
           GestureDetector(
@@ -243,20 +244,20 @@ class DashboardPage extends ConsumerWidget {
             child: Material(
               borderRadius: BorderRadius.circular(12),
               elevation: 0,
-              color: const Color(0xFFFFFFFF),
+              color: Color(0xFFFFFFFF),
               child: SizedBox(
                 width: 280,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     if (displayServers.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.all(16),
                         child: Center(
                           child: Text(
                             '暂无已保存的服务器',
-                            style: TextStyle(color: Color(0xFF686F78)),
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
                       )
@@ -281,7 +282,7 @@ class DashboardPage extends ConsumerWidget {
                                   notifier.refresh();
                                 },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 12,
                             ),
@@ -292,9 +293,9 @@ class DashboardPage extends ConsumerWidget {
                                   size: 18,
                                   color: s.url == currUrl
                                       ? Colors.green
-                                      : const Color(0xFFAAB4BF),
+                                      : AppColors.iconFaint,
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     s.name,
@@ -307,14 +308,14 @@ class DashboardPage extends ConsumerWidget {
                                   ),
                                 ),
                                 if (s.url == currUrl)
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 40,
                                     child: Text(
                                       '当前',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF686F78),
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -553,10 +554,7 @@ class DashboardPage extends ConsumerWidget {
             children: [
               Text(
                 hostname,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -572,18 +570,18 @@ class DashboardPage extends ConsumerWidget {
           child: RefreshIndicator(
             onRefresh: () => ref.read(serverStatusProvider.notifier).refresh(),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 90),
               children: [
                 // 三个环状图
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.only(bottom: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       RingChart(
                         value: data.cpuUsage,
                         label: 'CPU',
-                        color: const Color(0xFF0C1014),
+                        color: AppColors.textMain,
                       ),
                       RingChart(
                         value: data.memoryUsage,
@@ -600,33 +598,31 @@ class DashboardPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 // 网站卡片
                 Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const WebsiteListPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => WebsiteListPage()),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      padding: EdgeInsets.symmetric(vertical: 20),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             '网站',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF686F78),
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Text(
                             siteCount != null ? '$siteCount' : '-',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
@@ -636,21 +632,21 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 // 服务器信息卡片（暂时隐藏）
                 // Card(
                 //   child: InkWell(
                 //     borderRadius: BorderRadius.circular(12),
                 //     onTap: () => _showServerSwitcher(context, ref),
                 //     child: Padding(
-                //       padding: const EdgeInsets.all(16),
+                //       padding: EdgeInsets.all(16),
                 //       child: Column(
                 //         crossAxisAlignment: CrossAxisAlignment.start,
                 //         children: [
                 //           Row(
                 //             children: [
-                //               const Icon(Icons.dns_outlined, size: 20),
-                //               const SizedBox(width: 8),
+                //               Icon(Icons.dns_outlined, size: 20),
+                //               SizedBox(width: 8),
                 //               Expanded(
                 //                 child: Text(
                 //                   data.hostname.isNotEmpty ? data.hostname : data.ipv4Address,
@@ -661,11 +657,11 @@ class DashboardPage extends ConsumerWidget {
                 //               ),
                 //               if (data.platform.isNotEmpty)
                 //                 Chip(
-                //                   label: Text(data.platform, style: const TextStyle(fontSize: 12)),
+                //                   label: Text(data.platform, style: TextStyle(fontSize: 12)),
                 //                   visualDensity: VisualDensity.compact,
                 //                 ),
-                //               const SizedBox(width: 4),
-                //               const Icon(Icons.chevron_right, size: 20, color: Color(0xFFAAB4BF)),
+                //               SizedBox(width: 4),
+                //               Icon(Icons.chevron_right, size: 20, color: AppColors.iconFaint),
                 //             ],
                 //           ),
                 //           const SizedBox(height: 8),

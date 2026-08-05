@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 默认文档（index）配置弹层
 void showIndexSheet(BuildContext context, int websiteId) {
@@ -87,9 +88,12 @@ class _IndexSheetState extends State<IndexSheet> {
               }
               return SheetScroll(
                 children: [
-                  const Text(
+                  Text(
                     '每行一个默认文档，按优先级从上到下匹配',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF686F78)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(

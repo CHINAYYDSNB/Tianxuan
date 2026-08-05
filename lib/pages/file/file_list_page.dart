@@ -10,6 +10,7 @@ import '../../utils/file_utils.dart';
 import '../../widgets/file_icon.dart';
 import 'file_editor_page.dart';
 import 'file_image_preview_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// Standalone page (with Scaffold + AppBar)
 class FileListPage extends ConsumerStatefulWidget {
@@ -651,7 +652,7 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -659,7 +660,7 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF686F78)),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
@@ -733,11 +734,11 @@ class _FileListBodyState extends ConsumerState<FileListBody> {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.folder_open, size: 64, color: Color(0xFFAAB4BF)),
-        const SizedBox(height: 12),
-        const Text(
+        Icon(Icons.folder_open, size: 64, color: AppColors.iconFaint),
+        SizedBox(height: 12),
+        Text(
           '此目录为空',
-          style: TextStyle(fontSize: 16, color: Color(0xFF686F78)),
+          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
         ),
       ],
     ),
@@ -778,14 +779,14 @@ class _BreadcrumbBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: List.generate(crumbs.length * 2 - 1, (i) {
           if (i.isOdd) {
-            return const Icon(
+            return Icon(
               Icons.chevron_right,
               size: 16,
-              color: Color(0xFFAAB4BF),
+              color: AppColors.iconFaint,
             );
           }
           final idx = i ~/ 2;
@@ -797,7 +798,7 @@ class _BreadcrumbBar extends ConsumerWidget {
                 : () =>
                       ref.read(currentPathProvider.notifier).state = crumb.path,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              padding: EdgeInsets.symmetric(horizontal: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -808,7 +809,7 @@ class _BreadcrumbBar extends ConsumerWidget {
                 fontWeight: isLast ? FontWeight.w600 : FontWeight.normal,
                 color: isLast
                     ? Theme.of(context).colorScheme.primary
-                    : const Color(0xFFAAB4BF),
+                    : AppColors.iconFaint,
               ),
             ),
           );
@@ -844,16 +845,16 @@ class _FileListTile extends ConsumerWidget {
           : FileIcon(file: file),
       title: Text(
         file.name,
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
       ),
       subtitle: Text(
         file.isDir ? '' : '${file.formattedSize}  ${_formatTime(file.modTime)}',
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(fontSize: 12),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: file.isDir
-          ? const Icon(Icons.chevron_right, size: 18, color: Color(0xFFAAB4BF))
+          ? Icon(Icons.chevron_right, size: 18, color: AppColors.iconFaint)
           : null,
       onTap: multiSelect ? onToggleSelect : onTap,
       onLongPress: onLongPress,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/website_api.dart';
 import '../../models/website.dart';
 import '../../providers/website_provider.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class WebsiteCreatePage extends ConsumerStatefulWidget {
   const WebsiteCreatePage({super.key});
@@ -462,7 +463,7 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
 
   Widget _summaryRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -470,8 +471,8 @@ class _WebsiteCreatePageState extends ConsumerState<WebsiteCreatePage> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(
-                color: const Color(0xFF686F78),
+              style: TextStyle(
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),

@@ -8,6 +8,7 @@ import 'about_page.dart';
 import 'personalize_page.dart';
 import 'profile_page.dart';
 import '../auth/login_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -51,10 +52,7 @@ class SettingsPage extends ConsumerWidget {
                       }
                     : () => _startLogin(context, ref),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     children: [
                       if (auth.isLoggedIn && auth.avatarUrl.isNotEmpty)
@@ -66,16 +64,16 @@ class SettingsPage extends ConsumerWidget {
                         CircleAvatar(
                           radius: 22,
                           backgroundColor: Colors.green.withAlpha(30),
-                          child: const Icon(Icons.person, color: Colors.green),
+                          child: Icon(Icons.person, color: Colors.green),
                         )
                       else
                         CircleAvatar(
                           radius: 22,
-                          backgroundImage: const AssetImage(
+                          backgroundImage: AssetImage(
                             'assets/default_avatar.png',
                           ),
                         ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +84,7 @@ class SettingsPage extends ConsumerWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               auth.isLoggedIn
                                   ? (auth.emailMissing
@@ -96,13 +94,13 @@ class SettingsPage extends ConsumerWidget {
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: auth.isLoggedIn && auth.emailMissing
                                     ? Colors.orange
-                                    : const Color(0xFF686F78),
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+                      Icon(Icons.chevron_right, color: AppColors.iconFaint),
                     ],
                   ),
                 ),
@@ -190,11 +188,11 @@ class _SettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: const Color(0xFF0C1014)),
-              const SizedBox(width: 14),
+              Icon(icon, size: 22, color: AppColors.textMain),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,18 +204,18 @@ class _SettingsCard extends StatelessWidget {
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         subtitle!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF686F78),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+              Icon(Icons.chevron_right, color: AppColors.iconFaint),
             ],
           ),
         ),
@@ -247,11 +245,11 @@ class _SettingRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: color ?? const Color(0xFF0C1014)),
-            const SizedBox(width: 14),
+            Icon(icon, size: 22, color: color ?? AppColors.textMain),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,18 +261,18 @@ class _SettingRow extends StatelessWidget {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+            Icon(Icons.chevron_right, color: AppColors.iconFaint),
           ],
         ),
       ),

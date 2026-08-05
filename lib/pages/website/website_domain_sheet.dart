@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/website_api.dart';
 import '../../models/website_config.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 域名管理弹层
 void showDomainSheet(BuildContext context, int websiteId, String title) {
@@ -181,7 +182,7 @@ class _DomainSheetState extends ConsumerState<DomainSheet> {
                   return ListTile(
                     leading: Icon(
                       d.ssl ? Icons.lock : Icons.lock_open,
-                      color: d.ssl ? Colors.green : const Color(0xFFAAB4BF),
+                      color: d.ssl ? Colors.green : AppColors.iconFaint,
                     ),
                     title: Text(d.domain),
                     subtitle: Text('端口 ${d.port}'),

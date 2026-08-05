@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// HTTPS 配置弹层
 void showHttpsSheet(BuildContext context, int websiteId) {
@@ -150,7 +151,7 @@ class _HttpsSheetState extends State<HttpsSheet> {
           child: ListTile(
             leading: Icon(
               enable ? Icons.lock : Icons.lock_open,
-              color: enable ? Colors.green : const Color(0xFFAAB4BF),
+              color: enable ? Colors.green : AppColors.iconFaint,
             ),
             title: Text(enable ? 'HTTPS 已启用' : 'HTTPS 未启用'),
             subtitle: Text(enable ? '证书已配置' : '点击下方按钮配置 SSL'),
@@ -200,7 +201,7 @@ class _HttpsSheetState extends State<HttpsSheet> {
 
   Widget _info(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -208,7 +209,7 @@ class _HttpsSheetState extends State<HttpsSheet> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF686F78), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),

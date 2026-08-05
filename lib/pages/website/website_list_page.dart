@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/website.dart';
 import '../../providers/website_provider.dart';
 import 'website_action_sheet.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// Standalone page (with Scaffold + AppBar)
 class WebsiteListPage extends ConsumerStatefulWidget {
@@ -117,14 +118,14 @@ class WebsiteListBody extends ConsumerWidget {
                   ref.read(websitesProvider.notifier).loadMore();
                 }
                 if (!hasMore) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: Text(
                         '没有更多了',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9AA1A9),
+                          color: AppColors.textMuted,
                         ),
                       ),
                     ),
@@ -169,16 +170,16 @@ class _CenterState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: const Color(0xFFAAB4BF)),
-          const SizedBox(height: 12),
+          Icon(icon, size: 64, color: AppColors.iconFaint),
+          SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 16, color: Color(0xFF686F78)),
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 13, color: Color(0xFFAAB4BF)),
+            style: TextStyle(fontSize: 13, color: AppColors.iconFaint),
             textAlign: TextAlign.center,
           ),
         ],
@@ -224,40 +225,31 @@ class _WebsiteTile extends ConsumerWidget {
     final hasSsl = website.protocol?.toLowerCase() == 'https';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => showWebsiteActionSheet(context, ref, website),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0062F5).withAlpha(15),
+                      color: Color(0xFF0062F5).withAlpha(15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       website.typeLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF0062F5),
-                      ),
+                      style: TextStyle(fontSize: 11, color: Color(0xFF0062F5)),
                     ),
                   ),
-                  const Spacer(),
+                  Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: color.withAlpha(30),
                       borderRadius: BorderRadius.circular(6),
@@ -269,21 +261,21 @@ class _WebsiteTile extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
                   Icon(
                     hasSsl ? Icons.lock : Icons.lock_open,
                     size: 14,
-                    color: hasSsl ? Colors.green : const Color(0xFFAAB4BF),
+                    color: hasSsl ? Colors.green : AppColors.iconFaint,
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Expanded(
                     child: InkWell(
                       onTap: () => _openSite(context, website),
                       child: Text(
                         website.primaryDomain,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -294,21 +286,21 @@ class _WebsiteTile extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.folder_outlined,
                     size: 14,
-                    color: Color(0xFFAAB4BF),
+                    color: AppColors.iconFaint,
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       website.sitePath ?? website.siteDir ?? '目录未设置',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -316,17 +308,17 @@ class _WebsiteTile extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.notes, size: 14, color: Color(0xFFAAB4BF)),
-                  const SizedBox(width: 6),
+                  Icon(Icons.notes, size: 14, color: AppColors.iconFaint),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       website.remark.isEmpty ? '暂无备注' : website.remark,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -359,6 +351,6 @@ class _WebsiteTile extends ConsumerWidget {
     'Running' => Colors.green,
     'Stopped' => Colors.red,
     'Error' => Colors.red,
-    _ => const Color(0xFFAAB4BF),
+    _ => AppColors.iconFaint,
   };
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/cronjob_api.dart';
 import '../../providers/ssh_connection_provider.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 计划任务页（1Panel API 优先，失败 fallback SSH crontab）
 class ServerCronjobPage extends ConsumerStatefulWidget {
@@ -187,26 +188,26 @@ class _ServerCronjobPageState extends ConsumerState<ServerCronjobPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('计划任务')),
+      appBar: AppBar(title: Text('计划任务')),
       floatingActionButton: FloatingActionButton(
         onPressed: _addTask,
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 12),
+                  Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  SizedBox(height: 12),
                   Text(_error!),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: _load,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('重试'),
+                    icon: Icon(Icons.refresh),
+                    label: Text('重试'),
                   ),
                 ],
               ),
@@ -214,26 +215,26 @@ class _ServerCronjobPageState extends ConsumerState<ServerCronjobPage> {
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 children: [
                   if (_usingSsh)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(bottom: 8),
                       child: Text(
                         '（当前通过 SSH 读取系统 crontab）',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9AA1A9),
+                          color: AppColors.textMuted,
                         ),
                       ),
                     ),
                   if (_items.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 48),
                       child: Center(
                         child: Text(
                           '暂无计划任务，点击右下角 + 新建',
-                          style: TextStyle(color: Color(0xFF9AA1A9)),
+                          style: TextStyle(color: AppColors.textMuted),
                         ),
                       ),
                     )

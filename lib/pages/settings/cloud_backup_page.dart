@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/backup_item.dart';
 import '../../services/cloud_backup_service.dart';
 import '../../providers/server_list_provider.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class CloudBackupPage extends ConsumerStatefulWidget {
   const CloudBackupPage({super.key});
@@ -122,23 +123,23 @@ class _CloudBackupPageState extends ConsumerState<CloudBackupPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('数据备份')),
+      appBar: AppBar(title: Text('数据备份')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         children: [
           // 备份项目选择
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('备份项目', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '勾选要备份到服务器的配置项',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF686F78),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),

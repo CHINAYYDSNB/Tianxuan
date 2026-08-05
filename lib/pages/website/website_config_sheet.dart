@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 配置文件编辑弹层
 void showConfigSheet(BuildContext context, int websiteId) {
@@ -94,13 +95,16 @@ class _ConfigSheetState extends State<ConfigSheet> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'nginx 配置（保存后自动重载）',
-                  style: TextStyle(color: Color(0xFF686F78), fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
               TextButton.icon(

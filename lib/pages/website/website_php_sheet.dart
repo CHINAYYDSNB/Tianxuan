@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// PHP 版本切换弹层
 void showPhpSheet(BuildContext context, int websiteId) {
@@ -55,13 +56,13 @@ class _PhpSheetState extends State<PhpSheet> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               '选择要切换的 PHP 运行环境',
-              style: TextStyle(color: Color(0xFF686F78), fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
         ),

@@ -9,6 +9,7 @@ import '../settings/connection_test_page.dart';
 import 'server_system_page.dart';
 import 'server_cronjob_page.dart';
 import 'workspace_more_panel.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 服务器工作台 — 点服务器卡片进入，底部六 tab 导航。
 /// 每个 tab 拥有独立 Navigator，保持各自页面栈与底部 bar 常驻。
@@ -143,9 +144,9 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
                         Icon(
                           selected ? t.active : t.icon,
                           size: 22,
-                          color: selected ? t.color : const Color(0xFF9AA1A9),
+                          color: selected ? t.color : AppColors.textMuted,
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           t.label,
                           style: TextStyle(
@@ -153,7 +154,7 @@ class _ServerWorkspacePageState extends ConsumerState<ServerWorkspacePage> {
                             fontWeight: selected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
-                            color: selected ? t.color : const Color(0xFF9AA1A9),
+                            color: selected ? t.color : AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -294,7 +295,7 @@ class _SettingTile extends StatelessWidget {
         leading: Icon(icon, size: 22),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFFAAB4BF)),
+        trailing: Icon(Icons.chevron_right, color: AppColors.iconFaint),
         onTap: onTap,
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/update_service.dart';
 import '../../utils/url_launcher.dart';
 import 'contributors_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -42,13 +43,13 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('关于')),
+      appBar: AppBar(title: Text('关于')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Column(
                 children: [
                   SvgPicture.asset(
@@ -60,7 +61,7 @@ class _AboutPageState extends State<AboutPage> {
                       BlendMode.srcIn,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Tianxuan',
                     style: theme.textTheme.headlineSmall?.copyWith(
@@ -73,12 +74,12 @@ class _AboutPageState extends State<AboutPage> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.tag, size: 16, color: Color(0xFFAAB4BF)),
-                      const SizedBox(width: 4),
+                      Icon(Icons.tag, size: 16, color: AppColors.iconFaint),
+                      SizedBox(width: 4),
                       Text(
                         UpdateService.currentVersion,
                         style: theme.textTheme.titleMedium,
@@ -89,14 +90,14 @@ class _AboutPageState extends State<AboutPage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               child: Column(
                 children: [
                   Text('版本更新', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   if (_result != null) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -108,27 +109,27 @@ class _AboutPageState extends State<AboutPage> {
                           color: _result!.newer ? Colors.orange : Colors.green,
                           size: 28,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           _result!.newer ? '新版本可用: ${_result!.tag}' : '已是最新版本',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     if (_result!.newer)
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
                           onPressed: () => _openUrl(_result!.url),
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Text('前往下载'),
+                          icon: Icon(Icons.open_in_new),
+                          label: Text('前往下载'),
                         ),
                       ),
                   ],
                   if (_error != null) ...[
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(8),
@@ -141,19 +142,19 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _checking ? null : _checkUpdate,
                       icon: _checking
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.refresh),
+                          : Icon(Icons.refresh),
                       label: Text(_checking ? '检查中...' : '检查更新'),
                     ),
                   ),
@@ -161,26 +162,23 @@ class _AboutPageState extends State<AboutPage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.code),
-              title: const Text('GitHub'),
-              subtitle: const Text('CHINAYYDSNB/Tianxuan'),
-              trailing: const Icon(Icons.open_in_new, size: 18),
+              leading: Icon(Icons.code),
+              title: Text('GitHub'),
+              subtitle: Text('CHINAYYDSNB/Tianxuan'),
+              trailing: Icon(Icons.open_in_new, size: 18),
               onTap: () => _openUrl(UpdateService.repoUrl),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.people, color: Colors.blue),
-              title: const Text('贡献者'),
-              subtitle: const Text('感谢为项目做出贡献的开发者'),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color(0xFFAAB4BF),
-              ),
+              leading: Icon(Icons.people, color: Colors.blue),
+              title: Text('贡献者'),
+              subtitle: Text('感谢为项目做出贡献的开发者'),
+              trailing: Icon(Icons.chevron_right, color: AppColors.iconFaint),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ContributorsPage()),

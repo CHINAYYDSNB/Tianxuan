@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/casdoor_service.dart';
 import '../../providers/logto_auth_provider.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 账户资料页：头像 / 昵称 / 邮箱 / 绑定的快捷登录项
 /// 未绑定邮箱时提示用户绑定
@@ -119,14 +120,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final linkedProviders = auth.linkedProviders;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('账户资料')),
+      appBar: AppBar(title: Text('账户资料')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         children: [
           // 头像 / 昵称 / 邮箱
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Column(
                 children: [
                   CircleAvatar(
@@ -143,7 +144,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           )
                         : null,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     auth.name.isNotEmpty ? auth.name : '未设置昵称',
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -151,24 +152,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ),
                   ),
                   if (auth.email.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       auth.email,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                   if (auth.emailMissing) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _promptBindEmail,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.mark_email_unread_outlined,
                         size: 18,
                         color: Colors.orange,
                       ),
-                      label: const Text(
+                      label: Text(
                         '未绑定邮箱，点击查看',
                         style: TextStyle(color: Colors.orange),
                       ),
@@ -178,18 +179,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // 绑定的快捷登录项
           if (linkedProviders.isNotEmpty) ...[
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('快捷登录绑定', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -205,32 +206,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           )
                           .toList(),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       '以上第三方账号与本账户已绑定',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF686F78),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
 
           // 编辑资料
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('编辑资料', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: _nameCtrl,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '昵称',
                       hintText: '输入新的昵称',
                       border: OutlineInputBorder(),
@@ -238,10 +239,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       prefixIcon: Icon(Icons.badge_outlined, size: 20),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     enabled: false,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '邮箱',
                       border: OutlineInputBorder(),
                       isDense: true,
@@ -251,7 +252,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       text: auth.email.isNotEmpty ? auth.email : '未绑定',
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     auth.emailMissing
                         ? '未绑定邮箱，请在 Casdoor 控制台绑定'
@@ -259,23 +260,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: auth.emailMissing
                           ? Colors.orange
-                          : const Color(0xFFAAB4BF),
+                          : AppColors.iconFaint,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Divider(color: theme.colorScheme.outline.withAlpha(40)),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: _avatarCtrl,
                     decoration: InputDecoration(
                       labelText: '头像 URL',
                       hintText: 'https://example.com/avatar.jpg',
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(),
                       isDense: true,
-                      prefixIcon: const Icon(Icons.image_outlined, size: 20),
+                      prefixIcon: Icon(Icons.image_outlined, size: 20),
                       suffixIcon: _avatarCtrl.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.refresh, size: 20),
+                              icon: Icon(Icons.refresh, size: 20),
                               tooltip: '预览',
                               onPressed: () => setState(() {}),
                             )
@@ -283,11 +284,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '输入图片 URL，点击右侧刷新图标预览',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFAAB4BF),
+                      color: AppColors.iconFaint,
                     ),
                   ),
                   const SizedBox(height: 16),

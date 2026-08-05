@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/website_api.dart';
 import '../../models/website_config.dart';
 import 'website_sheet_widgets.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 密码访问配置弹层（全局 + 路径级）
 void showAuthSheet(BuildContext context, int websiteId) {
@@ -111,16 +112,16 @@ class _AuthSheetState extends State<AuthSheet> {
     if (_error != null) return SheetError(error: _error!, onRetry: _load);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const SheetSectionTitle(title: '全局访问密码'),
+        SheetSectionTitle(title: '全局访问密码'),
         Card(
           child: ListTile(
             leading: Icon(
               _global?.enable == true ? Icons.lock : Icons.lock_open,
               color: _global?.enable == true
                   ? Colors.green
-                  : const Color(0xFFAAB4BF),
+                  : AppColors.iconFaint,
             ),
             title: Text(
               _global?.enable == true

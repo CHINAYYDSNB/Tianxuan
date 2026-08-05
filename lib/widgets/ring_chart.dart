@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 class RingChart extends StatelessWidget {
   final double value; // 0~100
@@ -34,19 +35,16 @@ class RingChart extends StatelessWidget {
             child: Center(
               child: Text(
                 '${value.toStringAsFixed(1)}%',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 14)),
+        SizedBox(height: 6),
+        Text(label, style: TextStyle(fontSize: 14)),
         Text(
           subtitle,
-          style: const TextStyle(fontSize: 11, color: Color(0xFFAAB4BF)),
+          style: TextStyle(fontSize: 11, color: AppColors.iconFaint),
         ),
       ],
     );

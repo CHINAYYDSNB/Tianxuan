@@ -7,6 +7,7 @@ import '../../providers/ssh_connection_provider.dart';
 import '../../services/ssh_command_service.dart';
 import '../../widgets/server_add_sheet.dart';
 import '../workspace/server_workspace_page.dart';
+import 'package:tianxuan/theme/app_colors.dart';
 
 /// 首页：多服务器卡片概览
 class ServerCardsPage extends ConsumerWidget {
@@ -173,7 +174,7 @@ class _ServerCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(17),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -183,35 +184,31 @@ class _ServerCard extends ConsumerWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2F3F5),
+                      color: Color(0xFFF2F3F5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.dns,
-                      color: Color(0xFF0C1014),
-                      size: 22,
-                    ),
+                    child: Icon(Icons.dns, color: AppColors.textMain, size: 22),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           server.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           server.displayUrl,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF9AA1A9),
+                            color: AppColors.textMuted,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -221,33 +218,30 @@ class _ServerCard extends ConsumerWidget {
                   ),
                   if (isCurrent)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF2F3F5),
+                        color: Color(0xFFF2F3F5),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
+                      child: Text(
                         '当前',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF0C1014),
+                          color: AppColors.textMain,
                         ),
                       ),
                     )
                   else
-                    const Icon(Icons.chevron_right, color: Color(0xFFC0C5CC)),
+                    Icon(Icons.chevron_right, color: Color(0xFFC0C5CC)),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
+              Divider(height: 1),
+              SizedBox(height: 12),
               // 迷你监控
               statusAsync.when(
                 data: (s) => s == null
-                    ? const Padding(
+                    ? Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: [
@@ -261,7 +255,7 @@ class _ServerCard extends ConsumerWidget {
                               '状态获取失败',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF9AA1A9),
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],
@@ -276,7 +270,7 @@ class _ServerCard extends ConsumerWidget {
                           _metric(context, '磁盘', s.diskUsage),
                         ],
                       ),
-                loading: () => const Padding(
+                loading: () => Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
@@ -290,7 +284,7 @@ class _ServerCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                error: (e, _) => const Padding(
+                error: (e, _) => Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     '连接失败',
@@ -298,14 +292,11 @@ class _ServerCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               if (status != null && status.hostname.isNotEmpty)
                 Text(
                   '${status.hostname} · ${status.platform}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9AA1A9),
-                  ),
+                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -322,13 +313,13 @@ class _ServerCard extends ConsumerWidget {
         children: [
           Text(
             '${value.toStringAsFixed(0)}%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF0C1014),
+              color: AppColors.textMain,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: SizedBox(
@@ -336,15 +327,15 @@ class _ServerCard extends ConsumerWidget {
               height: 3,
               child: LinearProgressIndicator(
                 value: (value / 100).clamp(0.0, 1.0),
-                backgroundColor: const Color(0xFFE8EAEE),
-                valueColor: const AlwaysStoppedAnimation(Color(0xFF9AA1A9)),
+                backgroundColor: AppColors.divider,
+                valueColor: AlwaysStoppedAnimation(AppColors.textMuted),
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF9AA1A9)),
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ],
       ),

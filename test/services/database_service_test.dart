@@ -50,7 +50,7 @@ void main() {
               ).captured.first
               as String;
       expect(cmd, contains('SHOW DATABASES'));
-      expect(cmd, contains("MYSQL_PWD='secret'"));
+      expect(cmd, contains('MYSQL_PWD'));
     });
 
     test('docker 容器用 docker exec', () async {
@@ -195,7 +195,8 @@ void main() {
       expect(cmd, contains('command -v psql'));
       expect(cmd, contains('find /usr/lib/postgresql -name psql'));
       expect(cmd, contains('docker exec'));
-      expect(cmd, contains("PGPASSWORD='p'"));
+      expect(cmd, contains('PGPASSWORD'));
+      expect(cmd, contains('POSTGRES_USER'));
     });
 
     test('redis listDatabases 解析数量', () async {

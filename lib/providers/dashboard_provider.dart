@@ -78,7 +78,17 @@ class ServerStatusNotifier extends AsyncNotifier<ServerStatus> {
   Future<ServerStatus> _fetch() async {
     final ssh = ref.read(sshServiceProvider);
     if (ssh == null || !ssh.isConnected) {
-      throw StateError('监控需要 SSH 连接，请在设置中配置 SSH');
+      // SSH 未连接是预期状态：返回空状态，SSH 连上后轮询自动恢复
+      return ServerStatus(
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        uptime: '',
+        memoryTotal: '',
+        memoryUsed: '',
+        diskTotal: '',
+        diskUsed: '',
+      );
     }
     final monitor = SshMonitor(ssh);
     return monitor.fetchStatus();

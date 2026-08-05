@@ -107,21 +107,24 @@ class SshDatabaseService implements DatabaseService {
 
     switch (inst.type) {
       case DbType.mysql || DbType.mariadb:
-        // 动态查找 mysql；找不到则尝试 mysql/maria 容器 docker exec
-        return '$env M="\$(command -v mysql || find /usr/bin /usr/local/bin -name mysql 2>/dev/null | head -1)"; '
-            'if [ -n "\$M" ]; then "\$M" -u$user$hostArg -e "$innerCmd" -N; '
-            'else C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -iE \'mysql|maria\' | head -1)"; '
+        // 优先检测 mysql/maria 容器（docker exec，容器内 MYSQL_USER 优先）；
+        // 无容器则宿主动态查找 mysql
+        final mpass = inst.password?.replaceAll("'", "'\\''");
+        return 'C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -iE \'mysql|maria\' | head -1)"; '
             'if [ -n "\$C" ]; then '
-            "MYSQL_PWD='${inst.password?.replaceAll("'", "'\\''")}' docker exec \"\$C\" mysql -u$user -e \"$innerCmd\" -N; "
+            "docker exec \"\$C\" sh -c 'U=\"\\\${MYSQL_USER:-\$user}\"; MYSQL_PWD=\"$mpass\" mysql -u\"\$U\" -e \"\$innerCmd\" -N'; "
+            'else M="\$(command -v mysql || find /usr/bin /usr/local/bin -name mysql 2>/dev/null | head -1)"; '
+            "if [ -n \"\$M\" ]; then MYSQL_PWD=\"$mpass\" \"\$M\" -u$user$hostArg -e \"$innerCmd\" -N; "
             'else echo "mysql not found"; fi; fi';
       case DbType.postgresql:
-        // 动态查找 psql（原生安装可能在 /usr/lib/postgresql/*/bin/psql）；
-        // 找不到则尝试 postgres 容器 docker exec
-        return '$env P="\$(command -v psql || find /usr/lib/postgresql -name psql 2>/dev/null | tail -1)"; '
-            'if [ -n "\$P" ]; then "\$P" -U $user$hostArg -c "$innerCmd" -t -A; '
-            'else C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -i postgres | head -1)"; '
+        // 优先检测 postgres 容器（docker exec，容器内 POSTGRES_USER 优先）；
+        // 无容器则宿主动态查找 psql
+        final ppass = inst.password?.replaceAll("'", "'\\''");
+        return 'C="\$(docker ps --format \'{{.Names}}\' 2>/dev/null | grep -i postgres | head -1)"; '
             'if [ -n "\$C" ]; then '
-            "PGPASSWORD='${inst.password?.replaceAll("'", "'\\''")}' docker exec \"\$C\" psql -U $user -c \"$innerCmd\" -t -A; "
+            "docker exec \"\$C\" sh -c 'U=\"\\\${POSTGRES_USER:-\$user}\"; PGPASSWORD=\"$ppass\" psql -U \"\$U\" -c \"\$innerCmd\" -t -A'; "
+            'else P="\$(command -v psql || find /usr/lib/postgresql -name psql 2>/dev/null | tail -1)"; '
+            "if [ -n \"\$P\" ]; then PGPASSWORD=\"$ppass\" \"\$P\" -U $user$hostArg -c \"$innerCmd\" -t -A; "
             'else echo "psql not found"; fi; fi';
       case DbType.redis:
         final auth = inst.password != null && inst.password!.isNotEmpty

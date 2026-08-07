@@ -1,4 +1,4 @@
-package com.example.tianxuan
+package com.panel.tianxuan
 
 import android.content.ContentValues
 import android.content.Intent
@@ -69,7 +69,7 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    /** 写入公共 Downloads/tianxuan/ 目录，供系统文件管理器直接可见。 */
+    /** 写入公共 Downloads/tianxuan/ 目录，供系统文件管理器直接可见 */
     private fun saveToPublicDownloads(name: String, bytes: ByteArray): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // Android 10+ : MediaStore (scoped storage)

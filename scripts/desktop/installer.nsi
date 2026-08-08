@@ -9,9 +9,6 @@
 ; Installer output (relative to script dir scripts/desktop/ → repo root)
 OutFile "..\..\build\installer\setup.exe"
 
-!define MUI_ICON "..\..\assets\icon-1024.png"
-!define MUI_UNICON "..\..\assets\icon-1024.png"
-
 ; Interface
 !define MUI_ABORTWARNING
 

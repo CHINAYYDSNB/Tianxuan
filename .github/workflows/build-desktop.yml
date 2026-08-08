@@ -55,8 +55,11 @@ jobs:
       - name: Package setup.exe (NSIS)
         run: |
           choco install nsis -y
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (-not (Test-Path $nsis)) { $nsis = "C:\Program Files\NSIS\makensis.exe" }
           cd scripts\desktop
-          makensis installer.nsi
+          & $nsis installer.nsi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cd ..\..
           Copy-Item build\installer\setup.exe setup-windows-x64.exe
 

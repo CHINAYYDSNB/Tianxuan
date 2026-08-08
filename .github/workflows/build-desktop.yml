@@ -83,6 +83,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Anti-cheat scan (print statements)
+        shell: bash
         run: |
           if grep -r "print(" lib/ --include="*.dart" | grep -v "//"; then
             echo "::error::Found print() statements. Use debugPrint instead."

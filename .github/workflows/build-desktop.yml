@@ -9,6 +9,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     name: Windows setup.exe

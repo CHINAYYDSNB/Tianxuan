@@ -392,12 +392,64 @@ void main() {
       expect(items.first.name, 'appdb');
     });
 
-    test('非 200 抛异常', () async {
+    test('non200 throws', () async {
       stub['/api/v2/databases/search'] = {'code': 500, 'message': 'bad'};
       expect(
         DatabaseApi.searchDatabases(database: 'mysql', type: 'mysql'),
         throwsA(isA<Exception>()),
       );
+    });
+
+    test('bindUser binds mysql user', () async {
+      stub['/api/v2/databases/bind'] = {'code': 200, 'data': null};
+      await DatabaseApi.bindUser(
+        database: 'mysql',
+        db: 'appdb',
+        username: 'app',
+        password: 'pw',
+        permission: '%',
+      );
+    });
+
+    test('pg bind/privileges/password', () async {
+      stub['/api/v2/databases/pg/bind'] = {'code': 200, 'data': null};
+      stub['/api/v2/databases/pg/privileges'] = {'code': 200, 'data': null};
+      stub['/api/v2/databases/pg/password'] = {'code': 200, 'data': null};
+      await DatabaseApi.bindPgUser(
+        name: 'pg',
+        database: 'appdb',
+        username: 'app',
+        password: 'pw',
+      );
+      await DatabaseApi.changePgPrivileges(
+        name: 'pg',
+        database: 'appdb',
+        username: 'app',
+        superUser: true,
+      );
+      await DatabaseApi.changePgPassword(
+        name: 'pg',
+        database: 'appdb',
+        username: 'app',
+        value: 'c2VjcmV0',
+      );
+    });
+
+    test('updateDescription / listDatabaseOptions', () async {
+      stub['/api/v2/databases/description/update'] = {
+        'code': 200,
+        'data': null,
+      };
+      stub['/api/v2/databases/options'] = {
+        'code': 200,
+        'data': [
+          {'name': 'appdb'},
+          {'database': 'blog'},
+        ],
+      };
+      await DatabaseApi.updateDescription(id: 1, description: 'desc');
+      final options = await DatabaseApi.listDatabaseOptions();
+      expect(options, ['appdb', 'blog']);
     });
   });
 }

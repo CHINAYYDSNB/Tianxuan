@@ -432,6 +432,61 @@ class RedisConfDto {
   }
 }
 
+/// 数据库用户信息（列表/权限展示）。
+class DatabaseUserInfo {
+  final String username;
+  final String host;
+  final String? password;
+  final String? database;
+  final bool isSuperUser;
+
+  const DatabaseUserInfo({
+    required this.username,
+    this.host = '%',
+    this.password,
+    this.database,
+    this.isSuperUser = false,
+  });
+
+  factory DatabaseUserInfo.fromJson(Map<String, dynamic> json) {
+    return DatabaseUserInfo(
+      username: json['username']?.toString() ?? '',
+      host: json['host']?.toString() ?? json['permission']?.toString() ?? '%',
+      password: json['password']?.toString(),
+      database: json['database']?.toString(),
+      isSuperUser: json['superUser'] as bool? ?? false,
+    );
+  }
+}
+
+/// 绑定/创建数据库用户请求（MySQL: database/db/username/password/permission；
+/// PG: name/database/username/password/superUser）。
+class DbBindUser {
+  final String name;
+  final String database;
+  final String username;
+  final String password;
+  final String permission;
+  final bool isSuperUser;
+
+  const DbBindUser({
+    this.name = '',
+    required this.database,
+    required this.username,
+    required this.password,
+    this.permission = '%',
+    this.isSuperUser = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'database': database,
+    'db': name,
+    'username': username,
+    'password': password,
+    'permission': permission,
+  };
+}
+
 /// Redis 持久化配置（对齐 Mono-Dash RedisPersistenceDto）。
 class RedisPersistenceDto {
   final String aofEnabled;

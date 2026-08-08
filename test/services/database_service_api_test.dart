@@ -480,6 +480,41 @@ void main() {
       expect(await svc.getRemoteAccess(_mysqlApi), isTrue);
     });
 
+    test('listUsers 降级 SSH 解析', () async {
+      okSsh(stdout: 'root %\napp 192.168.1.5\n');
+      final users = await svc.listUsers(_mysqlApi);
+      expect(users.length, 2);
+      expect(users.first.username, 'root');
+      expect(users.first.host, '%');
+    });
+
+    test('bindUser 降级 SSH 构造 CREATE USER', () async {
+      okSsh();
+      await svc.bindUser(
+        _mysqlApi,
+        database: 'appdb',
+        username: 'app',
+        password: 'pw',
+      );
+      final cmd =
+          verify(
+                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
+              ).captured.first
+              as String;
+      expect(cmd, contains('CREATE USER'));
+    });
+
+    test('deleteUser 降级 SSH 构造 DROP USER', () async {
+      okSsh();
+      await svc.deleteUser(_mysqlApi, 'app');
+      final cmd =
+          verify(
+                () => ssh.execute(captureAny(), timeout: any(named: 'timeout')),
+              ).captured.first
+              as String;
+      expect(cmd, contains('DROP USER'));
+    });
+
     test('getStatus 降级 SSH', () async {
       okSsh(stdout: '8.0.36\n');
       final status = await svc.getStatus(_mysqlApi);
@@ -573,6 +608,15 @@ void main() {
       // SSH 模式下为空操作，API 失败也不抛。
       await svc.loadFromRemote(_mysqlApi);
       await svc.loadPgFromRemote(_mysqlApi);
+    });
+
+    test('用户方法无 SSH 抛异常', () {
+      expect(svc.listUsers(_mysqlApi), throwsA(isA<Exception>()));
+      expect(
+        svc.bindUser(_mysqlApi, database: 'db', username: 'u', password: 'p'),
+        throwsA(isA<Exception>()),
+      );
+      expect(svc.deleteUser(_mysqlApi, 'u'), throwsA(isA<Exception>()));
     });
   });
 }

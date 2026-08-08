@@ -554,6 +554,110 @@ class DatabaseApi {
     }
   }
 
+  /// POST /databases/bind — 绑定 MySQL 用户（绑定即创建/授权）。
+  static Future<void> bindUser({
+    required String database,
+    required String db,
+    required String username,
+    required String password,
+    required String permission,
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/databases/bind',
+      data: {
+        'database': database,
+        'db': db,
+        'username': username,
+        'password': encodeValue(password),
+        'permission': permission,
+      },
+    );
+    _checkCode(res);
+  }
+
+  /// POST /databases/pg/bind — 绑定 PostgreSQL 用户。
+  static Future<void> bindPgUser({
+    required String name,
+    required String database,
+    required String username,
+    required String password,
+    bool superUser = false,
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/databases/pg/bind',
+      data: {
+        'name': name,
+        'database': database,
+        'username': username,
+        'password': encodeValue(password),
+        'superUser': superUser,
+      },
+    );
+    _checkCode(res);
+  }
+
+  /// POST /databases/pg/privileges — 修改 PG 用户超级权限。
+  static Future<void> changePgPrivileges({
+    required String name,
+    required String database,
+    required String username,
+    required bool superUser,
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/databases/pg/privileges',
+      data: {
+        'name': name,
+        'database': database,
+        'username': username,
+        'superUser': superUser,
+      },
+    );
+    _checkCode(res);
+  }
+
+  /// POST /databases/pg/password — 修改 PG 用户密码。
+  static Future<void> changePgPassword({
+    required String name,
+    required String database,
+    required String username,
+    required String value,
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/databases/pg/password',
+      data: {
+        'name': name,
+        'database': database,
+        'username': username,
+        'value': encodeValue(value),
+      },
+    );
+    _checkCode(res);
+  }
+
+  /// POST /databases/description/update — 更新数据库描述。
+  static Future<void> updateDescription({
+    required int id,
+    required String description,
+  }) async {
+    final res = await ApiClient.instance.post(
+      '/databases/description/update',
+      data: {'id': id, 'description': description},
+    );
+    _checkCode(res);
+  }
+
+  /// POST /databases/options — 列出面板登记的可绑数据库名。
+  static Future<List<String>> listDatabaseOptions() async {
+    final res = await ApiClient.instance.get('/databases/options');
+    final data = _dataOf(res);
+    if (data is! List) return const [];
+    return data
+        .whereType<Map>()
+        .map((e) => e['name']?.toString() ?? e['database']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
   /// Base64 编码（修改密码/访问权限共用）。
   static String encodeValue(String value) => base64Encode(utf8.encode(value));
 }

@@ -5,6 +5,9 @@ import '../../models/database.dart';
 import '../../providers/database_provider.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_colors.dart';
+import 'database_backup_account_page.dart';
+import 'database_performance_page.dart';
+import 'database_slow_log_page.dart';
 
 // ─── 状态 Tab ───
 
@@ -369,6 +372,53 @@ class _SettingsTabState extends ConsumerState<DatabaseSettingsTab> {
         ),
         const SizedBox(height: 12),
         Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.speed_outlined),
+                title: const Text('性能调优'),
+                subtitle: const Text('调整 MySQL 性能参数'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DatabasePerformancePage(inst: widget.inst),
+                  ),
+                ),
+              ),
+              if (isMysql) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.slow_motion_video),
+                  title: const Text('慢查询日志'),
+                  subtitle: const Text('配置慢查询阈值并查看记录'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DatabaseSlowLogPage(inst: widget.inst),
+                    ),
+                  ),
+                ),
+              ],
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.cloud_outlined),
+                title: const Text('备份账号'),
+                subtitle: const Text('管理本地/云存储备份账号'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DatabaseBackupAccountPage(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -452,6 +502,11 @@ class _RemoteAccessTileState extends ConsumerState<_RemoteAccessTile> {
       await ref
           .read(databaseServiceProvider)
           .updateRemoteAccess(widget.inst, v);
+      if (!mounted) return;
+      // 成功后重新拉取真实状态，确保与服务器一致
+      final actual = await _load();
+      if (!mounted) return;
+      setState(() => _remote = actual);
     } catch (e) {
       if (mounted) {
         setState(() => _remote = !v);

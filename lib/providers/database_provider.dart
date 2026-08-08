@@ -171,3 +171,14 @@ final redisPersistenceProvider =
       if (inst == null) return const RedisPersistenceDto();
       return ref.read(databaseServiceProvider).getRedisPersistence(inst);
     });
+
+/// 实例下的数据库用户列表。
+final databaseUsersProvider =
+    FutureProvider.family<List<DatabaseUserInfo>, String>((
+      ref,
+      instanceId,
+    ) async {
+      final inst = _findInstance(ref, instanceId);
+      if (inst == null) return const [];
+      return ref.read(databaseServiceProvider).listUsers(inst);
+    });

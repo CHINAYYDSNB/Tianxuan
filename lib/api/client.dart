@@ -92,10 +92,14 @@ class ApiClient {
     return bytesDio.get<List<int>>(url, queryParameters: params);
   }
 
-  Future<Response> post(String path, {dynamic data}) {
+  Future<Response> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) {
     final url = _fullUrl(path);
     debugPrint('POST $url');
-    return _dio.post(url, data: data);
+    return _dio.post(url, data: data, queryParameters: queryParameters);
   }
 
   Future<Response> delete(String path) {

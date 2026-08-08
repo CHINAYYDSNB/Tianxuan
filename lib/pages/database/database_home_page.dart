@@ -5,6 +5,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
 import 'database_add_sheet.dart';
+import 'database_backup_account_page.dart';
 import 'database_detail_page.dart';
 import 'database_remote_create_sheet.dart';
 import 'redis_management_page.dart';
@@ -119,6 +120,16 @@ class _DatabaseHomePageState extends ConsumerState<DatabaseHomePage> {
             tooltip: '同步远程实例',
             onPressed: _importing ? null : _importRemote,
             icon: const Icon(Icons.add_link),
+          ),
+          IconButton(
+            tooltip: '备份账号',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const DatabaseBackupAccountPage(),
+              ),
+            ),
+            icon: const Icon(Icons.cloud_outlined),
           ),
         ],
       ),

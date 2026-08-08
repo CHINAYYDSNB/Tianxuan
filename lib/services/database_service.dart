@@ -86,6 +86,46 @@ abstract class DatabaseService {
 
   /// 返回 null 表示连接成功，否则返回错误信息。
   Future<String?> testConnection(DatabaseInstance inst);
+
+  // ── 用户与权限管理 ──
+
+  /// 列出实例下的数据库用户（MySQL: SELECT user,host FROM mysql.user；PG: \du）。
+  Future<List<DatabaseUserInfo>> listUsers(DatabaseInstance inst);
+
+  /// 绑定/创建用户（绑定即授权）。
+  Future<void> bindUser(
+    DatabaseInstance inst, {
+    required String database,
+    required String username,
+    required String password,
+    String permission = '%',
+    bool isSuperUser = false,
+  });
+
+  /// 修改用户访问权限（host 白名单）。
+  Future<void> changeUserAccess(
+    DatabaseInstance inst,
+    String username, {
+    String permission = '%',
+  });
+
+  /// 修改用户密码。
+  Future<void> changeUserPassword(
+    DatabaseInstance inst,
+    String username,
+    String newPassword,
+  );
+
+  /// 删除用户（SSH DROP USER；API 无此端点）。
+  Future<void> deleteUser(DatabaseInstance inst, String username);
+
+  /// 修改 PG 用户超级权限。
+  Future<void> changeUserSuperUser(
+    DatabaseInstance inst,
+    String username, {
+    required bool isSuperUser,
+    required String database,
+  });
 }
 
 /// 1Panel API 实现（面板登记实例可用）。
@@ -333,6 +373,106 @@ class ApiDatabaseService implements DatabaseService {
     }
     return body is Map ? body['data'] : null;
   }
+
+  // ── 用户与权限管理（API 实现）──
+
+  @override
+  Future<List<DatabaseUserInfo>> listUsers(DatabaseInstance inst) async {
+    throw Exception('1Panel API 不支持用户列表浏览，请通过 SSH 通道查看');
+  }
+
+  @override
+  Future<void> bindUser(
+    DatabaseInstance inst, {
+    required String database,
+    required String username,
+    required String password,
+    String permission = '%',
+    bool isSuperUser = false,
+  }) async {
+    if (inst.type.isPostgres) {
+      await DatabaseApi.bindPgUser(
+        name: inst.name,
+        database: database,
+        username: username,
+        password: password,
+        superUser: isSuperUser,
+      );
+      return;
+    }
+    await DatabaseApi.bindUser(
+      database: inst.name,
+      db: database,
+      username: username,
+      password: password,
+      permission: permission,
+    );
+  }
+
+  @override
+  Future<void> changeUserAccess(
+    DatabaseInstance inst,
+    String username, {
+    String permission = '%',
+  }) async {
+    if (inst.type.isPostgres) {
+      throw Exception('PG 修改访问权限请使用超级权限开关');
+    }
+    await DatabaseApi.changeAccess(
+      id: 0,
+      from: inst.isRemote ? 'remote' : 'local',
+      type: inst.type.apiType,
+      database: inst.name,
+      value: permission,
+    );
+  }
+
+  @override
+  Future<void> changeUserPassword(
+    DatabaseInstance inst,
+    String username,
+    String newPassword,
+  ) async {
+    if (inst.type.isPostgres) {
+      await DatabaseApi.changePgPassword(
+        name: inst.name,
+        database: inst.name,
+        username: username,
+        value: newPassword,
+      );
+      return;
+    }
+    await DatabaseApi.changePassword(
+      id: inst.apiId,
+      from: inst.isRemote ? 'remote' : 'local',
+      type: inst.type.apiType,
+      database: inst.name,
+      value: DatabaseApi.encodeValue(newPassword),
+    );
+  }
+
+  @override
+  Future<void> deleteUser(DatabaseInstance inst, String username) async {
+    throw Exception('1Panel API 不支持删除数据库用户，请通过 SSH 通道操作');
+  }
+
+  @override
+  Future<void> changeUserSuperUser(
+    DatabaseInstance inst,
+    String username, {
+    required bool isSuperUser,
+    required String database,
+  }) async {
+    if (!inst.type.isPostgres) {
+      throw Exception('仅 PostgreSQL 支持超级权限切换');
+    }
+    await DatabaseApi.changePgPrivileges(
+      name: inst.name,
+      database: database,
+      username: username,
+      superUser: isSuperUser,
+    );
+  }
 }
 
 /// API First, SSH Fallback：面板实例优先 API，失败或手动实例走 SSH。
@@ -340,9 +480,7 @@ class FallbackDatabaseService implements DatabaseService {
   final ApiDatabaseService _api;
   final SshDatabaseService? _ssh;
 
-  FallbackDatabaseService({SshDatabaseService? ssh})
-    : _api = ApiDatabaseService(),
-      _ssh = ssh;
+  FallbackDatabaseService({this._ssh}) : _api = ApiDatabaseService();
 
   bool get _canSsh => _ssh != null;
 
@@ -738,5 +876,137 @@ class FallbackDatabaseService implements DatabaseService {
     }
     if (_canSsh) return _ssh!.testConnection(inst);
     return '无可用的连接方式';
+  }
+
+  // ── 用户与权限管理（Fallback）──
+
+  @override
+  Future<List<DatabaseUserInfo>> listUsers(DatabaseInstance inst) async {
+    if (inst.fromApi) {
+      try {
+        return await _api.listUsers(inst);
+      } catch (_) {}
+    }
+    if (_canSsh) return _ssh!.listUsers(inst);
+    throw Exception('无可用的连接方式');
+  }
+
+  @override
+  Future<void> bindUser(
+    DatabaseInstance inst, {
+    required String database,
+    required String username,
+    required String password,
+    String permission = '%',
+    bool isSuperUser = false,
+  }) async {
+    if (inst.fromApi) {
+      try {
+        await _api.bindUser(
+          inst,
+          database: database,
+          username: username,
+          password: password,
+          permission: permission,
+          isSuperUser: isSuperUser,
+        );
+        return;
+      } catch (_) {}
+    }
+    if (_canSsh) {
+      await _ssh!.bindUser(
+        inst,
+        database: database,
+        username: username,
+        password: password,
+        permission: permission,
+        isSuperUser: isSuperUser,
+      );
+      return;
+    }
+    throw Exception('无可用的连接方式');
+  }
+
+  @override
+  Future<void> changeUserAccess(
+    DatabaseInstance inst,
+    String username, {
+    String permission = '%',
+  }) async {
+    if (inst.fromApi) {
+      try {
+        await _api.changeUserAccess(inst, username, permission: permission);
+        return;
+      } catch (_) {}
+    }
+    if (_canSsh) {
+      await _ssh!.changeUserAccess(inst, username, permission: permission);
+      return;
+    }
+    throw Exception('无可用的连接方式');
+  }
+
+  @override
+  Future<void> changeUserPassword(
+    DatabaseInstance inst,
+    String username,
+    String newPassword,
+  ) async {
+    if (inst.fromApi) {
+      try {
+        await _api.changeUserPassword(inst, username, newPassword);
+        return;
+      } catch (_) {}
+    }
+    if (_canSsh) {
+      await _ssh!.changeUserPassword(inst, username, newPassword);
+      return;
+    }
+    throw Exception('无可用的连接方式');
+  }
+
+  @override
+  Future<void> deleteUser(DatabaseInstance inst, String username) async {
+    if (inst.fromApi) {
+      try {
+        await _api.deleteUser(inst, username);
+        return;
+      } catch (_) {}
+    }
+    if (_canSsh) {
+      await _ssh!.deleteUser(inst, username);
+      return;
+    }
+    throw Exception('无可用的连接方式');
+  }
+
+  @override
+  Future<void> changeUserSuperUser(
+    DatabaseInstance inst,
+    String username, {
+    required bool isSuperUser,
+    required String database,
+  }) async {
+    if (inst.fromApi) {
+      try {
+        await _api.changeUserSuperUser(
+          inst,
+          username,
+          isSuperUser: isSuperUser,
+          database: database,
+        );
+        return;
+      } catch (_) {}
+    }
+    if (_canSsh) {
+      await _ssh!.changeUserSuperUser(
+        inst,
+        username,
+        isSuperUser: isSuperUser,
+        database: database,
+      );
+      return;
+    }
+    throw Exception('无可用的连接方式');
   }
 }

@@ -441,6 +441,161 @@ class SshDatabaseService implements DatabaseService {
     DbType.mongodb => 'mongo',
   };
 
+  // ── 用户与权限管理（SSH 实现）──
+
+  @override
+  Future<List<DatabaseUserInfo>> listUsers(DatabaseInstance inst) async {
+    final cmd = switch (inst.type) {
+      DbType.mysql ||
+      DbType.mariadb => _buildCli(inst, 'SELECT user, host FROM mysql.user'),
+      DbType.postgresql => _buildCli(
+        inst,
+        'SELECT rolname, rolsuper FROM pg_roles WHERE rolcanlogin',
+      ),
+      _ => throw Exception('当前数据库类型不支持用户管理'),
+    };
+    final r = await _ssh.execute(cmd, timeout: const Duration(seconds: 12));
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '查询失败' : r.stderr);
+    }
+    final users = <DatabaseUserInfo>[];
+    for (final line in r.stdout.split('\n')) {
+      final t = line.trim();
+      if (t.isEmpty) continue;
+      final parts = t.split(RegExp(r'\s+'));
+      if (parts.isEmpty) continue;
+      users.add(
+        DatabaseUserInfo(
+          username: parts[0],
+          host: parts.length > 1 ? parts[1] : '%',
+          isSuperUser: parts.length > 2 && parts[2] == 't',
+        ),
+      );
+    }
+    return users;
+  }
+
+  @override
+  Future<void> bindUser(
+    DatabaseInstance inst, {
+    required String database,
+    required String username,
+    required String password,
+    String permission = '%',
+    bool isSuperUser = false,
+  }) async {
+    final escUser = username.replaceAll("'", "''");
+    final escPass = password.replaceAll("'", "''");
+    final cmd = switch (inst.type) {
+      DbType.mysql || DbType.mariadb => _buildCli(
+        inst,
+        "CREATE USER IF NOT EXISTS '$escUser'@'$permission' IDENTIFIED BY '$escPass'; "
+        "GRANT ALL PRIVILEGES ON `$database`.* TO '$escUser'@'$permission'; "
+        'FLUSH PRIVILEGES',
+      ),
+      DbType.postgresql => _buildCli(
+        inst,
+        "CREATE USER \"$escUser\" WITH PASSWORD '$escPass'"
+        '${isSuperUser ? ' SUPERUSER' : ''}; '
+        'GRANT ALL PRIVILEGES ON DATABASE "$database" TO "$escUser"',
+      ),
+      _ => throw Exception('当前数据库类型不支持创建用户'),
+    };
+    final r = await _ssh.execute(cmd, timeout: const Duration(seconds: 12));
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '创建失败' : r.stderr);
+    }
+  }
+
+  @override
+  Future<void> changeUserAccess(
+    DatabaseInstance inst,
+    String username, {
+    String permission = '%',
+  }) async {
+    if (inst.type.isPostgres) {
+      throw Exception('PG 访问权限请使用超级权限开关');
+    }
+    final escUser = username.replaceAll("'", "''");
+    final r = await _ssh.execute(
+      _buildCli(
+        inst,
+        "UPDATE mysql.user SET host='$permission' WHERE user='$escUser'; "
+        'FLUSH PRIVILEGES',
+      ),
+      timeout: const Duration(seconds: 12),
+    );
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '修改失败' : r.stderr);
+    }
+  }
+
+  @override
+  Future<void> changeUserPassword(
+    DatabaseInstance inst,
+    String username,
+    String newPassword,
+  ) async {
+    final escUser = username.replaceAll("'", "''");
+    final escPass = newPassword.replaceAll("'", "''");
+    final cmd = switch (inst.type) {
+      DbType.mysql || DbType.mariadb => _buildCli(
+        inst,
+        "ALTER USER '$escUser'@'%' IDENTIFIED BY '$escPass'; FLUSH PRIVILEGES",
+      ),
+      DbType.postgresql => _buildCli(
+        inst,
+        "ALTER USER \"$escUser\" WITH PASSWORD '$escPass'",
+      ),
+      _ => throw Exception('当前数据库类型不支持修改用户密码'),
+    };
+    final r = await _ssh.execute(cmd, timeout: const Duration(seconds: 12));
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '修改失败' : r.stderr);
+    }
+  }
+
+  @override
+  Future<void> deleteUser(DatabaseInstance inst, String username) async {
+    final escUser = username.replaceAll("'", "''");
+    final cmd = switch (inst.type) {
+      DbType.mysql || DbType.mariadb => _buildCli(
+        inst,
+        "DROP USER IF EXISTS '$escUser'@'%'; "
+        "DROP USER IF EXISTS '$escUser'@'localhost'; FLUSH PRIVILEGES",
+      ),
+      DbType.postgresql => _buildCli(inst, 'DROP USER IF EXISTS "$escUser"'),
+      _ => throw Exception('当前数据库类型不支持删除用户'),
+    };
+    final r = await _ssh.execute(cmd, timeout: const Duration(seconds: 12));
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '删除失败' : r.stderr);
+    }
+  }
+
+  @override
+  Future<void> changeUserSuperUser(
+    DatabaseInstance inst,
+    String username, {
+    required bool isSuperUser,
+    required String database,
+  }) async {
+    if (!inst.type.isPostgres) {
+      throw Exception('仅 PostgreSQL 支持超级权限切换');
+    }
+    final escUser = username.replaceAll("'", "''");
+    final r = await _ssh.execute(
+      _buildCli(
+        inst,
+        'ALTER ROLE "$escUser" ${isSuperUser ? 'SUPERUSER' : 'NOSUPERUSER'}',
+      ),
+      timeout: const Duration(seconds: 12),
+    );
+    if (!r.isSuccess) {
+      throw Exception(r.stderr.isEmpty ? '修改失败' : r.stderr);
+    }
+  }
+
   static String _b64decode(String value) {
     try {
       return utf8.decode(base64Decode(value));
@@ -488,7 +643,7 @@ class SshDatabaseService implements DatabaseService {
         DbType.postgresql => "PGPASSWORD='$escapedPass'",
         _ => '',
       };
-      final inner = _cliInner(inst, user, '$env', innerCmd, insideDocker: true);
+      final inner = _cliInner(inst, user, env, innerCmd, insideDocker: true);
       return "docker exec ${inst.containerName} sh -c '$inner'";
     }
 
@@ -542,6 +697,96 @@ class SshDatabaseService implements DatabaseService {
             ? " -u $user -p '${inst.password}'"
             : '';
         return 'mongosh$hostArg$auth --quiet --eval "$innerCmd"';
+    }
+  }
+}
+
+/// SSH 数据库 CLI 工具：供备份/恢复复用，构造 dump/restore 命令。
+///
+/// 输出到服务器文件系统（Docker 容器内命令的重定向在容器外执行，
+/// 保证备份文件落在宿主机可管理目录）。
+class SshDatabaseCli {
+  static String _esc(String s) => s.replaceAll("'", "'\\''");
+
+  /// 构造备份命令：将 [database] 导出到 [target]（shell 单引号包裹的绝对路径）。
+  static String dumpCommand(
+    DatabaseInstance inst,
+    String database,
+    String target,
+  ) {
+    final pass = _esc(inst.password ?? '');
+    final user = inst.username;
+    final db = _esc(database);
+
+    switch (inst.type) {
+      case DbType.mysql || DbType.mariadb:
+        if (inst.inDocker && inst.containerName != null) {
+          return 'mkdir -p "${_esc(target.substring(0, target.lastIndexOf("/") + 1))}" 2>/dev/null; '
+              'docker exec ${inst.containerName} sh -c '
+              "'MYSQL_PWD=\"$pass\" mysqldump -u\"$user\" --single-transaction --quick --skip-lock-tables \"$db\"' > $target";
+        }
+        return 'mkdir -p "${_esc(target.substring(0, target.lastIndexOf("/") + 1))}" 2>/dev/null; '
+            'MYSQL_PWD="$pass" mysqldump -h ${inst.address} -P ${inst.port} '
+            '-u"$user" --single-transaction --quick --skip-lock-tables "$db" > $target';
+      case DbType.postgresql:
+        if (inst.inDocker && inst.containerName != null) {
+          return 'mkdir -p "${_esc(target.substring(0, target.lastIndexOf("/") + 1))}" 2>/dev/null; '
+              'docker exec ${inst.containerName} sh -c '
+              "'PGPASSWORD=\"$pass\" pg_dump -U \"$user\" -d \"$db\"' > $target";
+        }
+        return 'mkdir -p "${_esc(target.substring(0, target.lastIndexOf("/") + 1))}" 2>/dev/null; '
+            'PGPASSWORD="$pass" pg_dump -h ${inst.address} -p ${inst.port} '
+            '-U "$user" -d "$db" > $target';
+      case DbType.mongodb:
+        final auth = inst.password != null && inst.password!.isNotEmpty
+            ? ' --username $user --password "$pass"'
+            : '';
+        return 'mongodump --host ${inst.address} --port ${inst.port}$auth '
+            '--db "$db" --archive=$target';
+      case DbType.redis:
+        final auth = inst.password != null && inst.password!.isNotEmpty
+            ? ' -a "$pass" --no-auth-warning'
+            : '';
+        return 'redis-cli -h ${inst.address} -p ${inst.port}$auth SAVE';
+    }
+  }
+
+  /// 构造恢复命令：从 [source]（shell 单引号包裹路径）导入到 [database]。
+  static String restoreCommand(
+    DatabaseInstance inst,
+    String database,
+    String source,
+  ) {
+    final pass = _esc(inst.password ?? '');
+    final user = inst.username;
+    final db = _esc(database);
+
+    switch (inst.type) {
+      case DbType.mysql || DbType.mariadb:
+        if (inst.inDocker && inst.containerName != null) {
+          return 'cat $source | docker exec -i ${inst.containerName} sh -c '
+              "'MYSQL_PWD=\"$pass\" mysql -u\"$user\" \"$db\"'";
+        }
+        return 'MYSQL_PWD="$pass" mysql -h ${inst.address} -P ${inst.port} '
+            '-u"$user" "$db" < $source';
+      case DbType.postgresql:
+        if (inst.inDocker && inst.containerName != null) {
+          return 'cat $source | docker exec -i ${inst.containerName} sh -c '
+              "'PGPASSWORD=\"$pass\" psql -U \"$user\" -d \"$db\"'";
+        }
+        return 'PGPASSWORD="$pass" psql -h ${inst.address} -p ${inst.port} '
+            '-U "$user" -d "$db" < $source';
+      case DbType.mongodb:
+        final auth = inst.password != null && inst.password!.isNotEmpty
+            ? ' --username $user --password "$pass"'
+            : '';
+        return 'mongorestore --host ${inst.address} --port ${inst.port}$auth '
+            '--archive=$source';
+      case DbType.redis:
+        final auth = inst.password != null && inst.password!.isNotEmpty
+            ? ' -a "$pass" --no-auth-warning'
+            : '';
+        return 'redis-cli -h ${inst.address} -p ${inst.port}$auth --pipe < $source';
     }
   }
 }

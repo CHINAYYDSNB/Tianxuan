@@ -4,9 +4,11 @@ import '../../models/database.dart';
 import '../../providers/database_provider.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_colors.dart';
+import 'database_backup_sheet.dart';
 import 'database_detail_tabs.dart';
+import 'database_users_tab.dart';
 
-/// 数据库实例管理：列表 / 状态 / 设置（对齐 Mono-Dash 管理页）。
+/// 数据库实例管理：列表 / 状态 / 设置 / 用户。
 class DatabaseDetailPage extends ConsumerStatefulWidget {
   final DatabaseInstance instance;
   const DatabaseDetailPage({super.key, required this.instance});
@@ -22,7 +24,7 @@ class _DatabaseDetailPageState extends ConsumerState<DatabaseDetailPage>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -37,13 +39,14 @@ class _DatabaseDetailPageState extends ConsumerState<DatabaseDetailPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${_inst.name} 路 ${_inst.type.label}'),
+        title: Text('${_inst.name} · ${_inst.type.label}'),
         bottom: TabBar(
           controller: _tab,
           tabs: const [
             Tab(text: '列表'),
             Tab(text: '状态'),
             Tab(text: '设置'),
+            Tab(text: '用户'),
           ],
         ),
       ),
@@ -53,6 +56,10 @@ class _DatabaseDetailPageState extends ConsumerState<DatabaseDetailPage>
           _DatabaseListTab(inst: _inst),
           DatabaseStatusTab(inst: _inst),
           DatabaseSettingsTab(inst: _inst),
+          if (_inst.type.isRedis)
+            const Center(child: Text('Redis 无用户系统'))
+          else
+            DatabaseUsersTab(inst: _inst),
         ],
       ),
     );
@@ -179,16 +186,10 @@ class _DatabaseListTabState extends ConsumerState<_DatabaseListTab> {
         collation: collation,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('创建成功'), backgroundColor: Colors.green),
-      );
+      _snack('创建成功', green: true);
       ref.invalidate(databaseItemsProvider(widget.inst.id));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) _snack('$e');
     }
   }
 
@@ -216,16 +217,10 @@ class _DatabaseListTabState extends ConsumerState<_DatabaseListTab> {
     try {
       await _svc.deleteDatabase(widget.inst, item);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已删除'), backgroundColor: Colors.green),
-      );
+      _snack('已删除', green: true);
       ref.invalidate(databaseItemsProvider(widget.inst.id));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) _snack('$e');
     }
   }
 
@@ -237,17 +232,25 @@ class _DatabaseListTabState extends ConsumerState<_DatabaseListTab> {
         await _svc.loadFromRemote(widget.inst);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已同步'), backgroundColor: Colors.green),
-      );
+      _snack('已同步', green: true);
       ref.invalidate(databaseItemsProvider(widget.inst.id));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) _snack('$e');
     }
+  }
+
+  void _openBackup(DatabaseItem item) {
+    final name = item.instanceName.isNotEmpty ? item.instanceName : item.name;
+    showDatabaseBackupSheet(context, inst: widget.inst, dbName: name);
+  }
+
+  void _snack(String msg, {bool green = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: green ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   @override
@@ -281,7 +284,6 @@ class _DatabaseListTabState extends ConsumerState<_DatabaseListTab> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      onSubmitted: (v) => setState(() => _keyword = v.trim()),
                       onChanged: (v) => setState(() => _keyword = v.trim()),
                     ),
                   ),
@@ -338,15 +340,25 @@ class _DatabaseListTabState extends ConsumerState<_DatabaseListTab> {
                           ),
                           subtitle: db.format.isNotEmpty
                               ? Text(
-                                  '${db.format}${db.collation.isNotEmpty ? ' 路 ${db.collation}' : ''}'
-                                  '${db.username.isNotEmpty ? ' 路 ${db.username}' : ''}',
+                                  '${db.format}${db.collation.isNotEmpty ? ' · ${db.collation}' : ''}'
+                                  '${db.username.isNotEmpty ? ' · ${db.username}' : ''}',
                                   style: const TextStyle(fontSize: 12),
                                 )
                               : null,
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            tooltip: '删除',
-                            onPressed: () => _delete(db),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.archive_outlined),
+                                tooltip: '备份',
+                                onPressed: () => _openBackup(db),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: '删除',
+                                onPressed: () => _delete(db),
+                              ),
+                            ],
                           ),
                         ),
                       );

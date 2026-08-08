@@ -370,6 +370,51 @@ class FileApi {
     return res.data['data'] == true;
   }
 
+  /// Read file content by line (1Panel v2 专用端点)。
+  ///
+  /// POST /files/read — 支持按类型读取任务日志（type=task, name=taskID）、
+  /// 慢日志（type=mysql-slow-logs, name=实例名）等。返回分页行。
+  static Future<FileReadResult> readByLineFile({
+    required String type,
+    String name = '',
+    String taskID = '',
+    int id = 0,
+    int page = 1,
+    int pageSize = 500,
+    bool latest = true,
+  }) async {
+    try {
+      final res = await ApiClient.instance.post(
+        '/files/read',
+        data: {
+          'page': page,
+          'pageSize': pageSize,
+          'type': type,
+          'ID': id,
+          'name': taskID.isNotEmpty ? taskID : name,
+          'latest': latest,
+        },
+      );
+      final body = _parseBody(res);
+      return FileReadResult(
+        end: body['end'] as bool? ?? true,
+        path: body['path']?.toString() ?? '',
+        total: (body['total'] as num?)?.toInt() ?? 0,
+        taskStatus: body['taskStatus']?.toString() ?? '',
+        lines:
+            (body['lines'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
+        totalLines: (body['totalLines'] as num?)?.toInt() ?? 0,
+      );
+    } on FileReadException {
+      rethrow;
+    } on DioException catch (e) {
+      throw FileReadException(e.message ?? '网络错误', e.response?.statusCode);
+    } on Exception catch (e) {
+      throw FileReadException(e.toString());
+    }
+  }
+
   /// Parse 1Panel API response body
   static Map<String, dynamic> _parseBody(Response res) {
     final data = res.data;
@@ -398,6 +443,26 @@ class FileListResult {
   final int total;
 
   FileListResult({required this.items, required this.total});
+}
+
+class FileReadResult {
+  final bool end;
+  final String path;
+  final int total;
+  final String taskStatus;
+  final List<String> lines;
+  final int totalLines;
+
+  FileReadResult({
+    required this.end,
+    required this.path,
+    required this.total,
+    required this.taskStatus,
+    required this.lines,
+    required this.totalLines,
+  });
+
+  bool get isExecuting => taskStatus.toLowerCase() == 'executing';
 }
 
 class FileLineResult {

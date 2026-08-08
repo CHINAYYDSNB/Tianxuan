@@ -173,6 +173,7 @@ class _ServerCard extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(17),
         onTap: onTap,
+        onLongPress: () => _confirmDelete(context, ref),
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Column(
@@ -344,4 +345,46 @@ class _ServerCard extends ConsumerWidget {
 
   Widget _metricSep() =>
       const SizedBox(height: 28, child: VerticalDivider(width: 16));
+
+  /// 长按卡片：确认后删除该服务器。
+  /// 删除当前服务器时同时断开 API/SSH 连接。
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除服务器'),
+        content: Text(
+          isCurrent
+              ? '「${server.name}」是当前服务器，删除后将断开连接。确定删除吗？'
+              : '确定删除「${server.name}」吗？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    await ref.read(savedServersProvider.notifier).remove(server.id);
+    ref.invalidate(serverCardStatusProvider(server.id));
+    if (isCurrent) {
+      ref.read(settingsProvider.notifier).disconnect();
+      if (server.isSshOnly) {
+        ref.read(sshConnectionProvider.notifier).disconnect();
+      }
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已删除「${server.name}」')));
+    }
+  }
 }

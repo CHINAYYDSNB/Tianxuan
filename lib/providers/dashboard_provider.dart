@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/dashboard_api.dart';
 import '../models/server_status.dart';
+import '../services/ssh_command_service.dart';
 import '../services/ssh_monitor.dart';
 import 'server_list_provider.dart';
 import 'ssh_connection_provider.dart';
@@ -146,14 +147,14 @@ final serverStatusProvider =
       ServerStatusNotifier.new,
     );
 
-// ─── 服务器卡片状态（首页多服务器概览，10s 轮询） ───
+// ─── 服务器卡片状态（首页多服务器概览，15s 轮询） ───
 
 /// 按 server id 拉取状态（用于首页卡片迷你监控）。
-/// 每次拉取前临时切换到该服务器配置，拉完恢复。
-final serverCardStatusProvider = FutureProvider.family<ServerStatus?, String>((
+/// 优先走 SSH（与工作台一致），无 SSH 凭据时降级 1Panel API。
+final serverCardStatusProvider = StreamProvider.family<ServerStatus?, String>((
   ref,
   serverId,
-) async {
+) async* {
   final servers = ref.watch(savedServersProvider);
   SavedServer? server;
   for (final s in servers) {
@@ -162,12 +163,61 @@ final serverCardStatusProvider = FutureProvider.family<ServerStatus?, String>((
       break;
     }
   }
-  if (server == null) return null;
-  try {
-    await ApiClient.instance.saveConfig(server.url, server.apiKey);
-    final status = await DashboardApi.getStatus();
-    return status;
-  } catch (_) {
-    return null;
+  if (server == null) {
+    yield null;
+    return;
+  }
+
+  SshCommandService? ssh;
+  ref.onDispose(() => ssh?.disconnect());
+  while (true) {
+    final result = await _fetchCardStatus(server, ssh);
+    ssh = result.ssh;
+    yield result.status;
+    await Future.delayed(const Duration(seconds: 15));
   }
 });
+
+/// 拉取单个服务器卡片状态：SSH 优先（复用连接），失败降级 API。
+Future<({ServerStatus? status, SshCommandService? ssh})> _fetchCardStatus(
+  SavedServer server,
+  SshCommandService? ssh,
+) async {
+  if (server.sshHost.isNotEmpty) {
+    SshCommandService? svc;
+    try {
+      svc = ssh ?? SshCommandService();
+      if (!svc.isConnected) {
+        await svc.connect(
+          SshConfig(
+            host: server.sshHost,
+            port: server.sshPort,
+            username: server.sshUsername,
+            password: server.sshPassword,
+            privateKey: server.sshPrivateKey,
+          ),
+        );
+      }
+      final status = await SshMonitor(svc).fetchStatus();
+      return (status: status, ssh: svc);
+    } catch (e) {
+      debugPrint('Card SSH status failed (${server.name}): $e');
+      try {
+        svc?.disconnect();
+      } catch (_) {
+        // 忽略断开异常，下轮重新连接
+      }
+      ssh = null;
+    }
+  }
+  if (!server.isSshOnly && server.apiKey.isNotEmpty) {
+    try {
+      await ApiClient.instance.saveConfig(server.url, server.apiKey);
+      final status = await DashboardApi.getStatus();
+      return (status: status, ssh: ssh);
+    } catch (e) {
+      debugPrint('Card API status failed (${server.name}): $e');
+    }
+  }
+  return (status: null, ssh: ssh);
+}

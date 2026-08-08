@@ -1,0 +1,84 @@
+name: Build Desktop
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
+jobs:
+  windows:
+    name: Windows setup.exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: flutter analyze --fatal-warnings --no-fatal-infos
+
+      - name: Run tests with coverage
+        run: flutter test --coverage --concurrency=1
+
+      - name: Check coverage threshold (70%)
+        uses: VeryGoodOpenSource/very_good_coverage@v2
+        with:
+          path: coverage/lcov.info
+          min_coverage: 70
+          exclude: '**/lib/api/client.dart **/lib/services/storage_service.dart **/lib/utils/src/downloader_stub.dart **/lib/pages/** **/lib/widgets/** **/lib/theme/** **/lib/desktop/**'
+
+      - name: Build Windows release
+        run: flutter build windows --release --build-name "0.4.0.${{ github.run_number }}" --build-number "${{ github.run_number }}"
+
+      - name: Package setup.exe (NSIS)
+        run: |
+          choco install nsis -y
+          cd scripts\desktop
+          makensis installer.nsi
+          cd ..\..
+          Copy-Item build\installer\setup.exe setup-windows-x64.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tianxuan-desktop-windows
+          path: setup-windows-x64.exe
+
+      - name: Publish to GitHub Releases
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v0.4.0.${{ github.run_number }}
+          name: "Tianxuan Desktop 0.4.0.${{ github.run_number }}"
+          files: setup-windows-x64.exe
+          generate_release_notes: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Anti-cheat scan (print statements)
+        run: |
+          if grep -r "print(" lib/ --include="*.dart" | grep -v "//"; then
+            echo "::error::Found print() statements. Use debugPrint instead."
+            exit 1
+          fi

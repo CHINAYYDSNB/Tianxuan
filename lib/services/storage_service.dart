@@ -290,4 +290,47 @@ class StorageService {
       return null;
     }
   }
+
+  // ─── 桌面版服务器（独立存储，与手机端 key 隔离） ───
+
+  /// 桌面服务器列表元数据（不含密码/私钥）
+  Future<void> saveDesktopServersJson(String json) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('desktop_servers', json);
+  }
+
+  Future<String?> getDesktopServersJson() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString('desktop_servers');
+  }
+
+  /// 桌面服务器密码（加密存储）
+  Future<void> saveDesktopServerPass(String id, String? pass) async {
+    if (pass == null || pass.isEmpty) {
+      await _delete('desktop_ssh_pass_$id');
+    } else {
+      await _write('desktop_ssh_pass_$id', pass);
+    }
+  }
+
+  Future<String?> getDesktopServerPass(String id) =>
+      _read('desktop_ssh_pass_$id');
+
+  /// 桌面服务器私钥（加密存储）
+  Future<void> saveDesktopServerKey(String id, String? key) async {
+    if (key == null || key.isEmpty) {
+      await _delete('desktop_ssh_key_$id');
+    } else {
+      await _write('desktop_ssh_key_$id', key);
+    }
+  }
+
+  Future<String?> getDesktopServerKey(String id) =>
+      _read('desktop_ssh_key_$id');
+
+  Future<void> deleteDesktopServerPass(String id) =>
+      _delete('desktop_ssh_pass_$id');
+
+  Future<void> deleteDesktopServerKey(String id) =>
+      _delete('desktop_ssh_key_$id');
 }

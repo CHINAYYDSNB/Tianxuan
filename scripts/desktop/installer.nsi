@@ -2,12 +2,12 @@
 ; Build output: build/windows/x64/runner/Release/
 
 !define PRODUCT_NAME "Tianxuan Desktop"
-!define INSTALL_DIR "$PROGRAMFILES64\Tianxuan"
+!define PRODUCT_DIR "Tianxuan"
 
 !include "MUI2.nsh"
 
 ; Installer output (relative to script dir scripts/desktop/ → repo root)
-OutFile "..\..\build\installer\setup.exe"
+OutFile "..\..\setup-windows-x64.exe"
 
 ; Interface
 !define MUI_ABORTWARNING
@@ -25,7 +25,7 @@ OutFile "..\..\build\installer\setup.exe"
 !insertmacro MUI_LANGUAGE "English"
 
 ; Default install dir
-InstallDir "$INSTALL_DIR"
+InstallDir "$PROGRAMFILES64\${PRODUCT_DIR}"
 
 ; Silent mode for auto-update: /S
 RequestExecutionLevel admin
@@ -34,19 +34,19 @@ Section "Install"
   SetOutPath "$INSTDIR"
   ; 相对脚本目录（scripts/desktop/）定位构建产物
   File /r "..\..\build\windows\x64\runner\Release\*.*"
-  CreateShortCut "$DESKTOP\Tianxuan.lnk" "$INSTDIR\tianxuan.exe"
-  CreateDirectory "$SMPROGRAMS\Tianxuan"
-  CreateShortCut "$SMPROGRAMS\Tianxuan\Tianxuan.lnk" "$INSTDIR\tianxuan.exe"
+  CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\tianxuan.exe"
+  CreateDirectory "$SMPROGRAMS\${PRODUCT_DIR}"
+  CreateShortCut "$SMPROGRAMS\${PRODUCT_DIR}\${PRODUCT_NAME}.lnk" "$INSTDIR\tianxuan.exe"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Tianxuan" "DisplayName" "Tianxuan Desktop"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Tianxuan" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_DIR}" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_DIR}" "UninstallString" "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Uninstall"
   Delete "$INSTDIR\*.*"
   RMDir /r "$INSTDIR"
-  Delete "$DESKTOP\Tianxuan.lnk"
-  Delete "$SMPROGRAMS\Tianxuan\Tianxuan.lnk"
-  RMDir "$SMPROGRAMS\Tianxuan"
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Tianxuan"
+  Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
+  Delete "$SMPROGRAMS\${PRODUCT_DIR}\${PRODUCT_NAME}.lnk"
+  RMDir "$SMPROGRAMS\${PRODUCT_DIR}"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_DIR}"
 SectionEnd
